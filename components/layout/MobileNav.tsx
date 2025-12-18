@@ -2,7 +2,7 @@
 
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
-import { Home, Search, FileWarning, Bell, User } from 'lucide-react'
+import { Home, Search, FileWarning, User } from 'lucide-react'
 
 export function MobileNav() {
   const pathname = usePathname()
@@ -11,7 +11,6 @@ export function MobileNav() {
     { href: '/', icon: Home, label: 'หน้าแรก' },
     { href: '/search', icon: Search, label: 'ค้นหา' },
     { href: '/report/new', icon: FileWarning, label: 'รายงาน', isMain: true },
-    { href: '#', icon: Bell, label: 'แจ้งเตือน' },
     { href: '/login', icon: User, label: 'บัญชี' },
   ]
 
