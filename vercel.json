@@ -7,10 +7,6 @@
     {
       "path": "/api/cron/daily-reset",
       "schedule": "0 17 * * *"
-    },
-    {
-      "path": "/api/cron/check-subscriptions",
-      "schedule": "0 17 * * *"
     }
   ]
 }
