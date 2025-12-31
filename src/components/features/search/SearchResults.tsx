@@ -7,7 +7,8 @@ import { useTranslations } from 'next-intl';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { Loader2, ShieldAlert, CheckCircle, MapPin, SearchX, AlertTriangle, CreditCard, Phone, Star, Search, ArrowUpDown, SlidersHorizontal, Zap, Receipt, FileText, Banknote, Wallet } from 'lucide-react';
+import { Loader2, ShieldAlert, CheckCircle, MapPin, SearchX, AlertTriangle, CreditCard, Phone, Star, Search, ArrowUpDown, SlidersHorizontal, Zap, Receipt, FileText, Banknote, Wallet, Crown, MessageCircle } from 'lucide-react';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import Link from 'next/link';
 
 type SearchResult = {
@@ -17,6 +18,7 @@ type SearchResult = {
     isBoosted?: boolean;
     isPPC?: boolean;
     impressionId?: string;
+    isVerifiedPro?: boolean; // ร้านรับรอง (มี subscription active)
 };
 
 type SortOption = 'rating' | 'reviews' | 'name' | 'newest';
@@ -203,9 +205,24 @@ export default function SearchResults() {
                             .select('*')
                             .in('shop_id', shopIds);
 
+                        // Get subscription status for all shops (ร้านรับรอง)
+                        const { data: subscriptions } = await supabase
+                            .from('shop_subscriptions')
+                            .select('shop_id, status, ends_at')
+                            .in('shop_id', shopIds)
+                            .eq('status', 'active');
+
                         const adSettingsMap: Record<string, any> = {};
                         adSettings?.forEach(s => {
                             adSettingsMap[s.shop_id] = s;
+                        });
+
+                        // Create a set of verified pro shops (active subscription)
+                        const verifiedProShops = new Set<string>();
+                        subscriptions?.forEach(s => {
+                            if (s.status === 'active' && new Date(s.ends_at) > new Date()) {
+                                verifiedProShops.add(s.shop_id);
+                            }
                         });
 
                         // Map shops with ad info
@@ -214,6 +231,12 @@ export default function SearchResults() {
                             let adScore = 0;
                             let isBoosted = false;
                             let isPPC = false;
+                            const isVerifiedPro = verifiedProShops.has(shop.id);
+
+                            // ร้านรับรอง gets priority in sorting
+                            if (isVerifiedPro) {
+                                adScore += 300;
+                            }
 
                             if (settings) {
                                 // Check boost
@@ -234,7 +257,8 @@ export default function SearchResults() {
                                 data: shop,
                                 adScore,
                                 isBoosted,
-                                isPPC
+                                isPPC,
+                                isVerifiedPro
                             };
                         });
 
@@ -548,6 +572,20 @@ export default function SearchResults() {
                                     <div className="flex items-center gap-2 mb-2 flex-wrap">
                                         {result.type === 'shop' ? (
                                             <>
+                                                {result.isVerifiedPro && (
+                                                    <TooltipProvider>
+                                                        <Tooltip>
+                                                            <TooltipTrigger>
+                                                                <Badge className="bg-gradient-to-r from-yellow-400 to-orange-400 text-white border-0 shadow-sm">
+                                                                    <Crown className="w-3 h-3 mr-1" /> ร้านรับรอง
+                                                                </Badge>
+                                                            </TooltipTrigger>
+                                                            <TooltipContent>
+                                                                <p>ร้านนี้ผ่านการตรวจสอบและรับประกันมัดจำ ฿1,000</p>
+                                                            </TooltipContent>
+                                                        </Tooltip>
+                                                    </TooltipProvider>
+                                                )}
                                                 {result.isBoosted && (
                                                     <Badge className="bg-gradient-to-r from-yellow-100 to-orange-100 text-orange-700 border-orange-200">
                                                         <Zap className="w-3 h-3 mr-1" /> แนะนำ
@@ -558,9 +596,11 @@ export default function SearchResults() {
                                                         <Zap className="w-3 h-3 mr-1" /> แนะนำ
                                                     </Badge>
                                                 )}
-                                                <Badge className="bg-green-100 text-green-700 hover:bg-green-100 border-green-200">
-                                                    <CheckCircle className="w-3 h-3 mr-1" /> {t('verifiedShop')}
-                                                </Badge>
+                                                {!result.isVerifiedPro && (
+                                                    <Badge className="bg-green-100 text-green-700 hover:bg-green-100 border-green-200">
+                                                        <CheckCircle className="w-3 h-3 mr-1" /> {t('verifiedShop')}
+                                                    </Badge>
+                                                )}
                                                 {result.data.report_count > 0 && (
                                                     <Badge className="bg-red-100 text-red-700 border-red-200">
                                                         <AlertTriangle className="w-3 h-3 mr-1" />
@@ -645,14 +685,61 @@ export default function SearchResults() {
                                     )}
                                 </div>
 
-                                <div className="ml-4">
+                                <div className="ml-4 flex flex-col gap-2">
                                     {result.type === 'shop' ? (
-                                        <Link
-                                            href={`/shop/${result.data.id}`}
-                                            onClick={() => handleShopClick(result)}
-                                        >
-                                            <Button variant="outline">{t('viewShop')}</Button>
-                                        </Link>
+                                        <>
+                                            {/* Contact buttons for ร้านรับรอง (Pro shops) */}
+                                            {result.isVerifiedPro && (
+                                                <div className="flex gap-2">
+                                                    {result.data.phone_number && (
+                                                        <TooltipProvider>
+                                                            <Tooltip>
+                                                                <TooltipTrigger asChild>
+                                                                    <a
+                                                                        href={`tel:${result.data.phone_number}`}
+                                                                        className="inline-flex items-center justify-center w-10 h-10 rounded-full bg-green-100 text-green-600 hover:bg-green-200 transition-colors"
+                                                                        onClick={() => handleShopClick(result)}
+                                                                    >
+                                                                        <Phone className="w-4 h-4" />
+                                                                    </a>
+                                                                </TooltipTrigger>
+                                                                <TooltipContent>
+                                                                    <p>โทร {result.data.phone_number}</p>
+                                                                </TooltipContent>
+                                                            </Tooltip>
+                                                        </TooltipProvider>
+                                                    )}
+                                                    {result.data.line_id && (
+                                                        <TooltipProvider>
+                                                            <Tooltip>
+                                                                <TooltipTrigger asChild>
+                                                                    <a
+                                                                        href={result.data.line_id.startsWith('@')
+                                                                            ? `https://line.me/R/ti/p/${result.data.line_id}`
+                                                                            : `https://line.me/R/ti/p/~${result.data.line_id}`}
+                                                                        target="_blank"
+                                                                        rel="noopener noreferrer"
+                                                                        className="inline-flex items-center justify-center w-10 h-10 rounded-full bg-[#06C755]/10 text-[#06C755] hover:bg-[#06C755]/20 transition-colors"
+                                                                        onClick={() => handleShopClick(result)}
+                                                                    >
+                                                                        <MessageCircle className="w-4 h-4" />
+                                                                    </a>
+                                                                </TooltipTrigger>
+                                                                <TooltipContent>
+                                                                    <p>LINE: {result.data.line_id}</p>
+                                                                </TooltipContent>
+                                                            </Tooltip>
+                                                        </TooltipProvider>
+                                                    )}
+                                                </div>
+                                            )}
+                                            <Link
+                                                href={`/shop/${result.data.id}`}
+                                                onClick={() => handleShopClick(result)}
+                                            >
+                                                <Button variant="outline">{t('viewShop')}</Button>
+                                            </Link>
+                                        </>
                                     ) : (
                                         <Link href={`/blacklist/${result.data.id}`}>
                                             <Button variant="destructive" className="bg-red-600 hover:bg-red-700">

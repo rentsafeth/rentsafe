@@ -10,6 +10,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Camera, Loader2, Save, Building2, ImageIcon, X, Receipt, FileText, Banknote, CreditCard } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import Image from 'next/image';
+import { StandaloneAlert } from '@/components/ui/alert-modal';
 
 interface Shop {
     id: string;
@@ -40,6 +41,19 @@ export default function EditShopPage() {
     const [saving, setSaving] = useState(false);
     const [uploadingLogo, setUploadingLogo] = useState(false);
     const [uploadingCover, setUploadingCover] = useState(false);
+
+    // Alert state
+    const [alertState, setAlertState] = useState({
+        isOpen: false,
+        type: 'info' as 'success' | 'error' | 'warning' | 'info',
+        title: '',
+        message: '',
+        onConfirm: undefined as (() => void) | undefined,
+    });
+
+    const showAlert = (type: 'success' | 'error' | 'warning' | 'info', title: string, message: string, onConfirm?: () => void) => {
+        setAlertState({ isOpen: true, type, title, message, onConfirm });
+    };
 
     const [formData, setFormData] = useState({
         name: '',
@@ -129,7 +143,7 @@ export default function EditShopPage() {
 
         } catch (error) {
             console.error('Upload error:', error);
-            alert('เกิดข้อผิดพลาดในการอัพโหลดรูป');
+            showAlert('error', 'เกิดข้อผิดพลาด', 'ไม่สามารถอัพโหลดรูปได้ กรุณาลองใหม่อีกครั้ง');
         } finally {
             setUploading(false);
         }
@@ -153,7 +167,7 @@ export default function EditShopPage() {
             setShop(prev => prev ? { ...prev, [updateField]: null } : null);
         } catch (error) {
             console.error('Remove error:', error);
-            alert('เกิดข้อผิดพลาด');
+            showAlert('error', 'เกิดข้อผิดพลาด', 'ไม่สามารถลบรูปได้ กรุณาลองใหม่อีกครั้ง');
         } finally {
             setUploading(false);
         }
@@ -182,11 +196,12 @@ export default function EditShopPage() {
 
             if (error) throw error;
 
-            alert('บันทึกสำเร็จ!');
-            router.push(`/shop/${shop.id}`);
+            showAlert('success', 'บันทึกสำเร็จ!', 'ข้อมูลร้านค้าของคุณได้รับการอัปเดตแล้ว', () => {
+                router.push(`/shop/${shop.id}`);
+            });
         } catch (error) {
             console.error('Save error:', error);
-            alert('เกิดข้อผิดพลาดในการบันทึก');
+            showAlert('error', 'เกิดข้อผิดพลาด', 'ไม่สามารถบันทึกข้อมูลได้ กรุณาลองใหม่อีกครั้ง');
         } finally {
             setSaving(false);
         }
@@ -512,6 +527,16 @@ export default function EditShopPage() {
                     </CardContent>
                 </Card>
             </div>
+
+            {/* Alert Modal */}
+            <StandaloneAlert
+                isOpen={alertState.isOpen}
+                onClose={() => setAlertState(prev => ({ ...prev, isOpen: false }))}
+                type={alertState.type}
+                title={alertState.title}
+                message={alertState.message}
+                onConfirm={alertState.onConfirm}
+            />
         </div>
     );
 }

@@ -5,7 +5,7 @@ import Image from 'next/image';
 import {
     Building2, Edit, ExternalLink, Clock, CheckCircle, XCircle,
     Star, AlertTriangle, Eye, Calendar, Phone, MessageCircle,
-    Globe, MapPin, Coins, Megaphone
+    Globe, MapPin, Coins, Megaphone, Crown, Shield, Search
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -31,8 +31,24 @@ export default async function DashboardPage() {
     let reviewsCount = 0;
     let avgRating = 0;
     let reportsCount = 0;
+    let subscription: any = null;
+    let daysRemaining = 0;
 
     if (shop) {
+        // Get subscription status
+        const { data: subData } = await supabase
+            .from('shop_subscriptions')
+            .select('*, plan:subscription_plans(*)')
+            .eq('shop_id', shop.id)
+            .eq('status', 'active')
+            .single();
+
+        if (subData && new Date(subData.ends_at) > new Date()) {
+            subscription = subData;
+            daysRemaining = Math.ceil(
+                (new Date(subData.ends_at).getTime() - new Date().getTime()) / (1000 * 60 * 60 * 24)
+            );
+        }
         // Get reviews
         const { data: reviewsData } = await supabase
             .from('reviews')
@@ -158,6 +174,25 @@ export default async function DashboardPage() {
                                         </div>
                                     </div>
                                     <div className="flex gap-2 flex-wrap">
+                                        <Link href="/dashboard/subscription">
+                                            {subscription ? (
+                                                <Button variant="outline" className="border-yellow-300 text-yellow-700 bg-gradient-to-r from-yellow-50 to-orange-50 hover:from-yellow-100 hover:to-orange-100">
+                                                    <Crown className="w-4 h-4 mr-2" />
+                                                    ร้านรับรอง ({daysRemaining} วัน)
+                                                </Button>
+                                            ) : (
+                                                <Button variant="outline" className="border-yellow-300 text-yellow-700 hover:bg-yellow-50">
+                                                    <Crown className="w-4 h-4 mr-2" />
+                                                    อัพเกรดร้านรับรอง
+                                                </Button>
+                                            )}
+                                        </Link>
+                                        <Link href="/dashboard/blacklist">
+                                            <Button variant="outline" className="border-red-200 text-red-600 hover:bg-red-50">
+                                                <Shield className="w-4 h-4 mr-2" />
+                                                Blacklist
+                                            </Button>
+                                        </Link>
                                         <Link href="/dashboard/credits">
                                             <Button variant="outline" className="border-orange-200 text-orange-600 hover:bg-orange-50">
                                                 <Coins className="w-4 h-4 mr-2" />
