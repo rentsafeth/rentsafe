@@ -1,5 +1,6 @@
 import { createClient } from '@/lib/supabase/server';
 import { notFound } from 'next/navigation';
+import { Metadata } from 'next';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -12,7 +13,59 @@ import Link from 'next/link';
 import Image from 'next/image';
 import { PROVINCES } from '@/lib/constants/provinces';
 
-export default async function ShopProfilePage({ params }: { params: Promise<{ id: string }> }) {
+const BASE_URL = 'https://rentsafe.in.th';
+
+export async function generateMetadata({ params }: { params: Promise<{ id: string; locale: string }> }): Promise<Metadata> {
+    const { id, locale } = await params;
+    const supabase = await createClient();
+    const isThai = locale === 'th';
+
+    const { data: shop } = await supabase
+        .from('shops')
+        .select('name, description, service_provinces, rating_average, review_count, logo_url')
+        .eq('id', id)
+        .single();
+
+    if (!shop) {
+        return {
+            title: isThai ? 'ไม่พบร้านค้า' : 'Shop Not Found',
+        };
+    }
+
+    const provinces = shop.service_provinces?.join(', ') || '';
+    const title = isThai
+        ? `${shop.name} - ร้านเช่ารถ${provinces ? ` ${provinces}` : ''}`
+        : `${shop.name} - Car Rental${provinces ? ` in ${provinces}` : ''}`;
+    const description = shop.description || (isThai
+        ? `รีวิวและข้อมูลร้านเช่ารถ ${shop.name} คะแนน ${shop.rating_average?.toFixed(1) || '0.0'}/5 จาก ${shop.review_count || 0} รีวิว`
+        : `Reviews and info for ${shop.name} car rental. Rating ${shop.rating_average?.toFixed(1) || '0.0'}/5 from ${shop.review_count || 0} reviews`);
+
+    return {
+        title,
+        description,
+        openGraph: {
+            title: `${title} | RentSafe`,
+            description,
+            type: 'website',
+            url: `${BASE_URL}/${locale}/shop/${id}`,
+            images: shop.logo_url ? [{ url: shop.logo_url, alt: shop.name }] : [],
+        },
+        twitter: {
+            card: 'summary',
+            title,
+            description,
+        },
+        alternates: {
+            canonical: `${BASE_URL}/${locale}/shop/${id}`,
+            languages: {
+                'th': `${BASE_URL}/th/shop/${id}`,
+                'en': `${BASE_URL}/en/shop/${id}`,
+            },
+        },
+    };
+}
+
+export default async function ShopProfilePage({ params }: { params: Promise<{ id: string; locale: string }> }) {
     const { id } = await params;
     const supabase = await createClient();
 
@@ -77,10 +130,43 @@ export default async function ShopProfilePage({ params }: { params: Promise<{ id
         return bankNames[bankCode.toLowerCase()] || bankCode;
     };
 
+    // JSON-LD Structured Data for LocalBusiness
+    const jsonLd = {
+        '@context': 'https://schema.org',
+        '@type': 'LocalBusiness',
+        '@id': `${BASE_URL}/shop/${shop.id}`,
+        name: shop.name,
+        description: shop.description || `ร้านเช่ารถ ${shop.name}`,
+        url: `${BASE_URL}/shop/${shop.id}`,
+        ...(shop.logo_url && { image: shop.logo_url }),
+        ...(shop.phone_number && { telephone: shop.phone_number }),
+        ...(shop.service_provinces?.length > 0 && {
+            areaServed: shop.service_provinces.map((p: string) => ({
+                '@type': 'State',
+                name: p,
+            })),
+        }),
+        ...(avgRating > 0 && {
+            aggregateRating: {
+                '@type': 'AggregateRating',
+                ratingValue: avgRating.toFixed(1),
+                reviewCount: reviewsCount,
+                bestRating: 5,
+                worstRating: 1,
+            },
+        }),
+        priceRange: '฿฿',
+    };
+
     return (
-        <div className="min-h-screen bg-gradient-to-b from-slate-50 to-white">
-            <div className="container mx-auto px-4 py-8">
-                {/* Hero Header Section */}
+        <>
+            <script
+                type="application/ld+json"
+                dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
+            />
+            <div className="min-h-screen bg-gradient-to-b from-slate-50 to-white">
+                <div className="container mx-auto px-4 py-8">
+                    {/* Hero Header Section */}
                 <div className="bg-white rounded-2xl shadow-sm border overflow-hidden mb-8">
                     {/* Top Banner / Cover Image */}
                     <div className="h-48 md:h-64 bg-gradient-to-r from-blue-600 via-blue-500 to-cyan-500 relative">
@@ -421,5 +507,6 @@ export default async function ShopProfilePage({ params }: { params: Promise<{ id
                 </div>
             </div>
         </div>
+        </>
     );
 }
