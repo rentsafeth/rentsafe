@@ -75,6 +75,8 @@ export default function RegisterShopPage() {
         bank_name: '',
         bank_account_no: '',
         bank_account_name: '',
+        can_issue_tax_invoice: false,
+        can_issue_withholding_tax: false,
     })
 
     // File previews
@@ -398,6 +400,43 @@ export default function RegisterShopPage() {
                                         </span>
                                     </button>
                                 </div>
+
+                                {/* Tax/Withholding checkbox based on business type */}
+                                {formData.business_type === 'individual' ? (
+                                    <label className="flex items-center gap-3 mt-4 p-3 bg-gray-50 rounded-lg cursor-pointer hover:bg-gray-100 transition-colors">
+                                        <input
+                                            type="checkbox"
+                                            checked={formData.can_issue_withholding_tax}
+                                            onChange={(e) => setFormData(prev => ({
+                                                ...prev,
+                                                can_issue_withholding_tax: e.target.checked,
+                                                can_issue_tax_invoice: false
+                                            }))}
+                                            className="w-5 h-5 text-green-600 border-gray-300 rounded focus:ring-green-500"
+                                        />
+                                        <div>
+                                            <span className="font-medium text-gray-700">สามารถออกหนังสือหัก ณ ที่จ่ายได้</span>
+                                            <p className="text-xs text-gray-500">สำหรับลูกค้าที่ต้องการหักภาษี ณ ที่จ่าย</p>
+                                        </div>
+                                    </label>
+                                ) : (
+                                    <label className="flex items-center gap-3 mt-4 p-3 bg-gray-50 rounded-lg cursor-pointer hover:bg-gray-100 transition-colors">
+                                        <input
+                                            type="checkbox"
+                                            checked={formData.can_issue_tax_invoice}
+                                            onChange={(e) => setFormData(prev => ({
+                                                ...prev,
+                                                can_issue_tax_invoice: e.target.checked,
+                                                can_issue_withholding_tax: false
+                                            }))}
+                                            className="w-5 h-5 text-green-600 border-gray-300 rounded focus:ring-green-500"
+                                        />
+                                        <div>
+                                            <span className="font-medium text-gray-700">สามารถออกใบกำกับภาษีได้</span>
+                                            <p className="text-xs text-gray-500">สำหรับลูกค้าที่ต้องการใบกำกับภาษี VAT 7%</p>
+                                        </div>
+                                    </label>
+                                )}
                             </div>
 
                             <div>
@@ -786,6 +825,15 @@ export default function RegisterShopPage() {
                                             {formData.business_type === 'individual' ? 'บุคคลธรรมดา' : 'นิติบุคคล/บริษัท'}
                                         </span>
                                     </div>
+                                    {(formData.can_issue_tax_invoice || formData.can_issue_withholding_tax) && (
+                                        <div className="flex justify-between">
+                                            <span className="text-gray-500">บริการเอกสารภาษี:</span>
+                                            <span className="font-medium text-green-600">
+                                                {formData.can_issue_tax_invoice && 'ออกใบกำกับภาษีได้'}
+                                                {formData.can_issue_withholding_tax && 'ออกหนังสือหัก ณ ที่จ่ายได้'}
+                                            </span>
+                                        </div>
+                                    )}
                                     <div className="flex justify-between">
                                         <span className="text-gray-500">ชื่อร้าน:</span>
                                         <span className="font-medium">{formData.name}</span>

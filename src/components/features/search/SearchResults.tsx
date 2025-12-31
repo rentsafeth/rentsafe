@@ -7,7 +7,7 @@ import { useTranslations } from 'next-intl';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { Loader2, ShieldAlert, CheckCircle, MapPin, SearchX, AlertTriangle, CreditCard, Phone, Star, Search, ArrowUpDown, SlidersHorizontal, Zap } from 'lucide-react';
+import { Loader2, ShieldAlert, CheckCircle, MapPin, SearchX, AlertTriangle, CreditCard, Phone, Star, Search, ArrowUpDown, SlidersHorizontal, Zap, Receipt, FileText } from 'lucide-react';
 import Link from 'next/link';
 
 type SearchResult = {
@@ -64,6 +64,10 @@ export default function SearchResults() {
     const [searchQuery, setSearchQuery] = useState(query || '');
     const [selectedProvince, setSelectedProvince] = useState(province || '');
     const [searchType, setSearchType] = useState<'blacklist' | 'rental'>(type as 'blacklist' | 'rental');
+
+    // Tax filter state
+    const [filterTaxInvoice, setFilterTaxInvoice] = useState(false);
+    const [filterWithholdingTax, setFilterWithholdingTax] = useState(false);
 
     const supabase = createClient();
 
@@ -320,7 +324,18 @@ export default function SearchResults() {
         }).format(amount);
     };
 
-    const sortedResults = sortResults(results);
+    // Filter results based on tax document filters
+    const filteredResults = results.filter(r => {
+        if (type !== 'rental' || r.type !== 'shop') return true;
+
+        // Apply tax filters
+        if (filterTaxInvoice && !r.data.can_issue_tax_invoice) return false;
+        if (filterWithholdingTax && !r.data.can_issue_withholding_tax) return false;
+
+        return true;
+    });
+
+    const sortedResults = sortResults(filteredResults);
 
     // Search form component
     const SearchForm = () => (
@@ -431,7 +446,12 @@ export default function SearchResults() {
             {/* Results Header with Sort */}
             <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
                 <h2 className="text-2xl font-bold">
-                    {t('resultsCount', { count: results.length })}
+                    {t('resultsCount', { count: sortedResults.length })}
+                    {(filterTaxInvoice || filterWithholdingTax) && sortedResults.length !== results.length && (
+                        <span className="text-sm font-normal text-gray-500 ml-2">
+                            (กรองจาก {results.length} รายการ)
+                        </span>
+                    )}
                 </h2>
 
                 {/* Sort Controls - only for rental type */}
@@ -452,6 +472,40 @@ export default function SearchResults() {
                     </div>
                 )}
             </div>
+
+            {/* Tax Document Filters - only for rental type */}
+            {type === 'rental' && (
+                <div className="flex flex-wrap gap-3">
+                    <label className={`flex items-center gap-2 px-3 py-2 rounded-lg border cursor-pointer transition-all ${
+                        filterTaxInvoice
+                            ? 'bg-blue-50 border-blue-300 text-blue-700'
+                            : 'bg-white border-gray-200 hover:border-gray-300'
+                    }`}>
+                        <input
+                            type="checkbox"
+                            checked={filterTaxInvoice}
+                            onChange={(e) => setFilterTaxInvoice(e.target.checked)}
+                            className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
+                        />
+                        <Receipt className="w-4 h-4" />
+                        <span className="text-sm font-medium">ออกใบกำกับภาษีได้</span>
+                    </label>
+                    <label className={`flex items-center gap-2 px-3 py-2 rounded-lg border cursor-pointer transition-all ${
+                        filterWithholdingTax
+                            ? 'bg-green-50 border-green-300 text-green-700'
+                            : 'bg-white border-gray-200 hover:border-gray-300'
+                    }`}>
+                        <input
+                            type="checkbox"
+                            checked={filterWithholdingTax}
+                            onChange={(e) => setFilterWithholdingTax(e.target.checked)}
+                            className="w-4 h-4 text-green-600 border-gray-300 rounded focus:ring-green-500"
+                        />
+                        <FileText className="w-4 h-4" />
+                        <span className="text-sm font-medium">ออกหัก ณ ที่จ่ายได้</span>
+                    </label>
+                </div>
+            )}
 
             <div className="grid grid-cols-1 gap-4">
                 {sortedResults.map((result, index) => (
@@ -474,6 +528,16 @@ export default function SearchResults() {
                                                     <Badge className="bg-red-100 text-red-700 border-red-200">
                                                         <AlertTriangle className="w-3 h-3 mr-1" />
                                                         {t('hasReports', { count: result.data.report_count })}
+                                                    </Badge>
+                                                )}
+                                                {result.data.can_issue_tax_invoice && (
+                                                    <Badge className="bg-blue-50 text-blue-700 border-blue-200">
+                                                        <Receipt className="w-3 h-3 mr-1" /> ออกใบกำกับภาษีได้
+                                                    </Badge>
+                                                )}
+                                                {result.data.can_issue_withholding_tax && (
+                                                    <Badge className="bg-purple-50 text-purple-700 border-purple-200">
+                                                        <FileText className="w-3 h-3 mr-1" /> ออกหัก ณ ที่จ่ายได้
                                                     </Badge>
                                                 )}
                                             </>
