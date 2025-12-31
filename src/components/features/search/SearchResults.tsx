@@ -1,7 +1,7 @@
 'use client';
 
 import { createClient } from '@/lib/supabase/client';
-import { useSearchParams, useRouter } from 'next/navigation';
+import { useSearchParams, useRouter, useParams } from 'next/navigation';
 import { useEffect, useState, useRef } from 'react';
 import { useTranslations } from 'next-intl';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -53,6 +53,9 @@ const ALL_PROVINCES = [
 export default function SearchResults() {
     const searchParams = useSearchParams();
     const router = useRouter();
+    const params = useParams();
+    const locale = params.locale as string;
+    const isThai = locale === 'th';
     const query = searchParams.get('q');
     const type = searchParams.get('type') || 'blacklist'; // 'blacklist' or 'rental'
     const province = searchParams.get('province');
@@ -380,7 +383,7 @@ export default function SearchResults() {
                         }`}
                     >
                         <ShieldAlert className="w-4 h-4 inline mr-2" />
-                        ตรวจสอบ Blacklist
+                        {isThai ? 'ตรวจสอบ Blacklist' : 'Check Blacklist'}
                     </button>
                     <button
                         onClick={() => setSearchType('rental')}
@@ -391,7 +394,7 @@ export default function SearchResults() {
                         }`}
                     >
                         <Star className="w-4 h-4 inline mr-2" />
-                        ค้นหารถเช่า
+                        {isThai ? 'ค้นหารถเช่า' : 'Find Car Rental'}
                     </button>
                 </div>
 
@@ -403,7 +406,9 @@ export default function SearchResults() {
                             type="text"
                             value={searchQuery}
                             onChange={(e) => setSearchQuery(e.target.value)}
-                            placeholder={searchType === 'blacklist' ? 'พิมพ์เลขบัญชี, เบอร์โทร, หรือชื่อร้าน...' : 'พิมพ์ชื่อร้านรถเช่า...'}
+                            placeholder={searchType === 'blacklist'
+                                ? (isThai ? 'พิมพ์เลขบัญชี, เบอร์โทร, หรือชื่อร้าน...' : 'Enter bank account, phone, or shop name...')
+                                : (isThai ? 'พิมพ์ชื่อร้านรถเช่า...' : 'Enter car rental shop name...')}
                             className={`w-full pl-10 pr-4 py-3 border-2 rounded-lg focus:outline-none transition-all ${
                                 searchType === 'blacklist'
                                     ? 'border-gray-200 focus:border-red-500 focus:ring-2 focus:ring-red-500/20'
@@ -420,7 +425,7 @@ export default function SearchResults() {
                             onChange={(e) => setSelectedProvince(e.target.value)}
                             className="w-full px-4 py-3 border-2 border-gray-200 rounded-lg focus:outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 transition-all appearance-none bg-white cursor-pointer"
                         >
-                            <option value="">เลือกจังหวัด (ไม่บังคับ)</option>
+                            <option value="">{isThai ? 'เลือกจังหวัด (ไม่บังคับ)' : 'Select Province (Optional)'}</option>
                             {ALL_PROVINCES.map((prov) => (
                                 <option key={prov} value={prov}>
                                     {prov}
@@ -438,7 +443,7 @@ export default function SearchResults() {
                         }`}
                     >
                         <Search className="w-4 h-4 mr-2" />
-                        ค้นหา
+                        {isThai ? 'ค้นหา' : 'Search'}
                     </Button>
                 </div>
             </CardContent>
@@ -477,7 +482,7 @@ export default function SearchResults() {
                     {t('resultsCount', { count: sortedResults.length })}
                     {(filterTaxInvoice || filterWithholdingTax || filterPayOnPickup || filterCreditCard) && sortedResults.length !== results.length && (
                         <span className="text-sm font-normal text-gray-500 ml-2">
-                            (กรองจาก {results.length} รายการ)
+                            ({isThai ? `กรองจาก ${results.length} รายการ` : `filtered from ${results.length} items`})
                         </span>
                     )}
                 </h2>
@@ -486,16 +491,16 @@ export default function SearchResults() {
                 {type === 'rental' && results.length > 1 && (
                     <div className="flex items-center gap-2">
                         <SlidersHorizontal className="w-4 h-4 text-gray-500" />
-                        <span className="text-sm text-gray-500">เรียงตาม:</span>
+                        <span className="text-sm text-gray-500">{isThai ? 'เรียงตาม:' : 'Sort by:'}</span>
                         <select
                             value={sortBy}
                             onChange={(e) => setSortBy(e.target.value as SortOption)}
                             className="px-3 py-1.5 border border-gray-200 rounded-lg text-sm focus:outline-none focus:border-blue-500 bg-white cursor-pointer"
                         >
-                            <option value="rating">คะแนนสูงสุด</option>
-                            <option value="reviews">รีวิวมากสุด</option>
-                            <option value="name">ชื่อ ก-ฮ</option>
-                            <option value="newest">ใหม่ล่าสุด</option>
+                            <option value="rating">{isThai ? 'คะแนนสูงสุด' : 'Highest Rating'}</option>
+                            <option value="reviews">{isThai ? 'รีวิวมากสุด' : 'Most Reviews'}</option>
+                            <option value="name">{isThai ? 'ชื่อ ก-ฮ' : 'Name A-Z'}</option>
+                            <option value="newest">{isThai ? 'ใหม่ล่าสุด' : 'Newest'}</option>
                         </select>
                     </div>
                 )}
@@ -516,7 +521,7 @@ export default function SearchResults() {
                             className="w-4 h-4 text-emerald-600 border-gray-300 rounded focus:ring-emerald-500"
                         />
                         <Banknote className="w-4 h-4" />
-                        <span className="text-sm font-medium">ชำระตอนรับรถ</span>
+                        <span className="text-sm font-medium">{isThai ? 'ชำระตอนรับรถ' : 'Pay on Pickup'}</span>
                     </label>
                     <label className={`flex items-center gap-2 px-3 py-2 rounded-lg border cursor-pointer transition-all ${
                         filterCreditCard
@@ -530,7 +535,7 @@ export default function SearchResults() {
                             className="w-4 h-4 text-violet-600 border-gray-300 rounded focus:ring-violet-500"
                         />
                         <CreditCard className="w-4 h-4" />
-                        <span className="text-sm font-medium">รับบัตรเครดิต</span>
+                        <span className="text-sm font-medium">{isThai ? 'รับบัตรเครดิต' : 'Credit Card'}</span>
                     </label>
                     <label className={`flex items-center gap-2 px-3 py-2 rounded-lg border cursor-pointer transition-all ${
                         filterTaxInvoice
@@ -544,7 +549,7 @@ export default function SearchResults() {
                             className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
                         />
                         <Receipt className="w-4 h-4" />
-                        <span className="text-sm font-medium">ออกใบกำกับภาษีได้</span>
+                        <span className="text-sm font-medium">{isThai ? 'ออกใบกำกับภาษีได้' : 'Tax Invoice'}</span>
                     </label>
                     <label className={`flex items-center gap-2 px-3 py-2 rounded-lg border cursor-pointer transition-all ${
                         filterWithholdingTax
@@ -558,7 +563,7 @@ export default function SearchResults() {
                             className="w-4 h-4 text-purple-600 border-gray-300 rounded focus:ring-purple-500"
                         />
                         <FileText className="w-4 h-4" />
-                        <span className="text-sm font-medium">ออกหัก ณ ที่จ่ายได้</span>
+                        <span className="text-sm font-medium">{isThai ? 'ออกหัก ณ ที่จ่ายได้' : 'Withholding Tax'}</span>
                     </label>
                 </div>
             )}
@@ -577,23 +582,23 @@ export default function SearchResults() {
                                                         <Tooltip>
                                                             <TooltipTrigger>
                                                                 <Badge className="bg-gradient-to-r from-yellow-400 to-orange-400 text-white border-0 shadow-sm">
-                                                                    <Crown className="w-3 h-3 mr-1" /> ร้านรับรอง
+                                                                    <Crown className="w-3 h-3 mr-1" /> {isThai ? 'ร้านรับรอง' : 'Verified Shop'}
                                                                 </Badge>
                                                             </TooltipTrigger>
                                                             <TooltipContent>
-                                                                <p>ร้านนี้ผ่านการตรวจสอบและรับประกันมัดจำ ฿1,000</p>
+                                                                <p>{isThai ? 'ร้านนี้ผ่านการตรวจสอบและรับประกันมัดจำ ฿1,000' : 'Verified shop with ฿1,000 deposit guarantee'}</p>
                                                             </TooltipContent>
                                                         </Tooltip>
                                                     </TooltipProvider>
                                                 )}
                                                 {result.isBoosted && (
                                                     <Badge className="bg-gradient-to-r from-yellow-100 to-orange-100 text-orange-700 border-orange-200">
-                                                        <Zap className="w-3 h-3 mr-1" /> แนะนำ
+                                                        <Zap className="w-3 h-3 mr-1" /> {isThai ? 'แนะนำ' : 'Featured'}
                                                     </Badge>
                                                 )}
                                                 {result.isPPC && !result.isBoosted && (
                                                     <Badge className="bg-gradient-to-r from-blue-100 to-indigo-100 text-indigo-700 border-indigo-200">
-                                                        <Zap className="w-3 h-3 mr-1" /> แนะนำ
+                                                        <Zap className="w-3 h-3 mr-1" /> {isThai ? 'แนะนำ' : 'Featured'}
                                                     </Badge>
                                                 )}
                                                 {!result.isVerifiedPro && (
@@ -609,22 +614,22 @@ export default function SearchResults() {
                                                 )}
                                                 {result.data.can_issue_tax_invoice && (
                                                     <Badge className="bg-blue-50 text-blue-700 border-blue-200">
-                                                        <Receipt className="w-3 h-3 mr-1" /> ออกใบกำกับภาษีได้
+                                                        <Receipt className="w-3 h-3 mr-1" /> {isThai ? 'ออกใบกำกับภาษีได้' : 'Tax Invoice'}
                                                     </Badge>
                                                 )}
                                                 {result.data.can_issue_withholding_tax && (
                                                     <Badge className="bg-purple-50 text-purple-700 border-purple-200">
-                                                        <FileText className="w-3 h-3 mr-1" /> ออกหัก ณ ที่จ่ายได้
+                                                        <FileText className="w-3 h-3 mr-1" /> {isThai ? 'ออกหัก ณ ที่จ่ายได้' : 'Withholding Tax'}
                                                     </Badge>
                                                 )}
                                                 {result.data.pay_on_pickup && (
                                                     <Badge className="bg-emerald-50 text-emerald-700 border-emerald-200">
-                                                        <Banknote className="w-3 h-3 mr-1" /> ชำระตอนรับรถ
+                                                        <Banknote className="w-3 h-3 mr-1" /> {isThai ? 'ชำระตอนรับรถ' : 'Pay on Pickup'}
                                                     </Badge>
                                                 )}
                                                 {result.data.accept_credit_card && (
                                                     <Badge className="bg-violet-50 text-violet-700 border-violet-200">
-                                                        <CreditCard className="w-3 h-3 mr-1" /> รับบัตรเครดิต
+                                                        <CreditCard className="w-3 h-3 mr-1" /> {isThai ? 'รับบัตรเครดิต' : 'Credit Card'}
                                                     </Badge>
                                                 )}
                                             </>
@@ -704,7 +709,7 @@ export default function SearchResults() {
                                                                     </a>
                                                                 </TooltipTrigger>
                                                                 <TooltipContent>
-                                                                    <p>โทร {result.data.phone_number}</p>
+                                                                    <p>{isThai ? 'โทร' : 'Call'} {result.data.phone_number}</p>
                                                                 </TooltipContent>
                                                             </Tooltip>
                                                         </TooltipProvider>
