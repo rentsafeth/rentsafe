@@ -211,7 +211,7 @@ export default function FAQPage() {
                 },
                 {
                     question: 'แพ็คเกจร้านรับรองมีราคาเท่าไหร่?',
-                    answer: 'มี 3 แพ็คเกจ: รายเดือน 199 บาท (30 วัน), รายไตรมาส 499 บาท (90 วัน), และรายปี 1,499 บาท (365 วัน) - คุ้มที่สุด!'
+                    answer: 'มี 2 แพ็คเกจ: รายเดือน 99 บาท (30 วัน) และรายปี 999 บาท (365 วัน) - คุ้มที่สุด!'
                 },
                 {
                     question: 'สมัครร้านรับรองได้อย่างไร?',
@@ -328,7 +328,7 @@ export default function FAQPage() {
                 },
                 {
                     question: 'How much does Verified Shop cost?',
-                    answer: '3 packages available: Monthly 199 THB (30 days), Quarterly 499 THB (90 days), and Yearly 1,499 THB (365 days) - best value!'
+                    answer: '2 packages available: Monthly 99 THB (30 days) and Yearly 999 THB (365 days) - best value!'
                 },
                 {
                     question: 'How do I sign up for Verified Shop?',
