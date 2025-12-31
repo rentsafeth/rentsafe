@@ -521,6 +521,11 @@ export default function SearchResults() {
                                                         <Zap className="w-3 h-3 mr-1" /> แนะนำ
                                                     </Badge>
                                                 )}
+                                                {result.isPPC && !result.isBoosted && (
+                                                    <Badge className="bg-gradient-to-r from-blue-100 to-indigo-100 text-indigo-700 border-indigo-200">
+                                                        <Zap className="w-3 h-3 mr-1" /> สนับสนุน
+                                                    </Badge>
+                                                )}
                                                 <Badge className="bg-green-100 text-green-700 hover:bg-green-100 border-green-200">
                                                     <CheckCircle className="w-3 h-3 mr-1" /> {t('verifiedShop')}
                                                 </Badge>
