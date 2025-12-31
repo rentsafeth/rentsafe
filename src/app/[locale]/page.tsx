@@ -77,15 +77,6 @@ export default async function HomePage({ params }: { params: Promise<{ locale: s
             {/* Features & Stats Section - Combined */}
             <section className="py-16 md:py-24 bg-white">
                 <div className="container mx-auto px-4">
-                    <div className="text-center mb-12">
-                        <h2 className="text-3xl md:text-4xl font-bold text-gray-900 mb-4">
-                            {t('whyRentSafe')}
-                        </h2>
-                        <p className="text-gray-600 text-lg max-w-2xl mx-auto">
-                            {t('whyRentSafeDesc')}
-                        </p>
-                    </div>
-
                     <div className="grid grid-cols-2 lg:grid-cols-3 gap-4 md:gap-6">
                         {/* Feature 1 - Search */}
                         <div className="text-center p-5 md:p-6 rounded-2xl bg-gradient-to-br from-blue-50 to-blue-100/50 border border-blue-100">
