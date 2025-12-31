@@ -76,9 +76,6 @@ export default function HeroSection({ stats }: HeroSectionProps) {
                         <span className="text-blue-300 text-sm font-medium">{t('whyRentSafeDesc')}</span>
                     </div>
 
-                    <h1 className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-bold text-white mb-6 tracking-tight leading-tight">
-                        {t('title')}
-                    </h1>
                     <p className="text-base sm:text-lg md:text-xl text-slate-300 mb-8 max-w-2xl mx-auto">
                         <span className="block md:inline">ตรวจสอบประวัติร้านเช่ารถและรายงานการโกง</span>
                         <span className="block md:inline"> เพื่อความปลอดภัยของคุณ</span>
