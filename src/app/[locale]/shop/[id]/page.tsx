@@ -136,6 +136,18 @@ export default async function ShopProfilePage({ params }: { params: Promise<{ id
                                     <p className="text-slate-600 max-w-2xl mb-4">{shop.description}</p>
                                 )}
 
+                                {/* Service Provinces Badges */}
+                                {shop.service_provinces && shop.service_provinces.length > 0 && (
+                                    <div className="flex flex-wrap gap-2 mb-4">
+                                        {shop.service_provinces.map((province: string) => (
+                                            <Badge key={province} className="bg-orange-50 text-orange-700 border-orange-200 hover:bg-orange-100 font-normal px-3 py-1">
+                                                <MapPin className="w-3 h-3 mr-1" />
+                                                {getProvinceLabel(province)}
+                                            </Badge>
+                                        ))}
+                                    </div>
+                                )}
+
                                 {/* Quick Stats */}
                                 <div className="flex flex-wrap gap-4 text-sm">
                                     <div className="flex items-center gap-1.5 text-slate-500">
@@ -338,29 +350,6 @@ export default async function ShopProfilePage({ params }: { params: Promise<{ id
                             </Card>
                         )}
 
-                        {/* Service Areas */}
-                        <Card>
-                            <CardHeader className="pb-3">
-                                <CardTitle className="text-lg flex items-center gap-2">
-                                    <MapPin className="w-5 h-5 text-orange-600" />
-                                    พื้นที่ให้บริการ
-                                </CardTitle>
-                            </CardHeader>
-                            <CardContent>
-                                {shop.service_provinces && shop.service_provinces.length > 0 ? (
-                                    <div className="flex flex-wrap gap-2">
-                                        {shop.service_provinces.map((province: string) => (
-                                            <Badge key={province} variant="secondary" className="font-normal px-3 py-1.5">
-                                                <MapPin className="w-3 h-3 mr-1 text-orange-500" />
-                                                {getProvinceLabel(province)}
-                                            </Badge>
-                                        ))}
-                                    </div>
-                                ) : (
-                                    <p className="text-slate-500 text-center py-4">ไม่ระบุพื้นที่ให้บริการ</p>
-                                )}
-                            </CardContent>
-                        </Card>
                     </div>
 
                     {/* Right Column - Reports History */}
