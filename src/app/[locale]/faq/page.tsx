@@ -1,14 +1,12 @@
-import { Metadata } from 'next'
-import Link from 'next/link'
-import { HelpCircle, ArrowLeft, ChevronDown, Search, Shield, CreditCard, Users, AlertTriangle } from 'lucide-react'
+'use client'
 
-export async function generateMetadata({ params }: { params: Promise<{ locale: string }> }): Promise<Metadata> {
-    const { locale } = await params
-    return {
-        title: locale === 'th' ? 'คำถามที่พบบ่อย - RentSafe' : 'FAQ - RentSafe',
-        description: locale === 'th' ? 'คำถามที่พบบ่อยเกี่ยวกับการใช้งาน RentSafe' : 'Frequently asked questions about RentSafe',
-    }
-}
+import { useState } from 'react'
+import Link from 'next/link'
+import { useParams } from 'next/navigation'
+import {
+    HelpCircle, ArrowLeft, ChevronDown, Search, Shield, CreditCard,
+    Users, AlertTriangle, Store, Car, Building2, UserCheck, FileText, Clock
+} from 'lucide-react'
 
 interface FAQItem {
     question: string
@@ -21,120 +19,80 @@ interface FAQCategory {
     items: FAQItem[]
 }
 
-export default async function FAQPage({ params }: { params: Promise<{ locale: string }> }) {
-    const { locale } = await params
+export default function FAQPage() {
+    const params = useParams()
+    const locale = params.locale as string
     const isThai = locale === 'th'
 
-    const faqCategories: FAQCategory[] = isThai ? [
+    const [activeTab, setActiveTab] = useState<'user' | 'shop'>('user')
+
+    // FAQ สำหรับผู้ใช้ทั่วไป (ผู้เช่ารถ)
+    const userFAQs: FAQCategory[] = isThai ? [
         {
             title: 'ทั่วไป',
             icon: <HelpCircle className="w-5 h-5" />,
             items: [
                 {
                     question: 'RentSafe คืออะไร?',
-                    answer: 'RentSafe เป็นแพลตฟอร์มตรวจสอบประวัติลูกค้าสำหรับธุรกิจรถเช่า ช่วยให้ร้านเช่ารถสามารถค้นหาและตรวจสอบประวัติลูกค้าก่อนทำธุรกรรม เพื่อป้องกันความเสี่ยงจากลูกค้าที่มีประวัติไม่ดี'
+                    answer: 'RentSafe เป็นแพลตฟอร์มที่รวบรวมข้อมูลร้านเช่ารถที่ผ่านการตรวจสอบ ช่วยให้คุณค้นหาร้านเช่ารถที่น่าเชื่อถือ และตรวจสอบความน่าเชื่อถือของร้านก่อนตัดสินใจเช่า'
                 },
                 {
-                    question: 'ใครสามารถใช้งาน RentSafe ได้?',
-                    answer: 'RentSafe ออกแบบมาสำหรับผู้ประกอบการธุรกิจรถเช่าโดยเฉพาะ ไม่ว่าจะเป็นร้านเช่ารถขนาดเล็กหรือใหญ่ สามารถลงทะเบียนและใช้งานได้'
+                    question: 'ฉันต้องสมัครสมาชิกไหมถึงจะใช้งานได้?',
+                    answer: 'ไม่จำเป็น คุณสามารถค้นหาและดูข้อมูลร้านเช่ารถได้โดยไม่ต้องสมัครสมาชิก แต่ถ้าต้องการรีวิวร้านหรือรายงานปัญหา จะต้องเข้าสู่ระบบก่อน'
                 },
                 {
-                    question: 'การใช้งาน RentSafe มีค่าใช้จ่ายหรือไม่?',
-                    answer: 'มีทั้งบริการฟรีและบริการพรีเมียม บัญชีฟรีสามารถค้นหาและรายงานได้จำนวนจำกัด ส่วนแพ็คเกจ "ร้านรับรอง" มีค่าใช้จ่ายรายเดือน/รายปี และได้รับสิทธิพิเศษเพิ่มเติม'
+                    question: 'การใช้งาน RentSafe มีค่าใช้จ่ายไหม?',
+                    answer: 'ไม่มีค่าใช้จ่ายสำหรับผู้ใช้ทั่วไป การค้นหาร้าน ดูรีวิว และรายงานปัญหาล้วนเป็นบริการฟรี'
                 }
             ]
         },
         {
-            title: 'การค้นหาและตรวจสอบ',
+            title: 'การค้นหาร้านเช่ารถ',
             icon: <Search className="w-5 h-5" />,
             items: [
                 {
-                    question: 'ค้นหาลูกค้าได้อย่างไร?',
-                    answer: 'สามารถค้นหาได้โดยใช้ชื่อ-นามสกุล, เลขบัตรประชาชน, หรือเบอร์โทรศัพท์ของลูกค้า ระบบจะแสดงผลลัพธ์ที่ตรงกันพร้อมประวัติ (ถ้ามี)'
+                    question: 'ค้นหาร้านเช่ารถได้อย่างไร?',
+                    answer: 'ไปที่หน้าค้นหา แล้วพิมพ์ชื่อร้าน หรือเลือกจังหวัดที่ต้องการ ระบบจะแสดงรายชื่อร้านพร้อมข้อมูลและรีวิว'
                 },
                 {
-                    question: 'มีจำกัดจำนวนการค้นหาต่อวันหรือไม่?',
-                    answer: 'บัญชีฟรีมีจำนวนการค้นหาจำกัด 3 ครั้งต่อวัน ส่วนแพ็คเกจ "ร้านรับรอง" สามารถค้นหาได้ไม่จำกัด'
+                    question: 'ร้านที่มีเครื่องหมาย "ร้านรับรอง" คืออะไร?',
+                    answer: 'ร้านรับรอง คือร้านที่ผ่านการยืนยันตัวตนจาก RentSafe และเป็นสมาชิกพรีเมียม แสดงว่าร้านมีความน่าเชื่อถือและมีการดำเนินธุรกิจจริง'
                 },
                 {
-                    question: 'ข้อมูลที่ค้นหาได้มีความน่าเชื่อถือแค่ไหน?',
-                    answer: 'ข้อมูลทั้งหมดมาจากการรายงานของร้านเช่ารถในระบบ และผ่านการตรวจสอบจากทีมงานก่อนเผยแพร่ อย่างไรก็ตาม ขอแนะนำให้ใช้เป็นข้อมูลประกอบการตัดสินใจ'
+                    question: 'ดูรีวิวของร้านได้ที่ไหน?',
+                    answer: 'คลิกที่ชื่อร้านเพื่อดูหน้าร้าน จะเห็นรีวิวจากผู้ใช้คนอื่นๆ พร้อมคะแนน และรายละเอียดประสบการณ์การเช่า'
                 }
             ]
         },
         {
-            title: 'ร้านรับรอง (Verified Shop)',
+            title: 'การรีวิวและรายงาน',
+            icon: <FileText className="w-5 h-5" />,
+            items: [
+                {
+                    question: 'รีวิวร้านได้อย่างไร?',
+                    answer: 'เข้าสู่ระบบ แล้วไปที่หน้าร้านที่ต้องการรีวิว กดปุ่ม "เขียนรีวิว" ให้คะแนนและเขียนประสบการณ์ของคุณ'
+                },
+                {
+                    question: 'ถ้าเจอร้านมีปัญหาหรือหลอกลวง ทำอย่างไร?',
+                    answer: 'กดปุ่ม "รายงานร้าน" ที่หน้าร้านนั้น กรอกรายละเอียดปัญหาและแนบหลักฐาน ทีมงานจะตรวจสอบและดำเนินการภายใน 24-48 ชม.'
+                },
+                {
+                    question: 'รีวิวของฉันจะแสดงทันทีไหม?',
+                    answer: 'รีวิวจะแสดงทันทีหลังจากส่ง แต่ทีมงานอาจตรวจสอบและซ่อนรีวิวที่ไม่เหมาะสมหรือมีเนื้อหาหมิ่นประมาทในภายหลัง'
+                }
+            ]
+        },
+        {
+            title: 'ความปลอดภัย',
             icon: <Shield className="w-5 h-5" />,
             items: [
                 {
-                    question: '"ร้านรับรอง" คืออะไร?',
-                    answer: 'ร้านรับรอง คือแพ็คเกจสมาชิกพรีเมียมสำหรับร้านเช่ารถที่ต้องการสิทธิพิเศษ เช่น ค้นหาไม่จำกัด, แสดงป้ายยืนยันตัวตน, และได้รับการโปรโมทบนหน้าแรก'
+                    question: 'ข้อมูลส่วนตัวของฉันปลอดภัยไหม?',
+                    answer: 'เราใช้การเข้ารหัสข้อมูลและมาตรการรักษาความปลอดภัยตามมาตรฐาน ข้อมูลส่วนตัวจะไม่ถูกเปิดเผยต่อร้านค้าหรือบุคคลที่สาม'
                 },
                 {
-                    question: 'แพ็คเกจร้านรับรองมีราคาเท่าไหร่?',
-                    answer: 'มี 3 แพ็คเกจให้เลือก: รายเดือน 199 บาท (30 วัน), รายไตรมาส 499 บาท (90 วัน), และรายปี 1,499 บาท (365 วัน)'
-                },
-                {
-                    question: 'สมัครร้านรับรองได้อย่างไร?',
-                    answer: 'ไปที่ Dashboard > สมัครร้านรับรอง > เลือกแพ็คเกจ > ชำระเงินผ่าน PromptPay หรือโอนเงิน > อัปโหลดสลิป > รอการอนุมัติ (ปกติไม่เกิน 24 ชม.)'
-                },
-                {
-                    question: 'ต่ออายุร้านรับรองอย่างไร?',
-                    answer: 'ระบบจะส่งการแจ้งเตือนก่อนหมดอายุ 7 วันและ 3 วัน ท่านสามารถต่ออายุได้ที่ Dashboard > สมัครร้านรับรอง โดยเลือกแพ็คเกจและชำระเงินเหมือนการสมัครใหม่'
-                }
-            ]
-        },
-        {
-            title: 'การรายงาน Blacklist',
-            icon: <AlertTriangle className="w-5 h-5" />,
-            items: [
-                {
-                    question: 'รายงานลูกค้าเข้า Blacklist ได้อย่างไร?',
-                    answer: 'ไปที่ Dashboard > รายงานลูกค้า > กรอกข้อมูลลูกค้า, เหตุผล, และอัปโหลดหลักฐาน > ส่งรายงาน ทีมงานจะตรวจสอบและอนุมัติภายใน 24-48 ชม.'
-                },
-                {
-                    question: 'ต้องมีหลักฐานอะไรบ้างในการรายงาน?',
-                    answer: 'ควรมีหลักฐานเช่น สำเนาสัญญาเช่า, รูปถ่ายความเสียหาย, บันทึกการติดต่อ, หรือเอกสารอื่นๆ ที่เกี่ยวข้อง ยิ่งมีหลักฐานครบถ้วน ยิ่งได้รับการอนุมัติเร็ว'
-                },
-                {
-                    question: 'รายงานเท็จมีผลอย่างไร?',
-                    answer: 'การรายงานเท็จถือเป็นการละเมิดข้อกำหนดการใช้งาน อาจส่งผลให้บัญชีถูกระงับหรือยกเลิก และอาจต้องรับผิดชอบทางกฎหมายหากผู้ถูกรายงานดำเนินคดี'
-                }
-            ]
-        },
-        {
-            title: 'การชำระเงิน',
-            icon: <CreditCard className="w-5 h-5" />,
-            items: [
-                {
-                    question: 'ชำระเงินได้ช่องทางไหนบ้าง?',
-                    answer: 'รองรับการชำระผ่าน PromptPay และโอนเงินเข้าบัญชีธนาคาร (กสิกรไทย) โดยต้องอัปโหลดสลิปเพื่อยืนยันการชำระ'
-                },
-                {
-                    question: 'หลังชำระเงินแล้วต้องรอนานแค่ไหน?',
-                    answer: 'หลังอัปโหลดสลิปการชำระเงิน ทีมงานจะตรวจสอบและอนุมัติภายใน 24 ชั่วโมง (ปกติเร็วกว่านั้น) และระบบจะเปิดใช้งานอัตโนมัติ'
-                },
-                {
-                    question: 'ขอคืนเงินได้หรือไม่?',
-                    answer: 'ค่าบริการที่ชำระแล้วไม่สามารถขอคืนได้ กรุณาศึกษารายละเอียดแพ็คเกจให้ดีก่อนชำระเงิน'
-                }
-            ]
-        },
-        {
-            title: 'บัญชีและความปลอดภัย',
-            icon: <Users className="w-5 h-5" />,
-            items: [
-                {
-                    question: 'ลืมรหัสผ่านทำอย่างไร?',
-                    answer: 'กดปุ่ม "ลืมรหัสผ่าน" ที่หน้าเข้าสู่ระบบ > กรอกอีเมลที่ลงทะเบียน > ระบบจะส่งลิงก์รีเซ็ตรหัสผ่านไปทางอีเมล'
-                },
-                {
-                    question: 'เปลี่ยนข้อมูลร้านได้อย่างไร?',
-                    answer: 'ไปที่ Dashboard > แก้ไขข้อมูลร้าน > แก้ไขข้อมูลที่ต้องการ > กดบันทึก'
-                },
-                {
-                    question: 'ข้อมูลของฉันปลอดภัยหรือไม่?',
-                    answer: 'เราใช้การเข้ารหัสข้อมูลและมาตรการรักษาความปลอดภัยตามมาตรฐาน ข้อมูลส่วนตัวของท่านจะไม่ถูกเปิดเผยต่อบุคคลที่สาม ยกเว้นตามที่กฎหมายกำหนด'
+                    question: 'ถ้าถูกร้านเช่ารถโกงควรทำอย่างไร?',
+                    answer: 'รายงานผ่านระบบ RentSafe พร้อมหลักฐาน และแนะนำให้แจ้งความที่สถานีตำรวจใกล้บ้าน เก็บหลักฐานทุกอย่างไว้'
                 }
             ]
         }
@@ -145,51 +103,236 @@ export default async function FAQPage({ params }: { params: Promise<{ locale: st
             items: [
                 {
                     question: 'What is RentSafe?',
-                    answer: 'RentSafe is a customer background verification platform for car rental businesses. It helps rental shops search and verify customer history before transactions to prevent risks from problematic customers.'
+                    answer: 'RentSafe is a platform that collects verified car rental shop information, helping you find trustworthy rental shops and verify their credibility before making a decision.'
                 },
                 {
-                    question: 'Who can use RentSafe?',
-                    answer: 'RentSafe is designed specifically for car rental business operators, whether small or large rental shops can register and use it.'
+                    question: 'Do I need to register to use it?',
+                    answer: 'No, you can search and view car rental shop information without registering. However, if you want to review shops or report issues, you need to log in first.'
                 },
                 {
                     question: 'Is there a cost to use RentSafe?',
-                    answer: 'There are both free and premium services. Free accounts can search and report with limited quotas. The "Verified Shop" package has monthly/yearly fees with additional benefits.'
+                    answer: 'No cost for general users. Searching for shops, viewing reviews, and reporting issues are all free services.'
                 }
             ]
         },
         {
-            title: 'Search and Verification',
+            title: 'Searching for Rental Shops',
             icon: <Search className="w-5 h-5" />,
             items: [
                 {
-                    question: 'How do I search for customers?',
-                    answer: 'You can search using the customer\'s name, ID card number, or phone number. The system will display matching results with history (if any).'
+                    question: 'How do I search for rental shops?',
+                    answer: 'Go to the search page, type the shop name or select a province. The system will display a list of shops with information and reviews.'
+                },
+                {
+                    question: 'What does "Verified Shop" mean?',
+                    answer: 'Verified Shop indicates that the shop has been identity verified by RentSafe and is a premium member, showing that the shop is trustworthy and operates a real business.'
+                },
+                {
+                    question: 'Where can I see shop reviews?',
+                    answer: 'Click on a shop name to view its page. You will see reviews from other users along with ratings and rental experience details.'
+                }
+            ]
+        },
+        {
+            title: 'Reviews and Reports',
+            icon: <FileText className="w-5 h-5" />,
+            items: [
+                {
+                    question: 'How do I review a shop?',
+                    answer: 'Log in, then go to the shop page you want to review. Click the "Write Review" button, give a rating and write about your experience.'
+                },
+                {
+                    question: 'What if I encounter a problematic or fraudulent shop?',
+                    answer: 'Click the "Report Shop" button on that shop\'s page. Fill in the problem details and attach evidence. The team will investigate within 24-48 hours.'
+                }
+            ]
+        },
+        {
+            title: 'Safety',
+            icon: <Shield className="w-5 h-5" />,
+            items: [
+                {
+                    question: 'Is my personal information safe?',
+                    answer: 'We use data encryption and standard security measures. Personal information will not be disclosed to shops or third parties.'
+                },
+                {
+                    question: 'What should I do if I get scammed by a rental shop?',
+                    answer: 'Report through the RentSafe system with evidence, and we recommend filing a police report at your local station. Keep all evidence.'
+                }
+            ]
+        }
+    ]
+
+    // FAQ สำหรับร้านค้า
+    const shopFAQs: FAQCategory[] = isThai ? [
+        {
+            title: 'เริ่มต้นใช้งาน',
+            icon: <Store className="w-5 h-5" />,
+            items: [
+                {
+                    question: 'RentSafe ช่วยร้านเช่ารถได้อย่างไร?',
+                    answer: 'RentSafe ช่วยให้ร้านค้าตรวจสอบประวัติลูกค้าก่อนให้เช่า ป้องกันลูกค้าที่มีประวัติไม่ดี และเพิ่มความน่าเชื่อถือของร้านผ่านระบบร้านรับรอง'
+                },
+                {
+                    question: 'ลงทะเบียนร้านค้าได้อย่างไร?',
+                    answer: 'คลิก "ลงทะเบียนร้านค้า" กรอกข้อมูลร้าน อัปโหลดเอกสารยืนยันตัวตน และรอการตรวจสอบจากทีมงาน (ปกติ 1-3 วันทำการ)'
+                },
+                {
+                    question: 'ต้องมีเอกสารอะไรบ้างในการลงทะเบียน?',
+                    answer: 'ต้องมีสำเนาบัตรประชาชนเจ้าของ, ใบอนุญาตประกอบธุรกิจ (ถ้ามี), และรูปถ่ายหน้าร้านหรือรถที่ให้เช่า'
+                }
+            ]
+        },
+        {
+            title: 'การค้นหาและตรวจสอบลูกค้า',
+            icon: <Search className="w-5 h-5" />,
+            items: [
+                {
+                    question: 'ค้นหาประวัติลูกค้าได้อย่างไร?',
+                    answer: 'ไปที่ Dashboard > ค้นหา Blacklist > ใส่ชื่อ-นามสกุล, เลขบัตรประชาชน, หรือเบอร์โทรของลูกค้า ระบบจะแสดงประวัติ (ถ้ามี)'
+                },
+                {
+                    question: 'มีจำกัดจำนวนการค้นหาต่อวันไหม?',
+                    answer: 'บัญชีฟรีค้นหาได้ 3 ครั้งต่อวัน ส่วนแพ็คเกจ "ร้านรับรอง" ค้นหาได้ไม่จำกัด'
+                },
+                {
+                    question: 'ข้อมูลที่ค้นหาได้มีความน่าเชื่อถือแค่ไหน?',
+                    answer: 'ข้อมูลมาจากการรายงานของร้านเช่ารถในระบบและผ่านการตรวจสอบจากทีมงาน แนะนำให้ใช้เป็นข้อมูลประกอบการตัดสินใจร่วมกับการตรวจสอบอื่นๆ'
+                }
+            ]
+        },
+        {
+            title: 'ร้านรับรอง (Verified Shop)',
+            icon: <UserCheck className="w-5 h-5" />,
+            items: [
+                {
+                    question: '"ร้านรับรอง" คืออะไร?',
+                    answer: 'แพ็คเกจสมาชิกพรีเมียมที่ได้รับสิทธิพิเศษ: ค้นหาไม่จำกัด, แสดงป้ายยืนยันตัวตน, โปรโมทบนหน้าแรก, และความน่าเชื่อถือที่สูงขึ้นในสายตาลูกค้า'
+                },
+                {
+                    question: 'แพ็คเกจร้านรับรองมีราคาเท่าไหร่?',
+                    answer: 'มี 3 แพ็คเกจ: รายเดือน 199 บาท (30 วัน), รายไตรมาส 499 บาท (90 วัน), และรายปี 1,499 บาท (365 วัน) - คุ้มที่สุด!'
+                },
+                {
+                    question: 'สมัครร้านรับรองได้อย่างไร?',
+                    answer: 'ไปที่ Dashboard > อัพเกรดร้านรับรอง > เลือกแพ็คเกจ > ชำระเงินผ่าน PromptPay หรือโอน > อัปโหลดสลิป > รอการอนุมัติ (ปกติไม่เกิน 24 ชม.)'
+                },
+                {
+                    question: 'ต่ออายุร้านรับรองอย่างไร?',
+                    answer: 'ระบบจะแจ้งเตือนก่อนหมดอายุ 7 วันและ 3 วัน สามารถต่ออายุได้ที่ Dashboard > อัพเกรดร้านรับรอง เลือกแพ็คเกจและชำระเงินเหมือนสมัครใหม่'
+                }
+            ]
+        },
+        {
+            title: 'การรายงาน Blacklist',
+            icon: <AlertTriangle className="w-5 h-5" />,
+            items: [
+                {
+                    question: 'รายงานลูกค้าเข้า Blacklist ได้อย่างไร?',
+                    answer: 'ไปที่ Dashboard > รายงานลูกค้า > กรอกข้อมูลลูกค้า, ประเภทปัญหา, รายละเอียด > อัปโหลดหลักฐาน > ส่งรายงาน'
+                },
+                {
+                    question: 'ต้องมีหลักฐานอะไรบ้างในการรายงาน?',
+                    answer: 'ควรมี: สำเนาสัญญาเช่า, รูปถ่ายความเสียหาย, บันทึกการติดต่อ/แชท, ใบแจ้งความ (ถ้ามี) ยิ่งหลักฐานครบ ยิ่งอนุมัติเร็ว'
+                },
+                {
+                    question: 'รายงานจะได้รับการอนุมัติเมื่อไหร่?',
+                    answer: 'ทีมงานจะตรวจสอบและอนุมัติภายใน 24-48 ชม. หากหลักฐานครบถ้วน อาจได้รับการอนุมัติเร็วกว่านั้น'
+                },
+                {
+                    question: 'รายงานเท็จมีผลอย่างไร?',
+                    answer: 'การรายงานเท็จถือเป็นการละเมิดข้อกำหนด อาจทำให้บัญชีถูกระงับหรือยกเลิก และอาจต้องรับผิดชอบทางกฎหมายหากผู้ถูกรายงานฟ้องร้อง'
+                }
+            ]
+        },
+        {
+            title: 'การชำระเงิน',
+            icon: <CreditCard className="w-5 h-5" />,
+            items: [
+                {
+                    question: 'ชำระเงินได้ช่องทางไหนบ้าง?',
+                    answer: 'รองรับ PromptPay และโอนเงินเข้าบัญชีธนาคาร (กสิกรไทย) โดยต้องอัปโหลดสลิปเพื่อยืนยัน'
+                },
+                {
+                    question: 'หลังชำระเงินแล้วต้องรอนานแค่ไหน?',
+                    answer: 'หลังอัปโหลดสลิป ทีมงานจะตรวจสอบและเปิดใช้งานภายใน 24 ชม. (ปกติเร็วกว่านั้นมาก)'
+                },
+                {
+                    question: 'ขอคืนเงินได้ไหม?',
+                    answer: 'ค่าบริการที่ชำระแล้วไม่สามารถขอคืนได้ กรุณาศึกษารายละเอียดแพ็คเกจก่อนชำระเงิน'
+                }
+            ]
+        },
+        {
+            title: 'บัญชีและความปลอดภัย',
+            icon: <Users className="w-5 h-5" />,
+            items: [
+                {
+                    question: 'ลืมรหัสผ่านทำอย่างไร?',
+                    answer: 'กด "ลืมรหัสผ่าน" ที่หน้าเข้าสู่ระบบ > กรอกอีเมลที่ลงทะเบียน > ระบบจะส่งลิงก์รีเซ็ตรหัสผ่านไปทางอีเมล'
+                },
+                {
+                    question: 'เปลี่ยนข้อมูลร้านได้อย่างไร?',
+                    answer: 'ไปที่ Dashboard > แก้ไขข้อมูลร้าน > แก้ไขข้อมูล > กดบันทึก'
+                },
+                {
+                    question: 'ข้อมูลร้านของฉันปลอดภัยไหม?',
+                    answer: 'เราใช้การเข้ารหัสและมาตรการรักษาความปลอดภัยตามมาตรฐาน ข้อมูลธุรกิจจะไม่ถูกเปิดเผยนอกเหนือจากที่แสดงบนโปรไฟล์ร้าน'
+                }
+            ]
+        }
+    ] : [
+        {
+            title: 'Getting Started',
+            icon: <Store className="w-5 h-5" />,
+            items: [
+                {
+                    question: 'How does RentSafe help rental shops?',
+                    answer: 'RentSafe helps shops verify customer history before renting, prevent problematic customers, and increase shop credibility through the Verified Shop system.'
+                },
+                {
+                    question: 'How do I register my shop?',
+                    answer: 'Click "Register Shop", fill in shop information, upload identity documents, and wait for verification (usually 1-3 business days).'
+                },
+                {
+                    question: 'What documents are required for registration?',
+                    answer: 'You need a copy of the owner\'s ID card, business license (if any), and photos of your shop or rental vehicles.'
+                }
+            ]
+        },
+        {
+            title: 'Customer Search and Verification',
+            icon: <Search className="w-5 h-5" />,
+            items: [
+                {
+                    question: 'How do I search for customer history?',
+                    answer: 'Go to Dashboard > Search Blacklist > Enter name, ID card number, or phone number. The system will display history (if any).'
                 },
                 {
                     question: 'Is there a daily search limit?',
-                    answer: 'Free accounts have a limit of 3 searches per day. The "Verified Shop" package has unlimited searches.'
+                    answer: 'Free accounts can search 3 times per day. The "Verified Shop" package has unlimited searches.'
                 },
                 {
                     question: 'How reliable is the search data?',
-                    answer: 'All data comes from reports by rental shops in the system and is verified by our team before publication. However, we recommend using it as supplementary information for decision-making.'
+                    answer: 'Data comes from reports by rental shops in the system and is verified by our team. Use it as supplementary information along with other verification methods.'
                 }
             ]
         },
         {
             title: 'Verified Shop',
-            icon: <Shield className="w-5 h-5" />,
+            icon: <UserCheck className="w-5 h-5" />,
             items: [
                 {
                     question: 'What is "Verified Shop"?',
-                    answer: 'Verified Shop is a premium membership package for car rental shops that want special benefits such as unlimited searches, verified badge display, and homepage promotion.'
+                    answer: 'A premium membership package with benefits: unlimited searches, verified badge display, homepage promotion, and higher credibility with customers.'
                 },
                 {
                     question: 'How much does Verified Shop cost?',
-                    answer: 'There are 3 packages: Monthly 199 THB (30 days), Quarterly 499 THB (90 days), and Yearly 1,499 THB (365 days).'
+                    answer: '3 packages available: Monthly 199 THB (30 days), Quarterly 499 THB (90 days), and Yearly 1,499 THB (365 days) - best value!'
                 },
                 {
                     question: 'How do I sign up for Verified Shop?',
-                    answer: 'Go to Dashboard > Subscribe to Verified Shop > Choose package > Pay via PromptPay or bank transfer > Upload slip > Wait for approval (usually within 24 hours).'
+                    answer: 'Go to Dashboard > Upgrade to Verified Shop > Choose package > Pay via PromptPay or transfer > Upload slip > Wait for approval (usually within 24 hours).'
                 }
             ]
         },
@@ -198,16 +341,16 @@ export default async function FAQPage({ params }: { params: Promise<{ locale: st
             icon: <AlertTriangle className="w-5 h-5" />,
             items: [
                 {
-                    question: 'How do I report a customer to the Blacklist?',
-                    answer: 'Go to Dashboard > Report Customer > Fill in customer information, reason, and upload evidence > Submit report. The team will review and approve within 24-48 hours.'
+                    question: 'How do I report a customer to Blacklist?',
+                    answer: 'Go to Dashboard > Report Customer > Fill in customer info, problem type, details > Upload evidence > Submit report.'
                 },
                 {
                     question: 'What evidence is needed for reporting?',
-                    answer: 'You should have evidence such as rental contract copies, damage photos, communication records, or other related documents. The more complete the evidence, the faster the approval.'
+                    answer: 'You should have: rental contract copy, damage photos, communication records/chats, police report (if any). More complete evidence = faster approval.'
                 },
                 {
                     question: 'What happens with false reports?',
-                    answer: 'False reporting is a violation of the terms of service and may result in account suspension or termination, and may face legal liability if the reported person takes legal action.'
+                    answer: 'False reporting violates terms of service and may result in account suspension or termination, and possible legal liability if the reported person takes action.'
                 }
             ]
         },
@@ -217,15 +360,15 @@ export default async function FAQPage({ params }: { params: Promise<{ locale: st
             items: [
                 {
                     question: 'What payment methods are available?',
-                    answer: 'We support payment via PromptPay and bank transfer (Kasikorn Bank). You must upload a slip to confirm payment.'
+                    answer: 'We support PromptPay and bank transfer (Kasikorn Bank). You must upload a slip to confirm payment.'
                 },
                 {
-                    question: 'How long after payment until activation?',
-                    answer: 'After uploading the payment slip, the team will verify and approve within 24 hours (usually faster) and the system will activate automatically.'
+                    question: 'How long until activation after payment?',
+                    answer: 'After uploading the slip, the team will verify and activate within 24 hours (usually much faster).'
                 },
                 {
                     question: 'Can I get a refund?',
-                    answer: 'Service fees paid are non-refundable. Please study the package details carefully before payment.'
+                    answer: 'Service fees paid are non-refundable. Please study package details before payment.'
                 }
             ]
         },
@@ -235,19 +378,21 @@ export default async function FAQPage({ params }: { params: Promise<{ locale: st
             items: [
                 {
                     question: 'What if I forget my password?',
-                    answer: 'Click the "Forgot Password" button on the login page > Enter your registered email > The system will send a password reset link to your email.'
+                    answer: 'Click "Forgot Password" on the login page > Enter your registered email > The system will send a password reset link.'
                 },
                 {
                     question: 'How do I change shop information?',
-                    answer: 'Go to Dashboard > Edit Shop Information > Edit the information you want > Click Save.'
+                    answer: 'Go to Dashboard > Edit Shop Info > Make changes > Click Save.'
                 },
                 {
-                    question: 'Is my data secure?',
-                    answer: 'We use data encryption and standard security measures. Your personal information will not be disclosed to third parties except as required by law.'
+                    question: 'Is my shop data secure?',
+                    answer: 'We use encryption and standard security measures. Business information will not be disclosed beyond what is shown on your shop profile.'
                 }
             ]
         }
     ]
+
+    const currentFAQs = activeTab === 'user' ? userFAQs : shopFAQs
 
     return (
         <div className="min-h-screen bg-gray-50 py-12">
@@ -257,13 +402,13 @@ export default async function FAQPage({ params }: { params: Promise<{ locale: st
                     {isThai ? 'กลับหน้าหลัก' : 'Back to Home'}
                 </Link>
 
-                <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-8 md:p-12">
-                    <div className="flex items-center gap-4 mb-8">
+                <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6 md:p-12">
+                    <div className="flex items-center gap-4 mb-6">
                         <div className="w-14 h-14 bg-purple-100 rounded-xl flex items-center justify-center">
                             <HelpCircle className="w-7 h-7 text-purple-600" />
                         </div>
                         <div>
-                            <h1 className="text-3xl font-bold text-gray-900">
+                            <h1 className="text-2xl md:text-3xl font-bold text-gray-900">
                                 {isThai ? 'คำถามที่พบบ่อย' : 'Frequently Asked Questions'}
                             </h1>
                             <p className="text-gray-500">
@@ -272,8 +417,35 @@ export default async function FAQPage({ params }: { params: Promise<{ locale: st
                         </div>
                     </div>
 
+                    {/* Tab Switcher */}
+                    <div className="flex gap-2 p-1 bg-gray-100 rounded-xl mb-8">
+                        <button
+                            onClick={() => setActiveTab('user')}
+                            className={`flex-1 flex items-center justify-center gap-2 py-3 px-4 rounded-lg font-medium transition-all ${
+                                activeTab === 'user'
+                                    ? 'bg-white text-blue-600 shadow-sm'
+                                    : 'text-gray-600 hover:text-gray-900'
+                            }`}
+                        >
+                            <Car className="w-5 h-5" />
+                            {isThai ? 'สำหรับผู้เช่ารถ' : 'For Renters'}
+                        </button>
+                        <button
+                            onClick={() => setActiveTab('shop')}
+                            className={`flex-1 flex items-center justify-center gap-2 py-3 px-4 rounded-lg font-medium transition-all ${
+                                activeTab === 'shop'
+                                    ? 'bg-white text-blue-600 shadow-sm'
+                                    : 'text-gray-600 hover:text-gray-900'
+                            }`}
+                        >
+                            <Building2 className="w-5 h-5" />
+                            {isThai ? 'สำหรับร้านเช่ารถ' : 'For Rental Shops'}
+                        </button>
+                    </div>
+
+                    {/* FAQ Content */}
                     <div className="space-y-8">
-                        {faqCategories.map((category, categoryIndex) => (
+                        {currentFAQs.map((category, categoryIndex) => (
                             <div key={categoryIndex}>
                                 <div className="flex items-center gap-2 mb-4">
                                     <div className="w-8 h-8 bg-gray-100 rounded-lg flex items-center justify-center text-gray-600">
@@ -285,8 +457,8 @@ export default async function FAQPage({ params }: { params: Promise<{ locale: st
                                     {category.items.map((item, itemIndex) => (
                                         <details key={itemIndex} className="group bg-gray-50 rounded-xl">
                                             <summary className="flex items-center justify-between cursor-pointer p-4 text-gray-900 font-medium hover:bg-gray-100 rounded-xl transition-colors">
-                                                <span>{item.question}</span>
-                                                <ChevronDown className="w-5 h-5 text-gray-400 group-open:rotate-180 transition-transform" />
+                                                <span className="pr-4">{item.question}</span>
+                                                <ChevronDown className="w-5 h-5 text-gray-400 group-open:rotate-180 transition-transform flex-shrink-0" />
                                             </summary>
                                             <div className="px-4 pb-4 text-gray-600">
                                                 {item.answer}
