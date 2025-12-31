@@ -18,12 +18,11 @@ export async function GET(request: NextRequest) {
         }
 
         const { searchParams } = new URL(request.url);
-        const searchType = searchParams.get('type'); // 'id_card', 'phone', 'name'
         const query = searchParams.get('q');
 
-        if (!searchType || !query) {
+        if (!query) {
             return NextResponse.json(
-                { error: 'Missing search parameters' },
+                { error: 'Missing search query' },
                 { status: 400 }
             );
         }
@@ -51,45 +50,81 @@ export async function GET(request: NextRequest) {
             }, { status: 429 });
         }
 
-        // Build search query
-        let searchQuery = supabase
-            .from('customer_blacklist')
-            .select(`
-                id,
-                id_card_last4,
-                first_name,
-                last_name,
-                phone_number,
-                reason_type,
-                reason_detail,
-                severity,
-                report_count,
-                created_at
-            `)
-            .eq('status', 'approved');
+        // Clean query for different search types
+        const cleanQuery = query.replace(/-/g, '').replace(/\s+/g, ' ').trim();
 
-        if (searchType === 'id_card') {
-            const hash = hashIdCard(query.replace(/-/g, ''));
-            searchQuery = searchQuery.eq('id_card_hash', hash);
-        } else if (searchType === 'phone') {
-            searchQuery = searchQuery.eq('phone_number', query.replace(/-/g, ''));
-        } else if (searchType === 'name') {
-            const [firstName, lastName] = query.split(' ');
-            if (lastName) {
-                searchQuery = searchQuery
-                    .ilike('first_name', `%${firstName}%`)
-                    .ilike('last_name', `%${lastName}%`);
+        // Detect query type and build appropriate search
+        const isIdCard = /^\d{13}$/.test(cleanQuery);
+        const isPhone = /^\d{9,10}$/.test(cleanQuery);
+
+        let results: any[] = [];
+        let searchError: any = null;
+
+        if (isIdCard) {
+            // Search by ID card hash
+            const hash = hashIdCard(cleanQuery);
+            const { data, error } = await supabase
+                .from('customer_blacklist')
+                .select(`
+                    id, id_card_last4, first_name, last_name, phone_number,
+                    reason_type, reason_detail, severity, report_count, created_at
+                `)
+                .eq('status', 'approved')
+                .eq('id_card_hash', hash);
+            results = data || [];
+            searchError = error;
+        } else if (isPhone) {
+            // Search by phone number
+            const { data, error } = await supabase
+                .from('customer_blacklist')
+                .select(`
+                    id, id_card_last4, first_name, last_name, phone_number,
+                    reason_type, reason_detail, severity, report_count, created_at
+                `)
+                .eq('status', 'approved')
+                .eq('phone_number', cleanQuery);
+            results = data || [];
+            searchError = error;
+        } else {
+            // Search by name (first name or last name)
+            const nameParts = query.trim().split(' ');
+            let nameQuery;
+
+            if (nameParts.length >= 2) {
+                // Search by first name AND last name
+                nameQuery = supabase
+                    .from('customer_blacklist')
+                    .select(`
+                        id, id_card_last4, first_name, last_name, phone_number,
+                        reason_type, reason_detail, severity, report_count, created_at
+                    `)
+                    .eq('status', 'approved')
+                    .ilike('first_name', `%${nameParts[0]}%`)
+                    .ilike('last_name', `%${nameParts.slice(1).join(' ')}%`);
             } else {
-                searchQuery = searchQuery.or(`first_name.ilike.%${firstName}%,last_name.ilike.%${firstName}%`);
+                // Search by either first name OR last name
+                nameQuery = supabase
+                    .from('customer_blacklist')
+                    .select(`
+                        id, id_card_last4, first_name, last_name, phone_number,
+                        reason_type, reason_detail, severity, report_count, created_at
+                    `)
+                    .eq('status', 'approved')
+                    .or(`first_name.ilike.%${nameParts[0]}%,last_name.ilike.%${nameParts[0]}%`);
             }
-        }
 
-        const { data: results, error: searchError } = await searchQuery;
+            const { data, error } = await nameQuery;
+            results = data || [];
+            searchError = error;
+        }
 
         if (searchError) {
             console.error('Search error:', searchError);
             return NextResponse.json({ error: 'Search failed' }, { status: 500 });
         }
+
+        // Determine search type for logging
+        const detectedSearchType = isIdCard ? 'id_card' : isPhone ? 'phone' : 'name';
 
         // Log the search
         await supabase
@@ -97,7 +132,7 @@ export async function GET(request: NextRequest) {
             .insert({
                 shop_id: shop.id,
                 search_query: query,
-                search_type: searchType,
+                search_type: detectedSearchType,
                 result_found: results && results.length > 0,
             });
 

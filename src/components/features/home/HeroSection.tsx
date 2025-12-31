@@ -72,8 +72,8 @@ export default function HeroSection({ stats }: HeroSectionProps) {
                 {/* Hero Text */}
                 <div className="max-w-3xl mx-auto text-center mb-10 md:mb-14">
                     <div className="inline-flex items-center gap-2 bg-blue-500/10 border border-blue-500/20 rounded-full px-4 py-2 mb-6">
-                        <ShieldCheck className="w-4 h-4 text-blue-400" />
-                        <span className="text-blue-300 text-sm font-medium">{t('whyRentSafeDesc').slice(0, 30)}...</span>
+                        <ShieldCheck className="w-4 h-4 text-blue-400 flex-shrink-0" />
+                        <span className="text-blue-300 text-sm font-medium text-center leading-relaxed">{t('whyRentSafeDesc')}</span>
                     </div>
 
                     <h1 className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-bold text-white mb-6 tracking-tight leading-tight">

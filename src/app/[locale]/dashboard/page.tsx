@@ -11,6 +11,7 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent } from '@/components/ui/card';
 import { PROVINCES } from '@/lib/constants/provinces';
+import NotificationPanel from '@/components/features/notifications/NotificationPanel';
 
 export default async function DashboardPage() {
     const supabase = await createClient();
@@ -293,6 +294,9 @@ export default async function DashboardPage() {
                                 </CardContent>
                             </Card>
                         </div>
+
+                        {/* Notifications Widget */}
+                        <NotificationPanel maxItems={5} showViewAll={true} />
 
                         {/* Shop Details Grid */}
                         <div className="grid md:grid-cols-2 gap-6">

@@ -6,6 +6,7 @@ import Navbar from '@/components/layout/Navbar';
 import Footer from '@/components/layout/Footer';
 import BottomMenu from '@/components/layout/BottomMenu';
 import { Toaster } from '@/components/ui/sonner';
+import PWARegister from '@/components/PWARegister';
 import "../globals.css";
 
 const BASE_URL = 'https://rentsafe.in.th';
@@ -114,6 +115,7 @@ export default async function RootLayout({
     <html lang={locale} className={`${inter.variable} ${notoSansThai.variable}`}>
       <body className="antialiased bg-slate-50 min-h-screen flex flex-col font-sans">
         <NextIntlClientProvider messages={messages}>
+          <PWARegister />
           <Navbar />
           <main className="flex-grow">
             {children}

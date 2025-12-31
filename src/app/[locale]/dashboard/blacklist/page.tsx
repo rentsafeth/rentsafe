@@ -90,7 +90,6 @@ export default function BlacklistDashboard() {
     const [remainingSearches, setRemainingSearches] = useState(3);
 
     // Search state
-    const [searchType, setSearchType] = useState<'id_card' | 'phone' | 'name'>('id_card');
     const [searchQuery, setSearchQuery] = useState('');
     const [searchResults, setSearchResults] = useState<SearchResult[]>([]);
     const [searched, setSearched] = useState(false);
@@ -162,7 +161,7 @@ export default function BlacklistDashboard() {
 
         try {
             const response = await fetch(
-                `/api/blacklist?type=${searchType}&q=${encodeURIComponent(searchQuery)}`
+                `/api/blacklist?q=${encodeURIComponent(searchQuery)}`
             );
             const data = await response.json();
 
@@ -335,6 +334,24 @@ export default function BlacklistDashboard() {
         return `${digits.slice(0, 1)}-${digits.slice(1, 5)}-${digits.slice(5, 10)}-${digits.slice(10, 12)}-${digits.slice(12)}`;
     };
 
+    // Auto-format search input based on content
+    const handleSearchInputChange = (value: string) => {
+        const digitsOnly = value.replace(/\D/g, '');
+
+        // If it looks like an ID card (13 digits), format it
+        if (digitsOnly.length === 13) {
+            setSearchQuery(digitsOnly);
+        }
+        // If it looks like a phone number (9-10 digits), keep digits only
+        else if (digitsOnly.length >= 9 && digitsOnly.length <= 10 && /^\d+$/.test(value.replace(/-/g, ''))) {
+            setSearchQuery(digitsOnly);
+        }
+        // Otherwise, keep as-is (for name search)
+        else {
+            setSearchQuery(value);
+        }
+    };
+
     return (
         <div className="min-h-screen bg-gray-50 py-8">
             <div className="max-w-4xl mx-auto px-4">
@@ -422,47 +439,20 @@ export default function BlacklistDashboard() {
                             </CardTitle>
                         </CardHeader>
                         <CardContent className="space-y-4">
-                            {/* Search Type */}
-                            <div className="flex gap-2">
-                                <Button
-                                    variant={searchType === 'id_card' ? 'default' : 'outline'}
-                                    size="sm"
-                                    onClick={() => setSearchType('id_card')}
-                                    className={searchType === 'id_card' ? 'bg-blue-600' : ''}
-                                >
-                                    <CreditCard className="w-4 h-4 mr-1" />
-                                    เลขบัตร ปชช.
-                                </Button>
-                                <Button
-                                    variant={searchType === 'phone' ? 'default' : 'outline'}
-                                    size="sm"
-                                    onClick={() => setSearchType('phone')}
-                                    className={searchType === 'phone' ? 'bg-blue-600' : ''}
-                                >
-                                    <Phone className="w-4 h-4 mr-1" />
-                                    เบอร์โทร
-                                </Button>
-                                <Button
-                                    variant={searchType === 'name' ? 'default' : 'outline'}
-                                    size="sm"
-                                    onClick={() => setSearchType('name')}
-                                    className={searchType === 'name' ? 'bg-blue-600' : ''}
-                                >
-                                    <User className="w-4 h-4 mr-1" />
-                                    ชื่อ-นามสกุล
-                                </Button>
+                            {/* Search Description */}
+                            <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+                                <p className="text-sm text-blue-800">
+                                    <Search className="w-4 h-4 inline mr-1" />
+                                    ค้นหาได้จาก <span className="font-medium">เลขบัตรประชาชน</span>, <span className="font-medium">เบอร์โทรศัพท์</span> หรือ <span className="font-medium">ชื่อ-นามสกุล</span>
+                                </p>
                             </div>
 
                             {/* Search Input */}
                             <div className="flex gap-2">
                                 <Input
-                                    placeholder={
-                                        searchType === 'id_card' ? '1-2345-67890-12-3' :
-                                        searchType === 'phone' ? '081-234-5678' :
-                                        'ชื่อ นามสกุล'
-                                    }
+                                    placeholder="พิมพ์เลขบัตร, เบอร์โทร หรือชื่อ..."
                                     value={searchQuery}
-                                    onChange={(e) => setSearchQuery(e.target.value)}
+                                    onChange={(e) => handleSearchInputChange(e.target.value)}
                                     onKeyDown={(e) => e.key === 'Enter' && handleSearch()}
                                     className="flex-1"
                                 />

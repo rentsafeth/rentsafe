@@ -6,6 +6,7 @@ import { useState, useEffect } from 'react'
 import { ShieldCheck, Search, FileWarning, Menu, X, User, LogOut, Globe, UserPlus } from 'lucide-react'
 import { createClient } from '@/lib/supabase/client'
 import { useRouter, usePathname } from 'next/navigation'
+import NotificationBell from '@/components/features/notifications/NotificationBell'
 
 export default function Navbar() {
     const t = useTranslations('Common')
@@ -118,6 +119,7 @@ export default function Navbar() {
                             <div className="w-24 h-10 bg-gray-100 animate-pulse rounded-xl"></div>
                         ) : user ? (
                             <div className="flex items-center gap-2">
+                                <NotificationBell />
                                 <Link
                                     href="/dashboard"
                                     className="flex items-center gap-2 px-4 py-2 text-gray-600 hover:text-blue-600 hover:bg-blue-50 rounded-lg font-medium transition-colors"
