@@ -648,6 +648,105 @@ export default function AdsPage() {
                 </div>
             </div>
 
+            {/* Search Ranking Formula */}
+            <Card className="mb-6 border-2 border-emerald-200">
+                <CardHeader className="bg-gradient-to-r from-emerald-50 to-teal-50">
+                    <CardTitle className="flex items-center gap-2">
+                        <TrendingUp className="w-5 h-5 text-emerald-600" />
+                        สูตรคำนวณคะแนนอันดับการค้นหา
+                    </CardTitle>
+                </CardHeader>
+                <CardContent className="pt-6">
+                    {/* Formula Display */}
+                    <div className="bg-slate-900 text-white rounded-lg p-4 mb-6 overflow-x-auto">
+                        <code className="text-sm sm:text-base">
+                            <span className="text-emerald-400">คะแนนรวม</span> = (
+                            <span className="text-yellow-400">Boost × 1000</span>) + (
+                            <span className="text-blue-400">PPC_Bid × 10</span>) + (
+                            <span className="text-purple-400">Rating × 20</span>) + (
+                            <span className="text-pink-400">รีวิว × 2</span>) + (
+                            <span className="text-orange-400">Verified × 50</span>)
+                        </code>
+                    </div>
+
+                    {/* Factor Explanation */}
+                    <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4 mb-6">
+                        <div className="p-3 bg-yellow-50 rounded-lg border border-yellow-200">
+                            <div className="flex items-center gap-2 mb-1">
+                                <Zap className="w-4 h-4 text-yellow-600" />
+                                <span className="font-medium text-yellow-800">Daily Boost</span>
+                            </div>
+                            <p className="text-sm text-yellow-700">+1,000 คะแนน เมื่อเปิดใช้งาน</p>
+                        </div>
+                        <div className="p-3 bg-blue-50 rounded-lg border border-blue-200">
+                            <div className="flex items-center gap-2 mb-1">
+                                <MousePointer className="w-4 h-4 text-blue-600" />
+                                <span className="font-medium text-blue-800">PPC Bid</span>
+                            </div>
+                            <p className="text-sm text-blue-700">Bid × 10 คะแนน (เช่น Bid 5 = +50)</p>
+                        </div>
+                        <div className="p-3 bg-purple-50 rounded-lg border border-purple-200">
+                            <div className="flex items-center gap-2 mb-1">
+                                <Eye className="w-4 h-4 text-purple-600" />
+                                <span className="font-medium text-purple-800">Rating เฉลี่ย</span>
+                            </div>
+                            <p className="text-sm text-purple-700">Rating × 20 คะแนน (เช่น 4.5 = +90)</p>
+                        </div>
+                        <div className="p-3 bg-pink-50 rounded-lg border border-pink-200">
+                            <div className="flex items-center gap-2 mb-1">
+                                <BarChart3 className="w-4 h-4 text-pink-600" />
+                                <span className="font-medium text-pink-800">จำนวนรีวิว</span>
+                            </div>
+                            <p className="text-sm text-pink-700">รีวิว × 2 คะแนน (เช่น 25 รีวิว = +50)</p>
+                        </div>
+                        <div className="p-3 bg-orange-50 rounded-lg border border-orange-200">
+                            <div className="flex items-center gap-2 mb-1">
+                                <CheckCircle className="w-4 h-4 text-orange-600" />
+                                <span className="font-medium text-orange-800">ร้านรับรอง</span>
+                            </div>
+                            <p className="text-sm text-orange-700">+50 คะแนน (เฉพาะแพ็คเกจ Pro)</p>
+                        </div>
+                    </div>
+
+                    {/* Example Calculation */}
+                    <div className="bg-emerald-50 rounded-lg p-4 border border-emerald-200">
+                        <h4 className="font-semibold text-emerald-800 mb-3 flex items-center gap-2">
+                            <Info className="w-4 h-4" />
+                            ตัวอย่างการคำนวณ
+                        </h4>
+                        <div className="space-y-3 text-sm">
+                            {/* Shop A */}
+                            <div className="bg-white rounded-lg p-3">
+                                <p className="font-medium text-gray-800 mb-2">ร้าน A (เปิด Boost + PPC)</p>
+                                <div className="flex flex-wrap gap-2 text-xs">
+                                    <span className="px-2 py-1 bg-yellow-100 text-yellow-700 rounded">Boost: +1,000</span>
+                                    <span className="px-2 py-1 bg-blue-100 text-blue-700 rounded">PPC(10): +100</span>
+                                    <span className="px-2 py-1 bg-purple-100 text-purple-700 rounded">Rating(4.8): +96</span>
+                                    <span className="px-2 py-1 bg-pink-100 text-pink-700 rounded">รีวิว(30): +60</span>
+                                    <span className="px-2 py-1 bg-orange-100 text-orange-700 rounded">Verified: +50</span>
+                                </div>
+                                <p className="mt-2 font-bold text-emerald-600">รวม = 1,306 คะแนน</p>
+                            </div>
+                            {/* Shop B */}
+                            <div className="bg-white rounded-lg p-3">
+                                <p className="font-medium text-gray-800 mb-2">ร้าน B (ร้านธรรมดา)</p>
+                                <div className="flex flex-wrap gap-2 text-xs">
+                                    <span className="px-2 py-1 bg-gray-100 text-gray-500 rounded">Boost: 0</span>
+                                    <span className="px-2 py-1 bg-gray-100 text-gray-500 rounded">PPC: 0</span>
+                                    <span className="px-2 py-1 bg-purple-100 text-purple-700 rounded">Rating(4.2): +84</span>
+                                    <span className="px-2 py-1 bg-pink-100 text-pink-700 rounded">รีวิว(10): +20</span>
+                                    <span className="px-2 py-1 bg-gray-100 text-gray-500 rounded">ไม่ Verified: 0</span>
+                                </div>
+                                <p className="mt-2 font-bold text-gray-600">รวม = 104 คะแนน</p>
+                            </div>
+                            <p className="text-emerald-700 text-xs mt-2">
+                                * ร้าน A จะแสดงก่อนร้าน B เพราะมีคะแนนรวมสูงกว่า
+                            </p>
+                        </div>
+                    </div>
+                </CardContent>
+            </Card>
+
             {/* Stats Overview */}
             <Card className="mb-6 overflow-hidden">
                 <CardHeader className="bg-gradient-to-r from-slate-50 to-gray-100 pb-3">
