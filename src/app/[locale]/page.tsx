@@ -293,11 +293,11 @@ export default async function HomePage({ params }: { params: Promise<{ locale: s
             {/* CTA Section */}
             <section className="py-16 md:py-24 bg-gradient-to-br from-gray-900 to-gray-800">
                 <div className="container mx-auto px-4 text-center">
-                    <Shield className="w-16 h-16 text-blue-400 mx-auto mb-6" />
-                    <h2 className="text-3xl md:text-4xl font-bold text-white mb-4">
+                    <Shield className="w-12 h-12 md:w-16 md:h-16 text-blue-400 mx-auto mb-4 md:mb-6" />
+                    <h2 className="text-xl sm:text-2xl md:text-4xl font-bold text-white mb-3 md:mb-4">
                         {t('ctaTitle')}
                     </h2>
-                    <p className="text-gray-300 text-lg mb-8 max-w-2xl mx-auto">
+                    <p className="text-gray-300 text-sm sm:text-base md:text-lg mb-6 md:mb-8 max-w-2xl mx-auto">
                         {t('ctaDesc')}
                     </p>
                     <div className="flex flex-col sm:flex-row gap-4 justify-center">
