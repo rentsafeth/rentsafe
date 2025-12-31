@@ -148,73 +148,78 @@ export default async function DashboardPage() {
                             </div>
 
                             <div className="p-6 -mt-12 relative">
-                                <div className="flex flex-col sm:flex-row sm:items-end gap-4 mb-4">
-                                    {/* Shop Logo */}
-                                    <div className="w-24 h-24 bg-white rounded-xl shadow-lg border-4 border-white overflow-hidden relative flex-shrink-0">
-                                        {shop.logo_url ? (
-                                            <Image
-                                                src={shop.logo_url}
-                                                alt="Logo"
-                                                fill
-                                                className="object-cover"
-                                            />
-                                        ) : (
-                                            <div className="w-full h-full flex items-center justify-center bg-slate-100">
-                                                <Building2 className="w-10 h-10 text-slate-400" />
+                                <div className="flex flex-col gap-4 mb-4">
+                                    {/* Shop Info Row */}
+                                    <div className="flex items-end gap-4">
+                                        {/* Shop Logo */}
+                                        <div className="w-24 h-24 bg-white rounded-xl shadow-lg border-4 border-white overflow-hidden relative flex-shrink-0">
+                                            {shop.logo_url ? (
+                                                <Image
+                                                    src={shop.logo_url}
+                                                    alt="Logo"
+                                                    fill
+                                                    className="object-cover"
+                                                />
+                                            ) : (
+                                                <div className="w-full h-full flex items-center justify-center bg-slate-100">
+                                                    <Building2 className="w-10 h-10 text-slate-400" />
+                                                </div>
+                                            )}
+                                        </div>
+                                        <div className="flex-1 min-w-0">
+                                            <h2 className="text-xl sm:text-2xl font-bold text-gray-900 truncate">{shop.name}</h2>
+                                            <div className="flex items-center gap-2 mt-1 flex-wrap">
+                                                {getStatusBadge(shop.verification_status)}
+                                                <span className="text-sm text-gray-500">
+                                                    ลงทะเบียนมา {daysSinceRegistration} วัน
+                                                </span>
                                             </div>
-                                        )}
-                                    </div>
-                                    <div className="flex-1">
-                                        <h2 className="text-2xl font-bold text-gray-900">{shop.name}</h2>
-                                        <div className="flex items-center gap-2 mt-1 flex-wrap">
-                                            {getStatusBadge(shop.verification_status)}
-                                            <span className="text-sm text-gray-500">
-                                                ลงทะเบียนมา {daysSinceRegistration} วัน
-                                            </span>
                                         </div>
                                     </div>
+
+                                    {/* Actions Row */}
                                     <div className="flex gap-2 flex-wrap">
                                         <Link href="/dashboard/subscription">
                                             {subscription ? (
-                                                <Button variant="outline" className="border-yellow-300 text-yellow-700 bg-gradient-to-r from-yellow-50 to-orange-50 hover:from-yellow-100 hover:to-orange-100">
-                                                    <Crown className="w-4 h-4 mr-2" />
-                                                    ร้านรับรอง ({daysRemaining} วัน)
+                                                <Button variant="outline" size="sm" className="border-yellow-300 text-yellow-700 bg-gradient-to-r from-yellow-50 to-orange-50 hover:from-yellow-100 hover:to-orange-100">
+                                                    <Crown className="w-4 h-4 mr-1.5" />
+                                                    <span className="hidden sm:inline">ร้านรับรอง</span> ({daysRemaining} วัน)
                                                 </Button>
                                             ) : (
-                                                <Button variant="outline" className="border-yellow-300 text-yellow-700 hover:bg-yellow-50">
-                                                    <Crown className="w-4 h-4 mr-2" />
-                                                    อัพเกรดร้านรับรอง
+                                                <Button variant="outline" size="sm" className="border-yellow-300 text-yellow-700 hover:bg-yellow-50">
+                                                    <Crown className="w-4 h-4 mr-1.5" />
+                                                    <span className="hidden sm:inline">อัพเกรด</span>ร้านรับรอง
                                                 </Button>
                                             )}
                                         </Link>
                                         <Link href="/dashboard/blacklist">
-                                            <Button variant="outline" className="border-red-200 text-red-600 hover:bg-red-50">
-                                                <Shield className="w-4 h-4 mr-2" />
-                                                Blacklist
+                                            <Button variant="outline" size="sm" className="border-red-200 text-red-600 hover:bg-red-50">
+                                                <Shield className="w-4 h-4 sm:mr-1.5" />
+                                                <span className="hidden sm:inline">Blacklist</span>
                                             </Button>
                                         </Link>
                                         <Link href="/dashboard/credits">
-                                            <Button variant="outline" className="border-orange-200 text-orange-600 hover:bg-orange-50">
-                                                <Coins className="w-4 h-4 mr-2" />
-                                                {(shop.credit_balance || 0).toLocaleString()} เครดิต
+                                            <Button variant="outline" size="sm" className="border-orange-200 text-orange-600 hover:bg-orange-50">
+                                                <Coins className="w-4 h-4 mr-1.5" />
+                                                {(shop.credit_balance || 0).toLocaleString()} <span className="hidden sm:inline ml-1">เครดิต</span>
                                             </Button>
                                         </Link>
                                         <Link href="/dashboard/ads">
-                                            <Button variant="outline" className="border-purple-200 text-purple-600 hover:bg-purple-50">
-                                                <Megaphone className="w-4 h-4 mr-2" />
-                                                โฆษณา
+                                            <Button variant="outline" size="sm" className="border-purple-200 text-purple-600 hover:bg-purple-50">
+                                                <Megaphone className="w-4 h-4 sm:mr-1.5" />
+                                                <span className="hidden sm:inline">โฆษณา</span>
                                             </Button>
                                         </Link>
                                         <Link href="/dashboard/shop/edit">
-                                            <Button className="bg-blue-600 hover:bg-blue-700">
-                                                <Edit className="w-4 h-4 mr-2" />
-                                                แก้ไขข้อมูล
+                                            <Button size="sm" className="bg-blue-600 hover:bg-blue-700">
+                                                <Edit className="w-4 h-4 sm:mr-1.5" />
+                                                <span className="hidden sm:inline">แก้ไขข้อมูล</span>
                                             </Button>
                                         </Link>
                                         <Link href={`/shop/${shop.id}`}>
-                                            <Button variant="outline">
-                                                <ExternalLink className="w-4 h-4 mr-2" />
-                                                ดูหน้าร้าน
+                                            <Button variant="outline" size="sm">
+                                                <ExternalLink className="w-4 h-4 sm:mr-1.5" />
+                                                <span className="hidden sm:inline">ดูหน้าร้าน</span>
                                             </Button>
                                         </Link>
                                     </div>
