@@ -4,7 +4,7 @@ import { createClient } from '@/lib/supabase/client'
 import { useTranslations } from 'next-intl'
 import { useState, useRef } from 'react'
 import { useRouter } from 'next/navigation'
-import { Store, ArrowLeft, Upload, X, Check, ChevronDown, FileText, CreditCard, Building2, User, AlertTriangle } from 'lucide-react'
+import { Store, ArrowLeft, Upload, X, Check, ChevronDown, FileText, CreditCard, Building2, User, AlertTriangle, Banknote, Wallet } from 'lucide-react'
 import Link from 'next/link'
 import Image from 'next/image'
 
@@ -77,6 +77,8 @@ export default function RegisterShopPage() {
         bank_account_name: '',
         can_issue_tax_invoice: false,
         can_issue_withholding_tax: false,
+        pay_on_pickup: false,
+        accept_credit_card: false,
     })
 
     // File previews
@@ -437,6 +439,47 @@ export default function RegisterShopPage() {
                                         </div>
                                     </label>
                                 )}
+
+                                {/* Payment Options */}
+                                <div className="mt-4 space-y-2">
+                                    <p className="text-sm font-medium text-gray-700">ตัวเลือกการชำระเงิน</p>
+                                    <label className="flex items-center gap-3 p-3 bg-gray-50 rounded-lg cursor-pointer hover:bg-gray-100 transition-colors">
+                                        <input
+                                            type="checkbox"
+                                            checked={formData.pay_on_pickup}
+                                            onChange={(e) => setFormData(prev => ({
+                                                ...prev,
+                                                pay_on_pickup: e.target.checked
+                                            }))}
+                                            className="w-5 h-5 text-green-600 border-gray-300 rounded focus:ring-green-500"
+                                        />
+                                        <div className="flex items-center gap-2">
+                                            <Banknote className="w-5 h-5 text-emerald-600" />
+                                            <div>
+                                                <span className="font-medium text-gray-700">รับชำระเงินตอนรับรถ</span>
+                                                <p className="text-xs text-gray-500">ลูกค้าสามารถจ่ายเงินสดหรือโอนตอนมารับรถได้</p>
+                                            </div>
+                                        </div>
+                                    </label>
+                                    <label className="flex items-center gap-3 p-3 bg-gray-50 rounded-lg cursor-pointer hover:bg-gray-100 transition-colors">
+                                        <input
+                                            type="checkbox"
+                                            checked={formData.accept_credit_card}
+                                            onChange={(e) => setFormData(prev => ({
+                                                ...prev,
+                                                accept_credit_card: e.target.checked
+                                            }))}
+                                            className="w-5 h-5 text-green-600 border-gray-300 rounded focus:ring-green-500"
+                                        />
+                                        <div className="flex items-center gap-2">
+                                            <CreditCard className="w-5 h-5 text-violet-600" />
+                                            <div>
+                                                <span className="font-medium text-gray-700">รับบัตรเครดิต</span>
+                                                <p className="text-xs text-gray-500">รองรับการชำระเงินด้วยบัตรเครดิต/เดบิต</p>
+                                            </div>
+                                        </div>
+                                    </label>
+                                </div>
                             </div>
 
                             <div>
@@ -831,6 +874,17 @@ export default function RegisterShopPage() {
                                             <span className="font-medium text-green-600">
                                                 {formData.can_issue_tax_invoice && 'ออกใบกำกับภาษีได้'}
                                                 {formData.can_issue_withholding_tax && 'ออกหนังสือหัก ณ ที่จ่ายได้'}
+                                            </span>
+                                        </div>
+                                    )}
+                                    {(formData.pay_on_pickup || formData.accept_credit_card) && (
+                                        <div className="flex justify-between">
+                                            <span className="text-gray-500">การชำระเงิน:</span>
+                                            <span className="font-medium text-green-600">
+                                                {[
+                                                    formData.pay_on_pickup && 'ชำระตอนรับรถ',
+                                                    formData.accept_credit_card && 'รับบัตรเครดิต'
+                                                ].filter(Boolean).join(', ')}
                                             </span>
                                         </div>
                                     )}

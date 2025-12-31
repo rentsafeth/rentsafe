@@ -7,7 +7,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
-import { Camera, Loader2, Save, Building2, ImageIcon, X } from 'lucide-react';
+import { Camera, Loader2, Save, Building2, ImageIcon, X, Receipt, FileText, Banknote, CreditCard } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import Image from 'next/image';
 
@@ -22,6 +22,11 @@ interface Shop {
     logo_url: string | null;
     cover_url: string | null;
     owner_id: string;
+    business_type: 'individual' | 'company';
+    can_issue_tax_invoice: boolean;
+    can_issue_withholding_tax: boolean;
+    pay_on_pickup: boolean;
+    accept_credit_card: boolean;
 }
 
 export default function EditShopPage() {
@@ -43,6 +48,10 @@ export default function EditShopPage() {
         line_id: '',
         facebook_url: '',
         website: '',
+        can_issue_tax_invoice: false,
+        can_issue_withholding_tax: false,
+        pay_on_pickup: false,
+        accept_credit_card: false,
     });
 
     useEffect(() => {
@@ -75,6 +84,10 @@ export default function EditShopPage() {
             line_id: shopData.line_id || '',
             facebook_url: shopData.facebook_url || '',
             website: shopData.website || '',
+            can_issue_tax_invoice: shopData.can_issue_tax_invoice || false,
+            can_issue_withholding_tax: shopData.can_issue_withholding_tax || false,
+            pay_on_pickup: shopData.pay_on_pickup || false,
+            accept_credit_card: shopData.accept_credit_card || false,
         });
         setLoading(false);
     };
@@ -160,6 +173,10 @@ export default function EditShopPage() {
                     line_id: formData.line_id || null,
                     facebook_url: formData.facebook_url || null,
                     website: formData.website || null,
+                    can_issue_tax_invoice: formData.can_issue_tax_invoice,
+                    can_issue_withholding_tax: formData.can_issue_withholding_tax,
+                    pay_on_pickup: formData.pay_on_pickup,
+                    accept_credit_card: formData.accept_credit_card,
                 })
                 .eq('id', shop.id);
 
@@ -383,6 +400,93 @@ export default function EditShopPage() {
                                 onChange={(e) => setFormData(prev => ({ ...prev, website: e.target.value }))}
                                 placeholder="https://yourwebsite.com"
                             />
+                        </div>
+
+                        {/* Tax & Payment Options */}
+                        <div className="border-t pt-6">
+                            <h3 className="font-semibold text-gray-900 mb-4">บริการเอกสารและการชำระเงิน</h3>
+
+                            {/* Tax Document Options */}
+                            <div className="space-y-3 mb-4">
+                                <p className="text-sm text-gray-600">บริการเอกสารภาษี</p>
+
+                                {shop?.business_type === 'company' ? (
+                                    <label className="flex items-center gap-3 p-3 bg-gray-50 rounded-lg cursor-pointer hover:bg-gray-100 transition-colors">
+                                        <input
+                                            type="checkbox"
+                                            checked={formData.can_issue_tax_invoice}
+                                            onChange={(e) => setFormData(prev => ({
+                                                ...prev,
+                                                can_issue_tax_invoice: e.target.checked,
+                                                can_issue_withholding_tax: false
+                                            }))}
+                                            className="w-5 h-5 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
+                                        />
+                                        <Receipt className="w-5 h-5 text-blue-600" />
+                                        <div>
+                                            <span className="font-medium text-gray-700">ออกใบกำกับภาษีได้</span>
+                                            <p className="text-xs text-gray-500">สำหรับลูกค้าที่ต้องการใบกำกับภาษี VAT 7%</p>
+                                        </div>
+                                    </label>
+                                ) : (
+                                    <label className="flex items-center gap-3 p-3 bg-gray-50 rounded-lg cursor-pointer hover:bg-gray-100 transition-colors">
+                                        <input
+                                            type="checkbox"
+                                            checked={formData.can_issue_withholding_tax}
+                                            onChange={(e) => setFormData(prev => ({
+                                                ...prev,
+                                                can_issue_withholding_tax: e.target.checked,
+                                                can_issue_tax_invoice: false
+                                            }))}
+                                            className="w-5 h-5 text-purple-600 border-gray-300 rounded focus:ring-purple-500"
+                                        />
+                                        <FileText className="w-5 h-5 text-purple-600" />
+                                        <div>
+                                            <span className="font-medium text-gray-700">ออกหนังสือหัก ณ ที่จ่ายได้</span>
+                                            <p className="text-xs text-gray-500">สำหรับลูกค้าที่ต้องการหักภาษี ณ ที่จ่าย</p>
+                                        </div>
+                                    </label>
+                                )}
+                            </div>
+
+                            {/* Payment Options */}
+                            <div className="space-y-3">
+                                <p className="text-sm text-gray-600">ตัวเลือกการชำระเงิน</p>
+
+                                <label className="flex items-center gap-3 p-3 bg-gray-50 rounded-lg cursor-pointer hover:bg-gray-100 transition-colors">
+                                    <input
+                                        type="checkbox"
+                                        checked={formData.pay_on_pickup}
+                                        onChange={(e) => setFormData(prev => ({
+                                            ...prev,
+                                            pay_on_pickup: e.target.checked
+                                        }))}
+                                        className="w-5 h-5 text-emerald-600 border-gray-300 rounded focus:ring-emerald-500"
+                                    />
+                                    <Banknote className="w-5 h-5 text-emerald-600" />
+                                    <div>
+                                        <span className="font-medium text-gray-700">รับชำระเงินตอนรับรถ</span>
+                                        <p className="text-xs text-gray-500">ลูกค้าสามารถจ่ายเงินสดหรือโอนตอนมารับรถได้</p>
+                                    </div>
+                                </label>
+
+                                <label className="flex items-center gap-3 p-3 bg-gray-50 rounded-lg cursor-pointer hover:bg-gray-100 transition-colors">
+                                    <input
+                                        type="checkbox"
+                                        checked={formData.accept_credit_card}
+                                        onChange={(e) => setFormData(prev => ({
+                                            ...prev,
+                                            accept_credit_card: e.target.checked
+                                        }))}
+                                        className="w-5 h-5 text-violet-600 border-gray-300 rounded focus:ring-violet-500"
+                                    />
+                                    <CreditCard className="w-5 h-5 text-violet-600" />
+                                    <div>
+                                        <span className="font-medium text-gray-700">รับบัตรเครดิต</span>
+                                        <p className="text-xs text-gray-500">รองรับการชำระเงินด้วยบัตรเครดิต/เดบิต</p>
+                                    </div>
+                                </label>
+                            </div>
                         </div>
 
                         <div className="flex gap-3 pt-4">

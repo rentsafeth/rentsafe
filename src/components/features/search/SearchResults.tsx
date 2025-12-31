@@ -7,7 +7,7 @@ import { useTranslations } from 'next-intl';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { Loader2, ShieldAlert, CheckCircle, MapPin, SearchX, AlertTriangle, CreditCard, Phone, Star, Search, ArrowUpDown, SlidersHorizontal, Zap, Receipt, FileText } from 'lucide-react';
+import { Loader2, ShieldAlert, CheckCircle, MapPin, SearchX, AlertTriangle, CreditCard, Phone, Star, Search, ArrowUpDown, SlidersHorizontal, Zap, Receipt, FileText, Banknote, Wallet } from 'lucide-react';
 import Link from 'next/link';
 
 type SearchResult = {
@@ -65,9 +65,11 @@ export default function SearchResults() {
     const [selectedProvince, setSelectedProvince] = useState(province || '');
     const [searchType, setSearchType] = useState<'blacklist' | 'rental'>(type as 'blacklist' | 'rental');
 
-    // Tax filter state
+    // Filter state
     const [filterTaxInvoice, setFilterTaxInvoice] = useState(false);
     const [filterWithholdingTax, setFilterWithholdingTax] = useState(false);
+    const [filterPayOnPickup, setFilterPayOnPickup] = useState(false);
+    const [filterCreditCard, setFilterCreditCard] = useState(false);
 
     const supabase = createClient();
 
@@ -324,13 +326,15 @@ export default function SearchResults() {
         }).format(amount);
     };
 
-    // Filter results based on tax document filters
+    // Filter results based on filters
     const filteredResults = results.filter(r => {
         if (type !== 'rental' || r.type !== 'shop') return true;
 
-        // Apply tax filters
+        // Apply filters
         if (filterTaxInvoice && !r.data.can_issue_tax_invoice) return false;
         if (filterWithholdingTax && !r.data.can_issue_withholding_tax) return false;
+        if (filterPayOnPickup && !r.data.pay_on_pickup) return false;
+        if (filterCreditCard && !r.data.accept_credit_card) return false;
 
         return true;
     });
@@ -447,7 +451,7 @@ export default function SearchResults() {
             <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
                 <h2 className="text-2xl font-bold">
                     {t('resultsCount', { count: sortedResults.length })}
-                    {(filterTaxInvoice || filterWithholdingTax) && sortedResults.length !== results.length && (
+                    {(filterTaxInvoice || filterWithholdingTax || filterPayOnPickup || filterCreditCard) && sortedResults.length !== results.length && (
                         <span className="text-sm font-normal text-gray-500 ml-2">
                             (กรองจาก {results.length} รายการ)
                         </span>
@@ -473,9 +477,37 @@ export default function SearchResults() {
                 )}
             </div>
 
-            {/* Tax Document Filters - only for rental type */}
+            {/* Filters - only for rental type */}
             {type === 'rental' && (
                 <div className="flex flex-wrap gap-3">
+                    <label className={`flex items-center gap-2 px-3 py-2 rounded-lg border cursor-pointer transition-all ${
+                        filterPayOnPickup
+                            ? 'bg-emerald-50 border-emerald-300 text-emerald-700'
+                            : 'bg-white border-gray-200 hover:border-gray-300'
+                    }`}>
+                        <input
+                            type="checkbox"
+                            checked={filterPayOnPickup}
+                            onChange={(e) => setFilterPayOnPickup(e.target.checked)}
+                            className="w-4 h-4 text-emerald-600 border-gray-300 rounded focus:ring-emerald-500"
+                        />
+                        <Banknote className="w-4 h-4" />
+                        <span className="text-sm font-medium">ชำระตอนรับรถ</span>
+                    </label>
+                    <label className={`flex items-center gap-2 px-3 py-2 rounded-lg border cursor-pointer transition-all ${
+                        filterCreditCard
+                            ? 'bg-violet-50 border-violet-300 text-violet-700'
+                            : 'bg-white border-gray-200 hover:border-gray-300'
+                    }`}>
+                        <input
+                            type="checkbox"
+                            checked={filterCreditCard}
+                            onChange={(e) => setFilterCreditCard(e.target.checked)}
+                            className="w-4 h-4 text-violet-600 border-gray-300 rounded focus:ring-violet-500"
+                        />
+                        <CreditCard className="w-4 h-4" />
+                        <span className="text-sm font-medium">รับบัตรเครดิต</span>
+                    </label>
                     <label className={`flex items-center gap-2 px-3 py-2 rounded-lg border cursor-pointer transition-all ${
                         filterTaxInvoice
                             ? 'bg-blue-50 border-blue-300 text-blue-700'
@@ -492,14 +524,14 @@ export default function SearchResults() {
                     </label>
                     <label className={`flex items-center gap-2 px-3 py-2 rounded-lg border cursor-pointer transition-all ${
                         filterWithholdingTax
-                            ? 'bg-green-50 border-green-300 text-green-700'
+                            ? 'bg-purple-50 border-purple-300 text-purple-700'
                             : 'bg-white border-gray-200 hover:border-gray-300'
                     }`}>
                         <input
                             type="checkbox"
                             checked={filterWithholdingTax}
                             onChange={(e) => setFilterWithholdingTax(e.target.checked)}
-                            className="w-4 h-4 text-green-600 border-gray-300 rounded focus:ring-green-500"
+                            className="w-4 h-4 text-purple-600 border-gray-300 rounded focus:ring-purple-500"
                         />
                         <FileText className="w-4 h-4" />
                         <span className="text-sm font-medium">ออกหัก ณ ที่จ่ายได้</span>
@@ -523,7 +555,7 @@ export default function SearchResults() {
                                                 )}
                                                 {result.isPPC && !result.isBoosted && (
                                                     <Badge className="bg-gradient-to-r from-blue-100 to-indigo-100 text-indigo-700 border-indigo-200">
-                                                        <Zap className="w-3 h-3 mr-1" /> สนับสนุน
+                                                        <Zap className="w-3 h-3 mr-1" /> แนะนำ
                                                     </Badge>
                                                 )}
                                                 <Badge className="bg-green-100 text-green-700 hover:bg-green-100 border-green-200">
@@ -543,6 +575,16 @@ export default function SearchResults() {
                                                 {result.data.can_issue_withholding_tax && (
                                                     <Badge className="bg-purple-50 text-purple-700 border-purple-200">
                                                         <FileText className="w-3 h-3 mr-1" /> ออกหัก ณ ที่จ่ายได้
+                                                    </Badge>
+                                                )}
+                                                {result.data.pay_on_pickup && (
+                                                    <Badge className="bg-emerald-50 text-emerald-700 border-emerald-200">
+                                                        <Banknote className="w-3 h-3 mr-1" /> ชำระตอนรับรถ
+                                                    </Badge>
+                                                )}
+                                                {result.data.accept_credit_card && (
+                                                    <Badge className="bg-violet-50 text-violet-700 border-violet-200">
+                                                        <CreditCard className="w-3 h-3 mr-1" /> รับบัตรเครดิต
                                                     </Badge>
                                                 )}
                                             </>
