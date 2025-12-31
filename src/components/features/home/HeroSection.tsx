@@ -80,7 +80,8 @@ export default function HeroSection({ stats }: HeroSectionProps) {
                         {t('title')}
                     </h1>
                     <p className="text-base sm:text-lg md:text-xl text-slate-300 mb-8 max-w-2xl mx-auto">
-                        {t('subtitle')}
+                        <span className="block md:inline">ตรวจสอบประวัติร้านเช่ารถและรายงานการโกง</span>
+                        <span className="block md:inline"> เพื่อความปลอดภัยของคุณ</span>
                     </p>
                 </div>
 
