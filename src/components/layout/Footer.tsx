@@ -1,8 +1,43 @@
+'use client'
+
 import Link from 'next/link'
+import { useParams } from 'next/navigation'
 import { ShieldCheck, Facebook, Twitter, Mail } from 'lucide-react'
 
 export default function Footer() {
+    const params = useParams()
+    const locale = params.locale as string
+    const isThai = locale === 'th'
     const currentYear = new Date().getFullYear()
+
+    const content = {
+        brand: {
+            description: isThai
+                ? 'ระบบตรวจสอบร้านเช่ารถที่น่าเชื่อถือ\nปกป้องคุณจากการโกง'
+                : 'Trusted car rental shop verification\nProtect yourself from fraud'
+        },
+        menu: {
+            title: isThai ? 'เมนูหลัก' : 'Menu',
+            home: isThai ? 'หน้าแรก' : 'Home',
+            search: isThai ? 'ค้นหาร้านค้า' : 'Search Shops',
+            report: isThai ? 'รายงานร้านค้า' : 'Report Shop',
+            register: isThai ? 'ลงทะเบียนร้านค้า' : 'Register Shop'
+        },
+        support: {
+            title: isThai ? 'ช่วยเหลือ' : 'Support',
+            faq: isThai ? 'คำถามที่พบบ่อย' : 'FAQ',
+            contact: isThai ? 'ติดต่อเรา' : 'Contact Us',
+            privacy: isThai ? 'นโยบายความเป็นส่วนตัว' : 'Privacy Policy',
+            terms: isThai ? 'เงื่อนไขการใช้งาน' : 'Terms of Service'
+        },
+        contact: {
+            title: isThai ? 'ติดต่อเรา' : 'Contact Us',
+            email: isThai ? 'อีเมล' : 'Email',
+            phone: isThai ? 'โทรศัพท์' : 'Phone',
+            hours: isThai ? 'เวลาทำการ' : 'Business Hours',
+            hoursValue: isThai ? 'จันทร์ - ศุกร์ 09:00 - 18:00' : 'Mon - Fri 09:00 - 18:00'
+        }
+    }
 
     return (
         <footer className="bg-gray-900 text-gray-300 mt-auto">
@@ -17,9 +52,8 @@ export default function Footer() {
                             </div>
                             <span className="text-xl font-bold text-white">RentSafe</span>
                         </Link>
-                        <p className="text-gray-400 text-sm leading-relaxed mb-4">
-                            ระบบตรวจสอบร้านเช่ารถที่น่าเชื่อถือ<br />
-                            ปกป้องคุณจากการโกง
+                        <p className="text-gray-400 text-sm leading-relaxed mb-4 whitespace-pre-line">
+                            {content.brand.description}
                         </p>
                         <div className="flex gap-3">
                             <a
@@ -45,26 +79,26 @@ export default function Footer() {
 
                     {/* Quick Links */}
                     <div>
-                        <h3 className="text-white font-semibold mb-4">เมนูหลัก</h3>
+                        <h3 className="text-white font-semibold mb-4">{content.menu.title}</h3>
                         <ul className="space-y-3">
                             <li>
                                 <Link href="/" className="text-gray-400 hover:text-white transition-colors">
-                                    หน้าแรก
+                                    {content.menu.home}
                                 </Link>
                             </li>
                             <li>
                                 <Link href="/search" className="text-gray-400 hover:text-white transition-colors">
-                                    ค้นหาร้านค้า
+                                    {content.menu.search}
                                 </Link>
                             </li>
                             <li>
                                 <Link href="/report" className="text-gray-400 hover:text-white transition-colors">
-                                    รายงานร้านค้า
+                                    {content.menu.report}
                                 </Link>
                             </li>
                             <li>
                                 <Link href="/shop/register" className="text-gray-400 hover:text-white transition-colors">
-                                    ลงทะเบียนร้านค้า
+                                    {content.menu.register}
                                 </Link>
                             </li>
                         </ul>
@@ -72,26 +106,26 @@ export default function Footer() {
 
                     {/* Support */}
                     <div>
-                        <h3 className="text-white font-semibold mb-4">ช่วยเหลือ</h3>
+                        <h3 className="text-white font-semibold mb-4">{content.support.title}</h3>
                         <ul className="space-y-3">
                             <li>
                                 <Link href="/faq" className="text-gray-400 hover:text-white transition-colors">
-                                    คำถามที่พบบ่อย
+                                    {content.support.faq}
                                 </Link>
                             </li>
                             <li>
                                 <Link href="/contact" className="text-gray-400 hover:text-white transition-colors">
-                                    ติดต่อเรา
+                                    {content.support.contact}
                                 </Link>
                             </li>
                             <li>
                                 <Link href="/privacy" className="text-gray-400 hover:text-white transition-colors">
-                                    นโยบายความเป็นส่วนตัว
+                                    {content.support.privacy}
                                 </Link>
                             </li>
                             <li>
                                 <Link href="/terms" className="text-gray-400 hover:text-white transition-colors">
-                                    เงื่อนไขการใช้งาน
+                                    {content.support.terms}
                                 </Link>
                             </li>
                         </ul>
@@ -99,23 +133,17 @@ export default function Footer() {
 
                     {/* Contact */}
                     <div>
-                        <h3 className="text-white font-semibold mb-4">ติดต่อเรา</h3>
+                        <h3 className="text-white font-semibold mb-4">{content.contact.title}</h3>
                         <ul className="space-y-3 text-gray-400">
                             <li>
-                                <span className="block text-sm">อีเมล</span>
+                                <span className="block text-sm">{content.contact.email}</span>
                                 <a href="mailto:rentsafeth@gmail.com" className="text-white hover:text-blue-400 transition-colors">
                                     rentsafeth@gmail.com
                                 </a>
                             </li>
                             <li>
-                                <span className="block text-sm">โทรศัพท์</span>
-                                <a href="tel:0838068396" className="text-white hover:text-blue-400 transition-colors">
-                                    083-806-8396
-                                </a>
-                            </li>
-                            <li>
-                                <span className="block text-sm">เวลาทำการ</span>
-                                <span className="text-white">จันทร์ - ศุกร์ 09:00 - 18:00</span>
+                                <span className="block text-sm">{content.contact.hours}</span>
+                                <span className="text-white">{content.contact.hoursValue}</span>
                             </li>
                         </ul>
                     </div>
