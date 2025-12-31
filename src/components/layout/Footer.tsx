@@ -52,29 +52,9 @@ export default function Footer() {
                             </div>
                             <span className="text-xl font-bold text-white">RentSafe</span>
                         </Link>
-                        <p className="text-gray-400 text-sm leading-relaxed mb-4 whitespace-pre-line">
+                        <p className="text-gray-400 text-sm leading-relaxed whitespace-pre-line">
                             {content.brand.description}
                         </p>
-                        <div className="flex gap-3">
-                            <a
-                                href="#"
-                                className="w-10 h-10 bg-gray-800 hover:bg-blue-600 rounded-lg flex items-center justify-center transition-colors"
-                            >
-                                <Facebook className="w-5 h-5" />
-                            </a>
-                            <a
-                                href="#"
-                                className="w-10 h-10 bg-gray-800 hover:bg-blue-400 rounded-lg flex items-center justify-center transition-colors"
-                            >
-                                <Twitter className="w-5 h-5" />
-                            </a>
-                            <a
-                                href="mailto:rentsafeth@gmail.com"
-                                className="w-10 h-10 bg-gray-800 hover:bg-red-500 rounded-lg flex items-center justify-center transition-colors"
-                            >
-                                <Mail className="w-5 h-5" />
-                            </a>
-                        </div>
                     </div>
 
                     {/* Quick Links */}
