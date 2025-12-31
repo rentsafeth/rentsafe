@@ -120,6 +120,11 @@ export default function HeroSection({ stats }: HeroSectionProps) {
                                     <Search className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-gray-400" />
                                     <input
                                         type="text"
+                                        inputMode="text"
+                                        autoComplete="off"
+                                        autoCapitalize="none"
+                                        autoCorrect="off"
+                                        spellCheck={false}
                                         value={searchQuery}
                                         onChange={(e) => setSearchQuery(e.target.value)}
                                         placeholder={t('searchPlaceholder')}
@@ -141,6 +146,11 @@ export default function HeroSection({ stats }: HeroSectionProps) {
                                     <Search className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-gray-400" />
                                     <input
                                         type="text"
+                                        inputMode="text"
+                                        autoComplete="off"
+                                        autoCapitalize="none"
+                                        autoCorrect="off"
+                                        spellCheck={false}
                                         value={rentalSearchQuery}
                                         onChange={(e) => setRentalSearchQuery(e.target.value)}
                                         placeholder="พิมพ์ชื่อร้านรถเช่า..."
