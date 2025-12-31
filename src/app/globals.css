@@ -122,4 +122,27 @@
   body {
     @apply bg-background text-foreground;
   }
+
+  /* Fix iOS keyboard hiding on input focus */
+  html {
+    height: -webkit-fill-available;
+  }
+
+  /* Prevent iOS zoom on input focus */
+  input, select, textarea {
+    font-size: 16px !important;
+  }
+
+  @media screen and (max-width: 768px) {
+    input, select, textarea {
+      font-size: 16px !important;
+    }
+  }
+
+  /* Fix for iOS Safari visual viewport */
+  @supports (-webkit-touch-callout: none) {
+    body {
+      min-height: -webkit-fill-available;
+    }
+  }
 }

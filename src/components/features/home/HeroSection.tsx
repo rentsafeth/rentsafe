@@ -113,72 +113,72 @@ export default function HeroSection({ stats }: HeroSectionProps) {
                             </button>
                         </div>
 
-                        {/* Search Form */}
-                        {activeTab === 'blacklist' ? (
-                            <div className="space-y-4">
-                                <div className="relative">
-                                    <Search className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-gray-400" />
-                                    <input
-                                        type="text"
-                                        inputMode="text"
-                                        autoComplete="off"
-                                        autoCapitalize="none"
-                                        autoCorrect="off"
-                                        spellCheck={false}
-                                        value={searchQuery}
-                                        onChange={(e) => setSearchQuery(e.target.value)}
-                                        placeholder={t('searchPlaceholder')}
-                                        className="w-full pl-12 pr-4 py-4 text-base md:text-lg border-2 border-gray-200 rounded-xl focus:outline-none focus:border-red-500 focus:ring-2 focus:ring-red-500/20 transition-all"
-                                        onKeyDown={(e) => e.key === 'Enter' && handleSearch()}
-                                    />
-                                </div>
-                                <button
-                                    onClick={handleSearch}
-                                    className="w-full py-4 bg-red-600 hover:bg-red-700 text-white font-semibold rounded-xl transition-colors text-base md:text-lg"
-                                >
-                                    {t('checkBlacklist')}
-                                </button>
+                        {/* Search Form - Blacklist */}
+                        <div className={`space-y-4 ${activeTab === 'blacklist' ? '' : 'hidden'}`}>
+                            <div className="relative">
+                                <Search className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-gray-400" />
+                                <input
+                                    type="text"
+                                    inputMode="text"
+                                    autoComplete="off"
+                                    autoCapitalize="none"
+                                    autoCorrect="off"
+                                    spellCheck={false}
+                                    enterKeyHint="search"
+                                    value={searchQuery}
+                                    onChange={(e) => setSearchQuery(e.target.value)}
+                                    placeholder={t('searchPlaceholder')}
+                                    className="w-full pl-12 pr-4 py-4 text-base md:text-lg border-2 border-gray-200 rounded-xl focus:outline-none focus:border-red-500 focus:ring-2 focus:ring-red-500/20 transition-all"
+                                    onKeyDown={(e) => e.key === 'Enter' && handleSearch()}
+                                />
                             </div>
-                        ) : (
-                            <div className="space-y-4">
-                                {/* Shop name text input */}
-                                <div className="relative">
-                                    <Search className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-gray-400" />
-                                    <input
-                                        type="text"
-                                        inputMode="text"
-                                        autoComplete="off"
-                                        autoCapitalize="none"
-                                        autoCorrect="off"
-                                        spellCheck={false}
-                                        value={rentalSearchQuery}
-                                        onChange={(e) => setRentalSearchQuery(e.target.value)}
-                                        placeholder="พิมพ์ชื่อร้านรถเช่า..."
-                                        className="w-full pl-12 pr-4 py-4 text-base md:text-lg border-2 border-gray-200 rounded-xl focus:outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 transition-all"
-                                        onKeyDown={(e) => e.key === 'Enter' && handleSearch()}
-                                    />
-                                </div>
-                                {/* Province dropdown */}
-                                <select
-                                    value={selectedProvince}
-                                    onChange={(e) => setSelectedProvince(e.target.value)}
-                                    className="w-full px-4 py-4 text-base md:text-lg border-2 border-gray-200 rounded-xl focus:outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 transition-all appearance-none bg-white cursor-pointer"
-                                >
-                                    <option value="">เลือกจังหวัด (ไม่บังคับ)</option>
-                                    {ALL_PROVINCES.map((province) => (
-                                        <option key={province} value={province}>
-                                            {province}
-                                        </option>
-                                    ))}
-                                </select>
-                                <button
-                                    onClick={handleSearch}
-                                    className="w-full py-4 bg-blue-600 hover:bg-blue-700 text-white font-semibold rounded-xl transition-colors text-base md:text-lg"
-                                >
-                                    {t('findRental')}
-                                </button>
+                            <button
+                                onClick={handleSearch}
+                                className="w-full py-4 bg-red-600 hover:bg-red-700 text-white font-semibold rounded-xl transition-colors text-base md:text-lg"
+                            >
+                                {t('checkBlacklist')}
+                            </button>
+                        </div>
+
+                        {/* Search Form - Rental */}
+                        <div className={`space-y-4 ${activeTab === 'rental' ? '' : 'hidden'}`}>
+                            <div className="relative">
+                                <Search className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-gray-400" />
+                                <input
+                                    type="text"
+                                    inputMode="text"
+                                    autoComplete="off"
+                                    autoCapitalize="none"
+                                    autoCorrect="off"
+                                    spellCheck={false}
+                                    enterKeyHint="search"
+                                    value={rentalSearchQuery}
+                                    onChange={(e) => setRentalSearchQuery(e.target.value)}
+                                    placeholder="พิมพ์ชื่อร้านรถเช่า..."
+                                    className="w-full pl-12 pr-4 py-4 text-base md:text-lg border-2 border-gray-200 rounded-xl focus:outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 transition-all"
+                                    onKeyDown={(e) => e.key === 'Enter' && handleSearch()}
+                                />
                             </div>
-                        )}
+                            {/* Province dropdown */}
+                            <select
+                                value={selectedProvince}
+                                onChange={(e) => setSelectedProvince(e.target.value)}
+                                className="w-full px-4 py-4 text-base md:text-lg border-2 border-gray-200 rounded-xl focus:outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 transition-all appearance-none bg-white cursor-pointer"
+                            >
+                                <option value="">เลือกจังหวัด (ไม่บังคับ)</option>
+                                {ALL_PROVINCES.map((province) => (
+                                    <option key={province} value={province}>
+                                        {province}
+                                    </option>
+                                ))}
+                            </select>
+                            <button
+                                onClick={handleSearch}
+                                className="w-full py-4 bg-blue-600 hover:bg-blue-700 text-white font-semibold rounded-xl transition-colors text-base md:text-lg"
+                            >
+                                {t('findRental')}
+                            </button>
+                        </div>
 
                         {/* Quick Stats */}
                         <div className="mt-6 pt-6 border-t border-gray-100 grid grid-cols-3 gap-4 text-center">
