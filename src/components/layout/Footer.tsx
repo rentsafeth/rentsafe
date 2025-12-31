@@ -42,8 +42,48 @@ export default function Footer() {
     return (
         <footer className="bg-gray-900 text-gray-300 mt-auto">
             {/* Main Footer */}
-            <div className="container mx-auto px-4 py-12 md:py-16">
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8 lg:gap-12">
+            <div className="container mx-auto px-4 py-6 md:py-12">
+                {/* Mobile: Compact 2-column layout */}
+                <div className="md:hidden">
+                    {/* Brand - compact */}
+                    <div className="flex items-center gap-2 mb-4">
+                        <div className="w-8 h-8 bg-blue-600 rounded-lg flex items-center justify-center">
+                            <ShieldCheck className="h-5 w-5 text-white" />
+                        </div>
+                        <span className="text-lg font-bold text-white">RentSafe</span>
+                    </div>
+                    <p className="text-gray-400 text-xs mb-4">
+                        {isThai ? 'ระบบตรวจสอบร้านเช่ารถที่น่าเชื่อถือ' : 'Trusted car rental verification'}
+                    </p>
+
+                    {/* 2-column links */}
+                    <div className="grid grid-cols-2 gap-4 mb-4">
+                        <div>
+                            <h3 className="text-white font-semibold text-sm mb-2">{content.menu.title}</h3>
+                            <ul className="space-y-1.5 text-xs">
+                                <li><Link href="/" className="text-gray-400 hover:text-white">{content.menu.home}</Link></li>
+                                <li><Link href="/search" className="text-gray-400 hover:text-white">{content.menu.search}</Link></li>
+                                <li><Link href="/report" className="text-gray-400 hover:text-white">{content.menu.report}</Link></li>
+                            </ul>
+                        </div>
+                        <div>
+                            <h3 className="text-white font-semibold text-sm mb-2">{content.support.title}</h3>
+                            <ul className="space-y-1.5 text-xs">
+                                <li><Link href="/faq" className="text-gray-400 hover:text-white">{content.support.faq}</Link></li>
+                                <li><Link href="/privacy" className="text-gray-400 hover:text-white">{content.support.privacy}</Link></li>
+                                <li><Link href="/terms" className="text-gray-400 hover:text-white">{content.support.terms}</Link></li>
+                            </ul>
+                        </div>
+                    </div>
+
+                    {/* Contact - inline */}
+                    <div className="text-xs text-gray-400 border-t border-gray-800 pt-4">
+                        <a href="mailto:rentsafeth@gmail.com" className="text-blue-400">rentsafeth@gmail.com</a>
+                    </div>
+                </div>
+
+                {/* Desktop: Full 4-column layout */}
+                <div className="hidden md:grid md:grid-cols-2 lg:grid-cols-4 gap-8 lg:gap-12">
                     {/* Brand */}
                     <div className="lg:col-span-1">
                         <Link href="/" className="flex items-center gap-2 mb-4">
@@ -132,10 +172,10 @@ export default function Footer() {
 
             {/* Bottom Bar */}
             <div className="border-t border-gray-800">
-                <div className="container mx-auto px-4 py-6">
-                    <div className="flex flex-col md:flex-row items-center justify-between gap-4 text-sm text-gray-400">
-                        <p>&copy; {currentYear} RentSafe. All rights reserved.</p>
-                        <p>Rent with Confidence. Verify Before You Drive.</p>
+                <div className="container mx-auto px-4 py-4 md:py-6">
+                    <div className="flex flex-col md:flex-row items-center justify-between gap-2 text-xs md:text-sm text-gray-400">
+                        <p>&copy; {currentYear} RentSafe</p>
+                        <p className="hidden md:block">Rent with Confidence. Verify Before You Drive.</p>
                     </div>
                 </div>
             </div>
