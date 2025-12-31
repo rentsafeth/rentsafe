@@ -5,6 +5,13 @@ import Link from 'next/link'
 import { useParams } from 'next/navigation'
 import { FileText, ArrowLeft, Car, Building2 } from 'lucide-react'
 
+interface TermSection {
+    title: string
+    content: string
+    list?: string[]
+    note?: string
+}
+
 export default function TermsPage() {
     const params = useParams()
     const locale = params.locale as string
@@ -13,7 +20,7 @@ export default function TermsPage() {
     const [activeTab, setActiveTab] = useState<'user' | 'shop'>('user')
 
     // ข้อกำหนดสำหรับผู้เช่ารถ (ผู้ใช้ทั่วไป)
-    const userTermsThai = [
+    const userTermsThai: TermSection[] = [
         {
             title: '1. การยอมรับข้อกำหนด',
             content: 'เมื่อท่านเข้าใช้งานเว็บไซต์ RentSafe ท่านตกลงที่จะปฏิบัติตามข้อกำหนดและเงื่อนไขการใช้งานทั้งหมดที่ระบุไว้ในเอกสารนี้ หากท่านไม่ยอมรับข้อกำหนดเหล่านี้ กรุณาหยุดใช้งานเว็บไซต์ทันที'
@@ -72,7 +79,7 @@ export default function TermsPage() {
         }
     ]
 
-    const userTermsEng = [
+    const userTermsEng: TermSection[] = [
         {
             title: '1. Acceptance of Terms',
             content: 'By accessing the RentSafe website, you agree to comply with all terms and conditions outlined in this document. If you do not accept these terms, please stop using the website immediately.'
@@ -132,7 +139,7 @@ export default function TermsPage() {
     ]
 
     // ข้อกำหนดสำหรับร้านเช่ารถ
-    const shopTermsThai = [
+    const shopTermsThai: TermSection[] = [
         {
             title: '1. การยอมรับข้อกำหนด',
             content: 'เมื่อท่านลงทะเบียนร้านค้าและใช้งาน RentSafe ท่านตกลงที่จะปฏิบัติตามข้อกำหนดและเงื่อนไขทั้งหมดที่ระบุไว้ หากท่านไม่ยอมรับข้อกำหนดเหล่านี้ กรุณาหยุดใช้งานทันที'
@@ -213,7 +220,7 @@ export default function TermsPage() {
         }
     ]
 
-    const shopTermsEng = [
+    const shopTermsEng: TermSection[] = [
         {
             title: '1. Acceptance of Terms',
             content: 'By registering your shop and using RentSafe, you agree to comply with all terms and conditions outlined here. If you do not accept these terms, please stop using the service immediately.'
