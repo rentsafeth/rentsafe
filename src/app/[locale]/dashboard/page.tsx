@@ -132,10 +132,10 @@ export default async function DashboardPage() {
                     <p className="text-gray-600">ยินดีต้อนรับ, {user.email}</p>
 
                     <div className="mt-8 grid grid-cols-1 md:grid-cols-3 gap-4">
-                        <div className="bg-blue-50 rounded-xl p-6">
+                        <Link href="/dashboard/saved-shops" className="bg-blue-50 rounded-xl p-6 hover:bg-blue-100 transition-colors cursor-pointer">
                             <h3 className="font-semibold text-blue-900">ร้านที่บันทึก</h3>
                             <p className="text-3xl font-bold text-blue-600 mt-2">{savedShopsCount || 0}</p>
-                        </div>
+                        </Link>
                         <div className="bg-green-50 rounded-xl p-6">
                             <h3 className="font-semibold text-green-900">รีวิวของฉัน</h3>
                             <p className="text-3xl font-bold text-green-600 mt-2">{userReviewsCount || 0}</p>

@@ -93,24 +93,17 @@ export default function RegisterShopPage() {
     useEffect(() => {
         async function checkAuth() {
             try {
-                const supabase = createClient()
-                const { data: { user } } = await supabase.auth.getUser()
+                // Use API route to check shop ownership (bypasses RLS issues)
+                const response = await fetch('/api/user/has-shop')
+                const data = await response.json()
 
-                if (user) {
-                    // Check if user already has a shop
-                    const { data: existingShop } = await supabase
-                        .from('shops')
-                        .select('id')
-                        .eq('owner_id', user.id)
-                        .single()
-
-                    if (existingShop) {
+                if (data.authenticated) {
+                    if (data.hasShop) {
                         // User already has a shop, redirect to dashboard
                         router.push('/dashboard')
                         return
                     }
-
-                    setCurrentUser({ id: user.id, email: user.email || '' })
+                    setCurrentUser({ id: data.userId, email: data.email || '' })
                 }
             } catch (err) {
                 console.error('Auth check error:', err)
@@ -501,8 +494,7 @@ export default function RegisterShopPage() {
                                             checked={formData.can_issue_withholding_tax}
                                             onChange={(e) => setFormData(prev => ({
                                                 ...prev,
-                                                can_issue_withholding_tax: e.target.checked,
-                                                can_issue_tax_invoice: false
+                                                can_issue_withholding_tax: e.target.checked
                                             }))}
                                             className="w-5 h-5 text-green-600 border-gray-300 rounded focus:ring-green-500"
                                         />
@@ -512,22 +504,38 @@ export default function RegisterShopPage() {
                                         </div>
                                     </label>
                                 ) : (
-                                    <label className="flex items-center gap-3 mt-4 p-3 bg-gray-50 rounded-lg cursor-pointer hover:bg-gray-100 transition-colors">
-                                        <input
-                                            type="checkbox"
-                                            checked={formData.can_issue_tax_invoice}
-                                            onChange={(e) => setFormData(prev => ({
-                                                ...prev,
-                                                can_issue_tax_invoice: e.target.checked,
-                                                can_issue_withholding_tax: false
-                                            }))}
-                                            className="w-5 h-5 text-green-600 border-gray-300 rounded focus:ring-green-500"
-                                        />
-                                        <div>
-                                            <span className="font-medium text-gray-700">สามารถออกใบกำกับภาษีได้</span>
-                                            <p className="text-xs text-gray-500">สำหรับลูกค้าที่ต้องการใบกำกับภาษี VAT 7%</p>
-                                        </div>
-                                    </label>
+                                    <div className="mt-4 space-y-2">
+                                        <label className="flex items-center gap-3 p-3 bg-gray-50 rounded-lg cursor-pointer hover:bg-gray-100 transition-colors">
+                                            <input
+                                                type="checkbox"
+                                                checked={formData.can_issue_withholding_tax}
+                                                onChange={(e) => setFormData(prev => ({
+                                                    ...prev,
+                                                    can_issue_withholding_tax: e.target.checked
+                                                }))}
+                                                className="w-5 h-5 text-green-600 border-gray-300 rounded focus:ring-green-500"
+                                            />
+                                            <div>
+                                                <span className="font-medium text-gray-700">สามารถออกหนังสือหัก ณ ที่จ่ายได้</span>
+                                                <p className="text-xs text-gray-500">สำหรับลูกค้าที่ต้องการหักภาษี ณ ที่จ่าย</p>
+                                            </div>
+                                        </label>
+                                        <label className="flex items-center gap-3 p-3 bg-gray-50 rounded-lg cursor-pointer hover:bg-gray-100 transition-colors">
+                                            <input
+                                                type="checkbox"
+                                                checked={formData.can_issue_tax_invoice}
+                                                onChange={(e) => setFormData(prev => ({
+                                                    ...prev,
+                                                    can_issue_tax_invoice: e.target.checked
+                                                }))}
+                                                className="w-5 h-5 text-green-600 border-gray-300 rounded focus:ring-green-500"
+                                            />
+                                            <div>
+                                                <span className="font-medium text-gray-700">สามารถออกใบกำกับภาษีได้</span>
+                                                <p className="text-xs text-gray-500">สำหรับลูกค้าที่ต้องการใบกำกับภาษี VAT 7%</p>
+                                            </div>
+                                        </label>
+                                    </div>
                                 )}
 
                                 {/* Payment Options */}
@@ -962,8 +970,10 @@ export default function RegisterShopPage() {
                                         <div className="flex justify-between">
                                             <span className="text-gray-500">บริการเอกสารภาษี:</span>
                                             <span className="font-medium text-green-600">
-                                                {formData.can_issue_tax_invoice && 'ออกใบกำกับภาษีได้'}
-                                                {formData.can_issue_withholding_tax && 'ออกหนังสือหัก ณ ที่จ่ายได้'}
+                                                {[
+                                                    formData.can_issue_tax_invoice && 'ออกใบกำกับภาษีได้',
+                                                    formData.can_issue_withholding_tax && 'ออกหนังสือหัก ณ ที่จ่ายได้'
+                                                ].filter(Boolean).join(', ')}
                                             </span>
                                         </div>
                                     )}

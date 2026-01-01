@@ -12,6 +12,7 @@ import {
 import Link from 'next/link';
 import Image from 'next/image';
 import { PROVINCES } from '@/lib/constants/provinces';
+import SaveShopButton from '@/components/features/shop/SaveShopButton';
 
 const BASE_URL = 'https://rentsafe.in.th';
 
@@ -253,6 +254,7 @@ export default async function ShopProfilePage({ params }: { params: Promise<{ id
                             </div>
 
                             <div className="flex gap-3">
+                                <SaveShopButton shopId={shop.id} variant="icon" />
                                 <Link href={`/report?shop_id=${shop.id}`}>
                                     <Button variant="outline" className="text-red-600 border-red-200 hover:bg-red-50">
                                         <AlertTriangle className="w-4 h-4 mr-2" />
