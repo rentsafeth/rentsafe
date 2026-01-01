@@ -1305,7 +1305,7 @@ export default function AdsPage() {
                                             </div>
                                             <div className="flex justify-between text-sm">
                                                 <span>หลังจอง</span>
-                                                <span className={calculateScheduleCost('boost') > shop?.credit_balance ? 'text-red-600' : ''}>
+                                                <span className={calculateScheduleCost('boost') > (shop?.credit_balance || 0) ? 'text-red-600' : ''}>
                                                     {((shop?.credit_balance || 0) - calculateScheduleCost('boost')).toLocaleString()} เครดิต
                                                 </span>
                                             </div>
