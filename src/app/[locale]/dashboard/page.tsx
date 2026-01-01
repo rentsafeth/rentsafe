@@ -28,6 +28,22 @@ export default async function DashboardPage() {
         .eq('owner_id', user.id)
         .single();
 
+    // Get user statistics (for regular users without shop)
+    const { count: savedShopsCount } = await supabase
+        .from('saved_shops')
+        .select('*', { count: 'exact', head: true })
+        .eq('user_id', user.id);
+
+    const { count: userReviewsCount } = await supabase
+        .from('reviews')
+        .select('*', { count: 'exact', head: true })
+        .eq('user_id', user.id);
+
+    const { count: userReportsCount } = await supabase
+        .from('blacklist_entries')
+        .select('*', { count: 'exact', head: true })
+        .eq('reporter_id', user.id);
+
     // Get shop statistics if shop exists
     let reviewsCount = 0;
     let avgRating = 0;
@@ -118,15 +134,15 @@ export default async function DashboardPage() {
                     <div className="mt-8 grid grid-cols-1 md:grid-cols-3 gap-4">
                         <div className="bg-blue-50 rounded-xl p-6">
                             <h3 className="font-semibold text-blue-900">ร้านที่บันทึก</h3>
-                            <p className="text-3xl font-bold text-blue-600 mt-2">0</p>
+                            <p className="text-3xl font-bold text-blue-600 mt-2">{savedShopsCount || 0}</p>
                         </div>
                         <div className="bg-green-50 rounded-xl p-6">
                             <h3 className="font-semibold text-green-900">รีวิวของฉัน</h3>
-                            <p className="text-3xl font-bold text-green-600 mt-2">0</p>
+                            <p className="text-3xl font-bold text-green-600 mt-2">{userReviewsCount || 0}</p>
                         </div>
                         <div className="bg-red-50 rounded-xl p-6">
                             <h3 className="font-semibold text-red-900">รายงานที่ส่ง</h3>
-                            <p className="text-3xl font-bold text-red-600 mt-2">0</p>
+                            <p className="text-3xl font-bold text-red-600 mt-2">{userReportsCount || 0}</p>
                         </div>
                     </div>
                 </div>
