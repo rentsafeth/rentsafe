@@ -84,7 +84,7 @@ export default async function AdminShopDetailPage({ params }: PageProps) {
                         <h1 style="color: #16a34a;">ยินดีด้วย! ร้านค้าของคุณได้รับการอนุมัติแล้ว</h1>
                         <p>สวัสดีคุณเจ้าของร้าน <strong>${shopName}</strong>,</p>
                         <p>ทีมงาน RentSafe ได้ทำการตรวจสอบเอกสารของคุณเรียบร้อยแล้ว และมีความยินดีที่จะแจ้งให้ทราบว่าร้านค้าของคุณได้รับการอนุมัติให้เป็น Partner กับเราอย่างเป็นทางการ</p>
-                        <p>คุณสามารถเข้าสู่ระบบเพื่อจัดการร้านค้า เพิ่มรถเช่า และเริ่มรับลูกค้าได้ทันที</p>
+                        <p>คุณสามารถเข้าสู่ระบบเพื่อจัดการร้านค้าได้ทันที</p>
                         <div style="margin: 30px 0;">
                             <a href="https://rentsafe.in.th/dashboard" style="background-color: #2563eb; color: white; padding: 12px 24px; text-decoration: none; border-radius: 6px; font-weight: bold;">ไปที่ Dashboard ร้านค้า</a>
                         </div>
@@ -107,7 +107,7 @@ export default async function AdminShopDetailPage({ params }: PageProps) {
                 `;
 
             await resend.emails.send({
-                from: 'RentSafe Team <noreply@rentsafe.in.th>',
+                from: 'RentSafe Team <noreply@send.rentsafe.in.th>',
                 to: email,
                 subject: subject,
                 html: htmlContent
