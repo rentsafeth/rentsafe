@@ -480,7 +480,8 @@ export default async function AdminShopDetailPage({ params }: PageProps) {
                                         </Button>
                                         {shop.verification_email_sent_at && (
                                             <p className="text-sm text-gray-500">
-                                                ส่งอีเมลล่าสุดเมื่อ {new Date(shop.verification_email_sent_at).toLocaleDateString('th-TH', {
+                                                ส่งอีเมลล่าสุดเมื่อ {new Date(shop.verification_email_sent_at).toLocaleString('th-TH', {
+                                                    timeZone: 'Asia/Bangkok',
                                                     year: 'numeric',
                                                     month: 'short',
                                                     day: 'numeric',
