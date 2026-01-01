@@ -36,7 +36,7 @@ export async function GET(request: NextRequest) {
         let query = supabase
             .from('notifications')
             .select('*', { count: 'exact' })
-            .eq('shop_id', shop.id)
+            .or(`target_id.eq.${shop.id},shop_id.eq.${shop.id}`) // Check both target_id and shop_id
             .order('created_at', { ascending: false })
             .range(offset, offset + limit - 1);
 
@@ -55,7 +55,7 @@ export async function GET(request: NextRequest) {
         const { count: unreadCount } = await supabase
             .from('notifications')
             .select('*', { count: 'exact', head: true })
-            .eq('shop_id', shop.id)
+            .or(`target_id.eq.${shop.id},shop_id.eq.${shop.id}`)
             .eq('is_read', false);
 
         return NextResponse.json({
@@ -102,7 +102,7 @@ export async function PATCH(request: NextRequest) {
                     is_read: true,
                     read_at: new Date().toISOString(),
                 })
-                .eq('shop_id', shop.id)
+                .or(`target_id.eq.${shop.id},shop_id.eq.${shop.id}`)
                 .eq('is_read', false);
 
             if (error) {
@@ -116,7 +116,7 @@ export async function PATCH(request: NextRequest) {
                     is_read: true,
                     read_at: new Date().toISOString(),
                 })
-                .eq('shop_id', shop.id)
+                .or(`target_id.eq.${shop.id},shop_id.eq.${shop.id}`)
                 .in('id', notification_ids);
 
             if (error) {

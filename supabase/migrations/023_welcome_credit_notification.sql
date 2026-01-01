@@ -26,8 +26,17 @@ BEGIN
             'โบนัสเครดิตสำหรับร้านใหม่'
         );
 
-        -- Add notification
-        PERFORM notify_shop(
+        -- Add notification (Insert directly to support Text ID)
+        INSERT INTO notifications (
+            target_type,
+            target_id,
+            title,
+            message,
+            type,
+            severity,
+            action_url
+        ) VALUES (
+            'shop',
             NEW.id,
             'เครดิตลงทะเบียนร้านใหม่สำเร็จ +' || welcome_amount,
             'ยินดีด้วย! คุณได้รับเครดิตโบนัสสำหรับร้านใหม่เรียบร้อยแล้ว',
