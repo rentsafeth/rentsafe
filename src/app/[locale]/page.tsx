@@ -331,25 +331,25 @@ export default async function HomePage({ params }: { params: Promise<{ locale: s
 
             {/* Visitor Stats Section - Bottom of page */}
             <section className="py-6 bg-gray-900 border-t border-gray-800">
-                <div className="container mx-auto px-4">
-                    <div className="flex flex-col sm:flex-row items-center justify-center gap-8 md:gap-16 text-center">
-                        <div className="flex items-center gap-3">
-                            <div className="p-2 bg-gray-800 rounded-lg">
-                                <Users className="w-4 h-4 text-blue-400" />
+                <div className="container mx-auto px-2">
+                    <div className="flex flex-row items-center justify-center gap-4 md:gap-16 text-center">
+                        <div className="flex items-center gap-2 md:gap-3">
+                            <div className="p-1.5 md:p-2 bg-gray-800 rounded-lg">
+                                <Users className="w-3.5 h-3.5 md:w-4 md:h-4 text-blue-400" />
                             </div>
                             <div className="text-left">
-                                <p className="text-xs text-gray-400 font-medium">เข้าชมวันนี้</p>
-                                <p className="text-lg font-bold text-white">{stats.todayVisitors.toLocaleString()}</p>
+                                <p className="text-[10px] md:text-xs text-gray-400 font-medium">เข้าชมวันนี้</p>
+                                <p className="text-base md:text-lg font-bold text-white leading-tight">{stats.todayVisitors.toLocaleString()}</p>
                             </div>
                         </div>
-                        <div className="w-px h-8 bg-gray-800 hidden sm:block"></div>
-                        <div className="flex items-center gap-3">
-                            <div className="p-2 bg-gray-800 rounded-lg">
-                                <BarChart3 className="w-4 h-4 text-purple-400" />
+                        <div className="w-px h-8 bg-gray-800 block mx-2"></div>
+                        <div className="flex items-center gap-2 md:gap-3">
+                            <div className="p-1.5 md:p-2 bg-gray-800 rounded-lg">
+                                <BarChart3 className="w-3.5 h-3.5 md:w-4 md:h-4 text-purple-400" />
                             </div>
                             <div className="text-left">
-                                <p className="text-xs text-gray-400 font-medium">เข้าชมทั้งหมด</p>
-                                <p className="text-lg font-bold text-white">{stats.totalVisitors.toLocaleString()}</p>
+                                <p className="text-[10px] md:text-xs text-gray-400 font-medium">เข้าชมทั้งหมด</p>
+                                <p className="text-base md:text-lg font-bold text-white leading-tight">{stats.totalVisitors.toLocaleString()}</p>
                             </div>
                         </div>
                     </div>

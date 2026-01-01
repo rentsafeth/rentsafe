@@ -7,6 +7,7 @@ import { ShieldCheck, Search, FileWarning, Menu, X, User, LogOut, Globe, UserPlu
 import { createClient } from '@/lib/supabase/client'
 import { useRouter, usePathname } from 'next/navigation'
 import NotificationBell from '@/components/features/notifications/NotificationBell'
+import InstallPWAButton from '@/components/common/InstallPWAButton'
 
 export default function Navbar() {
     const t = useTranslations('Common')
@@ -74,9 +75,8 @@ export default function Navbar() {
                             <Link
                                 key={link.href}
                                 href={link.href}
-                                className={`flex items-center gap-2 px-4 py-2 rounded-lg font-medium transition-colors ${
-                                    link.className || 'text-gray-600 hover:text-blue-600 hover:bg-blue-50'
-                                }`}
+                                className={`flex items-center gap-2 px-4 py-2 rounded-lg font-medium transition-colors ${link.className || 'text-gray-600 hover:text-blue-600 hover:bg-blue-50'
+                                    }`}
                             >
                                 <link.icon className="w-4 h-4" />
                                 {link.label}
@@ -86,6 +86,7 @@ export default function Navbar() {
 
                     {/* Right Side - Language & Auth */}
                     <div className="hidden md:flex items-center gap-3">
+                        <InstallPWAButton />
                         {/* Language Switcher */}
                         <div className="relative">
                             <button
@@ -155,12 +156,15 @@ export default function Navbar() {
                     </div>
 
                     {/* Mobile Menu Button */}
-                    <button
-                        onClick={() => setIsMenuOpen(!isMenuOpen)}
-                        className="md:hidden p-2 text-gray-600 hover:text-gray-900 hover:bg-gray-100 rounded-lg transition-colors"
-                    >
-                        {isMenuOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
-                    </button>
+                    <div className="flex items-center gap-1 md:hidden">
+                        <InstallPWAButton />
+                        <button
+                            onClick={() => setIsMenuOpen(!isMenuOpen)}
+                            className="p-2 text-gray-600 hover:text-gray-900 hover:bg-gray-100 rounded-lg transition-colors"
+                        >
+                            {isMenuOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
+                        </button>
+                    </div>
                 </div>
 
                 {/* Mobile Menu */}
@@ -172,9 +176,8 @@ export default function Navbar() {
                                     key={link.href}
                                     href={link.href}
                                     onClick={() => setIsMenuOpen(false)}
-                                    className={`flex items-center gap-3 px-4 py-3 rounded-lg font-medium transition-colors ${
-                                        link.className || 'text-gray-600 hover:text-blue-600 hover:bg-blue-50'
-                                    }`}
+                                    className={`flex items-center gap-3 px-4 py-3 rounded-lg font-medium transition-colors ${link.className || 'text-gray-600 hover:text-blue-600 hover:bg-blue-50'
+                                        }`}
                                 >
                                     <link.icon className="w-5 h-5" />
                                     {link.label}
