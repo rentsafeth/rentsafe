@@ -443,7 +443,7 @@ export default async function DashboardPage() {
                             <Building2 className="w-16 h-16 text-blue-400 mx-auto mb-4" />
                             <h3 className="text-xl font-semibold text-gray-900 mb-2">คุณยังไม่มีร้านค้า</h3>
                             <p className="text-gray-600 mb-6">ลงทะเบียนร้านค้าเช่ารถของคุณเพื่อเพิ่มความน่าเชื่อถือและให้ลูกค้าค้นหาเจอ</p>
-                            <Link href="/register-shop">
+                            <Link href="/register/shop">
                                 <Button className="bg-blue-600 hover:bg-blue-700">
                                     <Building2 className="w-4 h-4 mr-2" />
                                     ลงทะเบียนร้านค้า
