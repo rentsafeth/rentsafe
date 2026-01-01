@@ -2,7 +2,7 @@
 
 import Link from 'next/link'
 import { useParams } from 'next/navigation'
-import { ShieldCheck, Facebook, Twitter, Mail } from 'lucide-react'
+import { ShieldCheck } from 'lucide-react'
 
 export default function Footer() {
     const params = useParams()
@@ -77,7 +77,7 @@ export default function Footer() {
                     </div>
 
                     {/* Contact - inline */}
-                    <div className="text-xs text-gray-400 border-t border-gray-800 pt-4">
+                    <div className="text-xs text-gray-400 border-t border-gray-800 pt-4 text-center">
                         <a href="mailto:rentsafeth@gmail.com" className="text-blue-400">rentsafeth@gmail.com</a>
                     </div>
                 </div>
