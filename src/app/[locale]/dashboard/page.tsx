@@ -164,7 +164,7 @@ export default async function DashboardPage() {
                                 )}
                             </div>
 
-                            <div className="p-6 -mt-12 relative">
+                            <div className="p-4 sm:p-6 -mt-6 sm:-mt-12 relative">
                                 <div className="flex flex-col gap-4 mb-4">
                                     {/* Shop Info Row */}
                                     <div className="flex items-end gap-4">
@@ -183,7 +183,7 @@ export default async function DashboardPage() {
                                                 </div>
                                             )}
                                         </div>
-                                        <div className="flex-1 min-w-0">
+                                        <div className="flex-1 min-w-0 pt-2 sm:pt-0">
                                             <h2 className="text-xl sm:text-2xl font-bold text-gray-900 truncate">{shop.name}</h2>
                                             <div className="flex items-center gap-2 mt-1 flex-wrap">
                                                 {getStatusBadge(shop.verification_status)}
