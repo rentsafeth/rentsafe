@@ -3,9 +3,11 @@
 import { createClient } from '@/lib/supabase/client';
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
+import { Switch } from '@/components/ui/switch';
+import { Label } from '@/components/ui/label';
 import {
     Crown,
     Loader2,
@@ -13,7 +15,6 @@ import {
     Clock,
     CheckCircle,
     AlertTriangle,
-    Upload,
     CreditCard,
     Shield,
     Search,
@@ -21,10 +22,10 @@ import {
     Bell,
     Star,
     ArrowRight,
-    X,
-    Check
+    Coins,
+    RefreshCw,
+    AlertCircle
 } from 'lucide-react';
-import Image from 'next/image';
 import Link from 'next/link';
 import { StandaloneAlert } from '@/components/ui/alert-modal';
 
@@ -35,6 +36,7 @@ type SubscriptionStatus = {
         name: string;
         slug: string;
         price: number;
+        credits_price: number;
         duration_days: number;
     } | null;
     subscription: {
@@ -42,26 +44,17 @@ type SubscriptionStatus = {
         status: string;
         starts_at: string;
         ends_at: string;
-        auto_renew: boolean;
+        auto_renew_enabled: boolean;
     } | null;
     daysRemaining: number;
-    isExpiringSoon: boolean; // < 7 days
-};
-
-type PaymentTransaction = {
-    id: string;
-    amount: number;
-    status: string;
-    payment_method: string;
-    created_at: string;
-    confirmed_at: string | null;
+    isExpiringSoon: boolean;
 };
 
 const plans = [
     {
         slug: 'pro_monthly',
         name: 'ร้านรับรอง รายเดือน',
-        price: 99,
+        credits_price: 99,
         period: '/เดือน',
         duration_days: 30,
         features: [
@@ -69,14 +62,14 @@ const plans = [
             'Badge "ร้านรับรอง" + มงกุฏ',
             'ปุ่มโทร/LINE ในผลค้นหา',
             'แสดงอันดับต้นในผลค้นหา',
-            'รับประกันมัดจำ ฿1,000',
+            'รับประกันมัดจำ 1,000 บาท',
             'แจ้งเตือน Blacklist ใหม่',
         ],
     },
     {
         slug: 'pro_yearly',
         name: 'ร้านรับรอง รายปี',
-        price: 999,
+        credits_price: 999,
         period: '/ปี',
         duration_days: 365,
         originalPrice: 1188,
@@ -86,14 +79,13 @@ const plans = [
             'Badge "ร้านรับรอง" + มงกุฏ',
             'ปุ่มโทร/LINE ในผลค้นหา',
             'แสดงอันดับต้นในผลค้นหา',
-            'รับประกันมัดจำ ฿1,000',
+            'รับประกันมัดจำ 1,000 บาท',
             'แจ้งเตือน Blacklist ใหม่',
-            'ประหยัด ฿189/ปี',
+            'ประหยัด 189 เครดิต/ปี',
         ],
         recommended: true,
     },
 ];
-
 
 export default function SubscriptionPage() {
     const router = useRouter();
@@ -102,20 +94,11 @@ export default function SubscriptionPage() {
     const [loading, setLoading] = useState(true);
     const [shop, setShop] = useState<any>(null);
     const [subscriptionStatus, setSubscriptionStatus] = useState<SubscriptionStatus | null>(null);
-    const [paymentHistory, setPaymentHistory] = useState<PaymentTransaction[]>([]);
-    const [promptpayNumber, setPromptpayNumber] = useState('');
-    const [bankAccount, setBankAccount] = useState({
-        bank: '',
-        accountNo: '',
-        accountName: '',
-    });
+    const [creditBalance, setCreditBalance] = useState(0);
 
-    // Payment flow state
-    const [selectedPlan, setSelectedPlan] = useState<string | null>(null);
-    const [showPaymentModal, setShowPaymentModal] = useState(false);
-    const [slipFile, setSlipFile] = useState<File | null>(null);
-    const [slipPreview, setSlipPreview] = useState<string | null>(null);
-    const [submitting, setSubmitting] = useState(false);
+    // Purchase state
+    const [purchasing, setPurchasing] = useState<string | null>(null);
+    const [togglingAutoRenew, setTogglingAutoRenew] = useState(false);
 
     // Alert state
     const [alertState, setAlertState] = useState({
@@ -141,7 +124,7 @@ export default function SubscriptionPage() {
                 return;
             }
 
-            // Get shop
+            // Get shop with credit balance
             const { data: shopData } = await supabase
                 .from('shops')
                 .select('*')
@@ -154,6 +137,7 @@ export default function SubscriptionPage() {
             }
 
             setShop(shopData);
+            setCreditBalance(shopData.credit_balance || 0);
 
             // Get subscription status
             const { data: subscription } = await supabase
@@ -167,7 +151,7 @@ export default function SubscriptionPage() {
                 .single();
 
             if (subscription) {
-                const endsAt = new Date(subscription.ends_at);
+                const endsAt = new Date(subscription.expires_at || subscription.ends_at);
                 const now = new Date();
                 const daysRemaining = Math.ceil((endsAt.getTime() - now.getTime()) / (1000 * 60 * 60 * 24));
 
@@ -177,9 +161,9 @@ export default function SubscriptionPage() {
                     subscription: {
                         id: subscription.id,
                         status: subscription.status,
-                        starts_at: subscription.starts_at,
-                        ends_at: subscription.ends_at,
-                        auto_renew: subscription.auto_renew,
+                        starts_at: subscription.started_at,
+                        ends_at: subscription.expires_at || subscription.ends_at,
+                        auto_renew_enabled: subscription.auto_renew_enabled || false,
                     },
                     daysRemaining: Math.max(0, daysRemaining),
                     isExpiringSoon: daysRemaining <= 7 && daysRemaining > 0,
@@ -194,32 +178,6 @@ export default function SubscriptionPage() {
                 });
             }
 
-            // Get payment history
-            const { data: payments } = await supabase
-                .from('payment_transactions')
-                .select('*')
-                .eq('shop_id', shopData.id)
-                .order('created_at', { ascending: false })
-                .limit(10);
-
-            setPaymentHistory(payments || []);
-
-            // Get payment settings from system_settings
-            const { data: settings } = await supabase
-                .from('system_settings')
-                .select('key, value')
-                .in('key', ['promptpay_number', 'bank_name', 'bank_account_number', 'bank_account_name']);
-
-            if (settings) {
-                settings.forEach((s: { key: string; value: string }) => {
-                    const val = typeof s.value === 'string' ? s.value.replace(/"/g, '') : s.value;
-                    if (s.key === 'promptpay_number') setPromptpayNumber(val);
-                    if (s.key === 'bank_name') setBankAccount(prev => ({ ...prev, bank: val }));
-                    if (s.key === 'bank_account_number') setBankAccount(prev => ({ ...prev, accountNo: val }));
-                    if (s.key === 'bank_account_name') setBankAccount(prev => ({ ...prev, accountName: val }));
-                });
-            }
-
         } catch (error) {
             console.error('Error fetching data:', error);
         } finally {
@@ -227,83 +185,75 @@ export default function SubscriptionPage() {
         }
     };
 
-    const handleSelectPlan = (planSlug: string) => {
-        setSelectedPlan(planSlug);
-        setShowPaymentModal(true);
-        setSlipFile(null);
-        setSlipPreview(null);
-    };
+    const handlePurchaseWithCredits = async (planSlug: string) => {
+        const plan = plans.find(p => p.slug === planSlug);
+        if (!plan || !shop) return;
 
-    const handleSlipChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-        const file = e.target.files?.[0];
-        if (!file) return;
-
-        if (file.size > 5 * 1024 * 1024) {
-            showAlert('error', 'ไฟล์ใหญ่เกินไป', 'กรุณาเลือกไฟล์ขนาดไม่เกิน 5MB');
+        // Check credit balance
+        if (creditBalance < plan.credits_price) {
+            showAlert('warning', 'เครดิตไม่พอ', `ต้องการ ${plan.credits_price} เครดิต แต่มีเพียง ${creditBalance} เครดิต`);
             return;
         }
 
-        if (!file.type.startsWith('image/')) {
-            showAlert('error', 'ไฟล์ไม่ถูกต้อง', 'กรุณาเลือกไฟล์รูปภาพเท่านั้น');
-            return;
-        }
-
-        setSlipFile(file);
-        const reader = new FileReader();
-        reader.onloadend = () => {
-            setSlipPreview(reader.result as string);
-        };
-        reader.readAsDataURL(file);
-    };
-
-    const handleSubmitPayment = async () => {
-        if (!slipFile || !selectedPlan || !shop) return;
-
-        setSubmitting(true);
+        setPurchasing(planSlug);
 
         try {
-            const plan = plans.find(p => p.slug === selectedPlan);
-            if (!plan) throw new Error('Plan not found');
+            const response = await fetch('/api/subscription/purchase', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ plan_slug: planSlug }),
+            });
 
-            // Upload slip
-            const fileExt = slipFile.name.split('.').pop();
-            const fileName = `${shop.id}/${Date.now()}_slip.${fileExt}`;
+            const result = await response.json();
 
-            const { error: uploadError } = await supabase.storage
-                .from('payment-slips')
-                .upload(fileName, slipFile);
+            if (!response.ok) {
+                throw new Error(result.message || result.error || 'Purchase failed');
+            }
 
-            if (uploadError) throw uploadError;
+            showAlert('success', 'ซื้อแพ็คเกจสำเร็จ!', `หักเครดิต ${plan.credits_price} เครดิต ยอดคงเหลือ ${result.new_balance} เครดิต`);
+            setCreditBalance(result.new_balance);
+            fetchData(); // Refresh subscription status
 
-            const { data: { publicUrl } } = supabase.storage
-                .from('payment-slips')
-                .getPublicUrl(fileName);
-
-            // Create payment transaction
-            const { data: transaction, error: transactionError } = await supabase
-                .from('payment_transactions')
-                .insert({
-                    shop_id: shop.id,
-                    plan_slug: selectedPlan,
-                    amount: plan.price,
-                    payment_method: 'bank_transfer',
-                    slip_url: publicUrl,
-                    status: 'pending',
-                })
-                .select()
-                .single();
-
-            if (transactionError) throw transactionError;
-
-            showAlert('success', 'ส่งหลักฐานการชำระเงินแล้ว', 'ทีมงานจะตรวจสอบและเปิดใช้งานภายใน 24 ชั่วโมง');
-            setShowPaymentModal(false);
-            fetchData(); // Refresh data
-
-        } catch (error) {
-            console.error('Payment error:', error);
-            showAlert('error', 'เกิดข้อผิดพลาด', 'ไม่สามารถส่งหลักฐานการชำระเงินได้ กรุณาลองใหม่อีกครั้ง');
+        } catch (error: any) {
+            console.error('Purchase error:', error);
+            showAlert('error', 'เกิดข้อผิดพลาด', error.message || 'ไม่สามารถซื้อแพ็คเกจได้ กรุณาลองใหม่');
         } finally {
-            setSubmitting(false);
+            setPurchasing(null);
+        }
+    };
+
+    const handleToggleAutoRenew = async (enabled: boolean) => {
+        setTogglingAutoRenew(true);
+
+        try {
+            const response = await fetch('/api/subscription/auto-renew', {
+                method: 'PATCH',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ enabled }),
+            });
+
+            const result = await response.json();
+
+            if (!response.ok) {
+                throw new Error(result.message || result.error);
+            }
+
+            // Update local state
+            setSubscriptionStatus(prev => prev ? {
+                ...prev,
+                subscription: prev.subscription ? {
+                    ...prev.subscription,
+                    auto_renew_enabled: enabled
+                } : null
+            } : null);
+
+            showAlert('success', enabled ? 'เปิดต่ออายุอัตโนมัติ' : 'ปิดต่ออายุอัตโนมัติ', result.message);
+
+        } catch (error: any) {
+            console.error('Auto-renew toggle error:', error);
+            showAlert('error', 'เกิดข้อผิดพลาด', error.message || 'ไม่สามารถอัพเดทได้');
+        } finally {
+            setTogglingAutoRenew(false);
         }
     };
 
@@ -313,14 +263,6 @@ export default function SubscriptionPage() {
             month: 'long',
             day: 'numeric',
         });
-    };
-
-    const formatMoney = (amount: number) => {
-        return new Intl.NumberFormat('th-TH', {
-            style: 'currency',
-            currency: 'THB',
-            minimumFractionDigits: 0,
-        }).format(amount);
     };
 
     if (loading) {
@@ -338,6 +280,27 @@ export default function SubscriptionPage() {
                     <Crown className="w-6 h-6 text-yellow-500" />
                     แพ็คเกจร้านรับรอง
                 </h1>
+
+                {/* Credit Balance Card */}
+                <Card className="mb-6 bg-gradient-to-r from-blue-600 to-cyan-500 text-white">
+                    <CardContent className="py-4">
+                        <div className="flex items-center justify-between">
+                            <div className="flex items-center gap-4">
+                                <Coins className="w-10 h-10 text-blue-200" />
+                                <div>
+                                    <p className="text-blue-100 text-sm">เครดิตคงเหลือ</p>
+                                    <p className="text-2xl font-bold">{creditBalance.toLocaleString()} เครดิต</p>
+                                </div>
+                            </div>
+                            <Link href="/dashboard/credits">
+                                <Button variant="secondary" size="sm" className="bg-white/20 hover:bg-white/30 text-white border-none">
+                                    <CreditCard className="w-4 h-4 mr-2" />
+                                    เติมเครดิต
+                                </Button>
+                            </Link>
+                        </div>
+                    </CardContent>
+                </Card>
 
                 {/* Current Status Card */}
                 <Card className="mb-8">
@@ -366,11 +329,10 @@ export default function SubscriptionPage() {
                                 </div>
 
                                 {/* Expiry Info */}
-                                <div className={`p-4 rounded-lg ${
-                                    subscriptionStatus.isExpiringSoon
+                                <div className={`p-4 rounded-lg ${subscriptionStatus.isExpiringSoon
                                         ? 'bg-orange-50 border border-orange-200'
                                         : 'bg-gray-50'
-                                }`}>
+                                    }`}>
                                     <div className="flex items-center justify-between">
                                         <div className="flex items-center gap-2">
                                             {subscriptionStatus.isExpiringSoon ? (
@@ -384,9 +346,8 @@ export default function SubscriptionPage() {
                                         </div>
                                         <div className="flex items-center gap-2">
                                             <Clock className="w-5 h-5 text-gray-400" />
-                                            <span className={`font-bold ${
-                                                subscriptionStatus.isExpiringSoon ? 'text-orange-600' : 'text-gray-900'
-                                            }`}>
+                                            <span className={`font-bold ${subscriptionStatus.isExpiringSoon ? 'text-orange-600' : 'text-gray-900'
+                                                }`}>
                                                 เหลืออีก {subscriptionStatus.daysRemaining} วัน
                                             </span>
                                         </div>
@@ -397,6 +358,27 @@ export default function SubscriptionPage() {
                                             แพ็คเกจใกล้หมดอายุ กรุณาต่ออายุเพื่อไม่ให้สิทธิพิเศษหายไป
                                         </p>
                                     )}
+                                </div>
+
+                                {/* Auto Renew Toggle */}
+                                <div className="flex items-center justify-between p-4 bg-blue-50 rounded-lg border border-blue-200">
+                                    <div className="flex items-center gap-3">
+                                        <RefreshCw className="w-5 h-5 text-blue-600" />
+                                        <div>
+                                            <Label htmlFor="auto-renew" className="font-medium text-gray-900 cursor-pointer">
+                                                ต่ออายุอัตโนมัติ
+                                            </Label>
+                                            <p className="text-sm text-gray-500">
+                                                ระบบจะหักเครดิตและต่ออายุให้อัตโนมัติเมื่อใกล้หมดอายุ
+                                            </p>
+                                        </div>
+                                    </div>
+                                    <Switch
+                                        id="auto-renew"
+                                        checked={subscriptionStatus.subscription?.auto_renew_enabled || false}
+                                        onCheckedChange={handleToggleAutoRenew}
+                                        disabled={togglingAutoRenew}
+                                    />
                                 </div>
 
                                 {/* Benefits */}
@@ -415,7 +397,7 @@ export default function SubscriptionPage() {
                                     </div>
                                     <div className="flex items-center gap-2 text-sm text-gray-600">
                                         <Shield className="w-4 h-4 text-emerald-500" />
-                                        รับประกัน ฿1,000
+                                        รับประกัน 1,000 บาท
                                     </div>
                                     <div className="flex items-center gap-2 text-sm text-gray-600">
                                         <Bell className="w-4 h-4 text-purple-500" />
@@ -426,17 +408,6 @@ export default function SubscriptionPage() {
                                         แสดงอันดับต้น
                                     </div>
                                 </div>
-
-                                {/* Renew Button */}
-                                {subscriptionStatus.isExpiringSoon && (
-                                    <Button
-                                        onClick={() => handleSelectPlan(subscriptionStatus.plan!.slug)}
-                                        className="w-full bg-gradient-to-r from-yellow-500 to-orange-500 hover:from-yellow-600 hover:to-orange-600"
-                                    >
-                                        <Crown className="w-4 h-4 mr-2" />
-                                        ต่ออายุตอนนี้
-                                    </Button>
-                                )}
                             </div>
                         ) : (
                             <div className="text-center py-6">
@@ -463,238 +434,119 @@ export default function SubscriptionPage() {
                 </h2>
 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
-                    {plans.map((plan) => (
-                        <Card
-                            key={plan.slug}
-                            className={`relative overflow-hidden transition-all hover:shadow-lg ${
-                                plan.recommended ? 'border-2 border-yellow-400' : ''
-                            }`}
-                        >
-                            {plan.recommended && (
-                                <div className="absolute top-0 right-0 bg-gradient-to-r from-yellow-400 to-orange-400 text-white px-4 py-1 text-sm font-semibold">
-                                    แนะนำ
-                                </div>
-                            )}
-                            <CardHeader className={plan.recommended ? 'bg-gradient-to-br from-yellow-50 to-orange-50' : ''}>
-                                <div className="flex items-center gap-2">
-                                    <Crown className="w-5 h-5 text-yellow-500" />
-                                    <CardTitle className="text-lg">{plan.name}</CardTitle>
-                                </div>
-                                <div className="mt-2">
-                                    <span className="text-3xl font-bold text-gray-900">
-                                        ฿{plan.price.toLocaleString()}
-                                    </span>
-                                    <span className="text-gray-500">{plan.period}</span>
-                                    {plan.originalPrice && (
-                                        <p className="text-sm text-gray-400 line-through">
-                                            ฿{plan.originalPrice.toLocaleString()}/ปี
-                                        </p>
-                                    )}
-                                    {plan.savings && (
-                                        <Badge className="mt-1 bg-green-100 text-green-700">
-                                            ประหยัด ฿{plan.savings}
-                                        </Badge>
-                                    )}
-                                </div>
-                            </CardHeader>
-                            <CardContent className="pt-4">
-                                <ul className="space-y-2 mb-4">
-                                    {plan.features.map((feature, idx) => (
-                                        <li key={idx} className="flex items-center gap-2 text-sm">
-                                            <CheckCircle className="w-4 h-4 text-green-500" />
-                                            {feature}
-                                        </li>
-                                    ))}
-                                </ul>
-                                <Button
-                                    onClick={() => handleSelectPlan(plan.slug)}
-                                    className={`w-full ${
-                                        plan.recommended
-                                            ? 'bg-gradient-to-r from-yellow-500 to-orange-500 hover:from-yellow-600 hover:to-orange-600'
-                                            : ''
+                    {plans.map((plan) => {
+                        const canAfford = creditBalance >= plan.credits_price;
+
+                        return (
+                            <Card
+                                key={plan.slug}
+                                className={`relative overflow-hidden transition-all hover:shadow-lg ${plan.recommended ? 'border-2 border-yellow-400' : ''
                                     }`}
-                                >
-                                    เลือกแพ็คเกจนี้
-                                    <ArrowRight className="w-4 h-4 ml-2" />
-                                </Button>
-                            </CardContent>
-                        </Card>
-                    ))}
-                </div>
-
-                {/* Payment History */}
-                {paymentHistory.length > 0 && (
-                    <Card>
-                        <CardHeader>
-                            <CardTitle className="text-lg">ประวัติการชำระเงิน</CardTitle>
-                        </CardHeader>
-                        <CardContent>
-                            <div className="space-y-3">
-                                {paymentHistory.map((payment) => (
-                                    <div
-                                        key={payment.id}
-                                        className="flex items-center justify-between p-3 bg-gray-50 rounded-lg"
-                                    >
-                                        <div className="flex items-center gap-3">
-                                            <CreditCard className="w-5 h-5 text-gray-400" />
-                                            <div>
-                                                <p className="font-medium text-gray-900">
-                                                    {formatMoney(payment.amount)}
-                                                </p>
-                                                <p className="text-sm text-gray-500">
-                                                    {formatDate(payment.created_at)}
-                                                </p>
-                                            </div>
-                                        </div>
-                                        <Badge className={
-                                            payment.status === 'confirmed'
-                                                ? 'bg-green-100 text-green-700'
-                                                : payment.status === 'pending'
-                                                ? 'bg-yellow-100 text-yellow-700'
-                                                : 'bg-red-100 text-red-700'
-                                        }>
-                                            {payment.status === 'confirmed' ? 'สำเร็จ'
-                                                : payment.status === 'pending' ? 'รอตรวจสอบ'
-                                                : 'ยกเลิก'}
-                                        </Badge>
-                                    </div>
-                                ))}
-                            </div>
-                        </CardContent>
-                    </Card>
-                )}
-            </div>
-
-            {/* Payment Modal */}
-            {showPaymentModal && selectedPlan && (
-                <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-                    <div className="bg-white rounded-2xl max-w-md w-full max-h-[90vh] overflow-y-auto">
-                        <div className="p-6 border-b border-gray-100 flex justify-between items-center">
-                            <h2 className="text-xl font-bold text-gray-900">ชำระเงิน</h2>
-                            <button
-                                onClick={() => setShowPaymentModal(false)}
-                                className="text-gray-400 hover:text-gray-600"
                             >
-                                <X className="w-6 h-6" />
-                            </button>
-                        </div>
-
-                        <div className="p-6 space-y-6">
-                            {/* Order Summary */}
-                            <div className="bg-gray-50 p-4 rounded-lg">
-                                <h3 className="font-semibold text-gray-900 mb-2">สรุปรายการ</h3>
-                                <div className="flex justify-between items-center">
-                                    <span>{plans.find(p => p.slug === selectedPlan)?.name}</span>
-                                    <span className="font-bold text-lg">
-                                        ฿{plans.find(p => p.slug === selectedPlan)?.price.toLocaleString()}
-                                    </span>
-                                </div>
-                            </div>
-
-                            {/* Payment Methods */}
-                            <div>
-                                <h3 className="font-semibold text-gray-900 mb-3">วิธีการชำระเงิน</h3>
-
-                                {/* PromptPay */}
-                                <div className="border rounded-lg p-4 mb-3">
-                                    <div className="flex items-center gap-2 mb-3">
-                                        <div className="w-8 h-8 bg-blue-600 rounded flex items-center justify-center">
-                                            <span className="text-white text-xs font-bold">PP</span>
-                                        </div>
-                                        <span className="font-medium">PromptPay</span>
+                                {plan.recommended && (
+                                    <div className="absolute top-0 right-0 bg-gradient-to-r from-yellow-400 to-orange-400 text-white px-4 py-1 text-sm font-semibold">
+                                        แนะนำ
                                     </div>
-                                    <div className="bg-white border-2 border-dashed rounded-lg p-4 text-center">
-                                        <p className="text-sm text-gray-500 mb-2">สแกน QR Code เพื่อชำระเงิน</p>
-                                        {promptpayNumber && (
-                                            <img
-                                                src={`https://promptpay.io/${promptpayNumber}/${plans.find(p => p.slug === selectedPlan)?.price || 0}`}
-                                                alt="PromptPay QR"
-                                                className="w-40 h-40 mx-auto mb-2"
-                                            />
+                                )}
+                                <CardHeader className={plan.recommended ? 'bg-gradient-to-br from-yellow-50 to-orange-50' : ''}>
+                                    <div className="flex items-center gap-2">
+                                        <Crown className="w-5 h-5 text-yellow-500" />
+                                        <CardTitle className="text-lg">{plan.name}</CardTitle>
+                                    </div>
+                                    <div className="mt-2">
+                                        <div className="flex items-baseline gap-1">
+                                            <Coins className="w-5 h-5 text-blue-600" />
+                                            <span className="text-3xl font-bold text-gray-900">
+                                                {plan.credits_price.toLocaleString()}
+                                            </span>
+                                            <span className="text-gray-500">เครดิต{plan.period}</span>
+                                        </div>
+                                        {plan.originalPrice && (
+                                            <p className="text-sm text-gray-400 line-through">
+                                                {plan.originalPrice.toLocaleString()} เครดิต/ปี
+                                            </p>
                                         )}
-                                        <p className="text-sm text-gray-600">
-                                            เบอร์ PromptPay: <span className="font-mono font-medium">{promptpayNumber}</span>
-                                        </p>
+                                        {plan.savings && (
+                                            <Badge className="mt-1 bg-green-100 text-green-700">
+                                                ประหยัด {plan.savings} เครดิต
+                                            </Badge>
+                                        )}
                                     </div>
-                                </div>
+                                </CardHeader>
+                                <CardContent className="pt-4">
+                                    <ul className="space-y-2 mb-4">
+                                        {plan.features.map((feature, idx) => (
+                                            <li key={idx} className="flex items-center gap-2 text-sm">
+                                                <CheckCircle className="w-4 h-4 text-green-500" />
+                                                {feature}
+                                            </li>
+                                        ))}
+                                    </ul>
 
-                                {/* Bank Transfer */}
-                                <div className="border rounded-lg p-4">
-                                    <div className="flex items-center gap-2 mb-3">
-                                        <CreditCard className="w-6 h-6 text-green-600" />
-                                        <span className="font-medium">โอนเงินผ่านธนาคาร</span>
-                                    </div>
-                                    <div className="bg-green-50 p-3 rounded-lg text-sm">
-                                        <p><strong>ธนาคาร:</strong> {bankAccount.bank}</p>
-                                        <p><strong>เลขบัญชี:</strong> {bankAccount.accountNo}</p>
-                                        <p><strong>ชื่อบัญชี:</strong> {bankAccount.accountName}</p>
-                                    </div>
-                                </div>
-                            </div>
+                                    {/* Credit status */}
+                                    {!canAfford && (
+                                        <div className="mb-4 p-3 bg-red-50 rounded-lg flex items-center gap-2 text-sm text-red-700">
+                                            <AlertCircle className="w-4 h-4" />
+                                            ต้องการอีก {(plan.credits_price - creditBalance).toLocaleString()} เครดิต
+                                        </div>
+                                    )}
 
-                            {/* Upload Slip */}
-                            <div>
-                                <h3 className="font-semibold text-gray-900 mb-3">
-                                    อัพโหลดหลักฐานการชำระเงิน <span className="text-red-500">*</span>
-                                </h3>
-
-                                {slipPreview ? (
-                                    <div className="relative border-2 border-green-500 rounded-lg p-4 bg-green-50">
-                                        <button
-                                            onClick={() => {
-                                                setSlipFile(null);
-                                                setSlipPreview(null);
-                                            }}
-                                            className="absolute top-2 right-2 p-1 bg-red-500 text-white rounded-full hover:bg-red-600"
+                                    <div className="space-y-2">
+                                        <Button
+                                            onClick={() => handlePurchaseWithCredits(plan.slug)}
+                                            disabled={!canAfford || purchasing !== null}
+                                            className={`w-full ${plan.recommended && canAfford
+                                                    ? 'bg-gradient-to-r from-yellow-500 to-orange-500 hover:from-yellow-600 hover:to-orange-600'
+                                                    : canAfford
+                                                        ? 'bg-blue-600 hover:bg-blue-700'
+                                                        : 'bg-gray-300'
+                                                }`}
                                         >
-                                            <X className="w-4 h-4" />
-                                        </button>
-                                        <img
-                                            src={slipPreview}
-                                            alt="Payment slip"
-                                            className="max-h-48 mx-auto rounded-lg"
-                                        />
-                                        <p className="text-center text-sm text-green-700 mt-2 flex items-center justify-center gap-1">
-                                            <Check className="w-4 h-4" />
-                                            {slipFile?.name}
-                                        </p>
+                                            {purchasing === plan.slug ? (
+                                                <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                                            ) : (
+                                                <Coins className="w-4 h-4 mr-2" />
+                                            )}
+                                            {purchasing === plan.slug
+                                                ? 'กำลังดำเนินการ...'
+                                                : canAfford
+                                                    ? 'ซื้อด้วยเครดิต'
+                                                    : 'เครดิตไม่พอ'}
+                                        </Button>
+
+                                        {!canAfford && (
+                                            <Link href="/dashboard/credits" className="block">
+                                                <Button variant="outline" className="w-full">
+                                                    <CreditCard className="w-4 h-4 mr-2" />
+                                                    เติมเครดิต
+                                                </Button>
+                                            </Link>
+                                        )}
                                     </div>
-                                ) : (
-                                    <label className="block border-2 border-dashed border-gray-300 rounded-lg p-6 text-center hover:border-blue-500 hover:bg-blue-50 cursor-pointer transition-colors">
-                                        <input
-                                            type="file"
-                                            accept="image/*"
-                                            onChange={handleSlipChange}
-                                            className="hidden"
-                                        />
-                                        <Upload className="w-10 h-10 text-gray-400 mx-auto mb-2" />
-                                        <p className="text-gray-600">คลิกเพื่ออัพโหลดสลิป</p>
-                                        <p className="text-xs text-gray-400 mt-1">รองรับ JPG, PNG (ไม่เกิน 5MB)</p>
-                                    </label>
-                                )}
-                            </div>
-
-                            {/* Submit Button */}
-                            <Button
-                                onClick={handleSubmitPayment}
-                                disabled={!slipFile || submitting}
-                                className="w-full bg-green-600 hover:bg-green-700"
-                            >
-                                {submitting ? (
-                                    <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                                ) : (
-                                    <Check className="w-4 h-4 mr-2" />
-                                )}
-                                {submitting ? 'กำลังส่ง...' : 'ยืนยันการชำระเงิน'}
-                            </Button>
-
-                            <p className="text-xs text-gray-500 text-center">
-                                หลังจากส่งหลักฐานแล้ว ทีมงานจะตรวจสอบและเปิดใช้งานภายใน 24 ชั่วโมง
-                            </p>
-                        </div>
-                    </div>
+                                </CardContent>
+                            </Card>
+                        );
+                    })}
                 </div>
-            )}
+
+                {/* Info Section */}
+                <Card className="bg-blue-50 border-blue-200">
+                    <CardContent className="py-4">
+                        <div className="flex items-start gap-3">
+                            <AlertCircle className="w-5 h-5 text-blue-600 mt-0.5" />
+                            <div className="text-sm text-blue-800">
+                                <p className="font-medium mb-1">หมายเหตุ</p>
+                                <ul className="list-disc list-inside space-y-1 text-blue-700">
+                                    <li>เครดิตจะถูกหักทันทีเมื่อซื้อแพ็คเกจ</li>
+                                    <li>หากมี subscription อยู่แล้ว ระบบจะต่ออายุจากวันหมดอายุเดิม</li>
+                                    <li>เครดิตไม่มีวันหมดอายุ สามารถใช้ได้ตลอด</li>
+                                    <li>ไม่สามารถยกเลิกหรือขอคืนเครดิตได้หลังซื้อแพ็คเกจ</li>
+                                </ul>
+                            </div>
+                        </div>
+                    </CardContent>
+                </Card>
+            </div>
 
             {/* Alert Modal */}
             <StandaloneAlert

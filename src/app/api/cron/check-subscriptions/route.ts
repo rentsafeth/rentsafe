@@ -24,8 +24,30 @@ export async function GET(request: NextRequest) {
         const results = {
             expired: 0,
             expiringSoon: 0,
+            autoRenewed: 0,
+            autoRenewFailed: 0,
             errors: [] as string[],
         };
+
+        // 0. Process auto-renewals first (before expiring)
+        try {
+            const { data: renewalResults, error: renewalError } = await supabase
+                .rpc('process_auto_renewals');
+
+            if (renewalError) {
+                results.errors.push(`Auto-renewal error: ${renewalError.message}`);
+            } else if (renewalResults && Array.isArray(renewalResults)) {
+                for (const result of renewalResults) {
+                    if (result.status === 'renewed') {
+                        results.autoRenewed++;
+                    } else {
+                        results.autoRenewFailed++;
+                    }
+                }
+            }
+        } catch (autoRenewError) {
+            results.errors.push(`Auto-renewal exception: ${autoRenewError}`);
+        }
 
         // 1. Find and expire subscriptions that have ended
         const { data: expiredSubs, error: expiredError } = await supabase

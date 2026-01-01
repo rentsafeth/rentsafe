@@ -5,12 +5,17 @@ import { createClient } from '@/lib/supabase/client';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
+import { Checkbox } from '@/components/ui/checkbox';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
 import {
     Coins, Upload, Loader2, CheckCircle, Clock, XCircle,
-    CreditCard, History, Gift, AlertCircle, QrCode
+    CreditCard, History, Gift, AlertCircle, QrCode, Filter,
+    Calendar, Crown
 } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import Image from 'next/image';
+import Link from 'next/link';
 
 interface CreditPackage {
     id: string;
@@ -28,6 +33,7 @@ interface CreditOrder {
     credits_to_add: number;
     status: string;
     slip_url: string | null;
+    transfer_datetime: string | null;
     created_at: string;
     credit_packages: {
         name: string;
@@ -42,6 +48,8 @@ interface CreditTransaction {
     balance_after: number;
     created_at: string;
 }
+
+type TransactionFilter = 'all' | 'topup' | 'ads' | 'subscription';
 
 export default function CreditsPage() {
     const router = useRouter();
@@ -59,6 +67,13 @@ export default function CreditsPage() {
     const [currentOrder, setCurrentOrder] = useState<CreditOrder | null>(null);
     const [uploadingSlip, setUploadingSlip] = useState(false);
     const [creatingOrder, setCreatingOrder] = useState(false);
+
+    // New states for enhanced features
+    const [transferDateTime, setTransferDateTime] = useState('');
+    const [termsAccepted, setTermsAccepted] = useState(false);
+    const [transactionFilter, setTransactionFilter] = useState<TransactionFilter>('all');
+    const [slipFile, setSlipFile] = useState<File | null>(null);
+    const [slipPreview, setSlipPreview] = useState<string | null>(null);
 
     useEffect(() => {
         loadData();
@@ -134,7 +149,7 @@ export default function CreditsPage() {
             .select('*')
             .eq('shop_id', shopData.id)
             .order('created_at', { ascending: false })
-            .limit(20);
+            .limit(50);
 
         setTransactions(transactionsData || []);
 
@@ -174,18 +189,57 @@ export default function CreditsPage() {
         }
     };
 
-    const uploadSlip = async (file: File) => {
-        if (!currentOrder || !shop) return;
+    // Calculate file hash for duplicate detection
+    const calculateFileHash = async (file: File): Promise<string> => {
+        const buffer = await file.arrayBuffer();
+        const hashBuffer = await crypto.subtle.digest('SHA-256', buffer);
+        const hashArray = Array.from(new Uint8Array(hashBuffer));
+        return hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
+    };
+
+    const handleSlipSelect = (file: File) => {
+        setSlipFile(file);
+        const reader = new FileReader();
+        reader.onloadend = () => {
+            setSlipPreview(reader.result as string);
+        };
+        reader.readAsDataURL(file);
+    };
+
+    const uploadSlip = async () => {
+        if (!currentOrder || !shop || !slipFile) return;
+        if (!transferDateTime) {
+            alert('กรุณาระบุวันเวลาที่โอนเงิน');
+            return;
+        }
+        if (!termsAccepted) {
+            alert('กรุณายอมรับเงื่อนไขการใช้เครดิต');
+            return;
+        }
+
         setUploadingSlip(true);
 
         try {
-            const fileExt = file.name.split('.').pop();
+            // Calculate file hash
+            const slipHash = await calculateFileHash(slipFile);
+
+            // Check for duplicate slip
+            const { data: existingSlip } = await supabase
+                .rpc('check_duplicate_slip', { p_slip_hash: slipHash });
+
+            if (existingSlip) {
+                alert('สลิปนี้เคยถูกใช้แล้ว กรุณาอัพโหลดสลิปที่ถูกต้อง');
+                setUploadingSlip(false);
+                return;
+            }
+
+            const fileExt = slipFile.name.split('.').pop();
             const fileName = `${shop.id}/${currentOrder.id}.${fileExt}`;
 
             // Upload to storage
             const { error: uploadError } = await supabase.storage
                 .from('payment-slips')
-                .upload(fileName, file, { upsert: true });
+                .upload(fileName, slipFile, { upsert: true });
 
             if (uploadError) throw uploadError;
 
@@ -194,19 +248,29 @@ export default function CreditsPage() {
                 .from('payment-slips')
                 .getPublicUrl(fileName);
 
-            // Update order with slip URL
+            // Update order with slip URL, transfer datetime, and hash
             const { error: updateError } = await supabase
                 .from('credit_orders')
-                .update({ slip_url: publicUrl })
+                .update({
+                    slip_url: publicUrl,
+                    transfer_datetime: transferDateTime,
+                    slip_hash: slipHash
+                })
                 .eq('id', currentOrder.id);
 
             if (updateError) throw updateError;
 
             // Update local state
-            setCurrentOrder(prev => prev ? { ...prev, slip_url: publicUrl } : null);
+            setCurrentOrder(prev => prev ? { ...prev, slip_url: publicUrl, transfer_datetime: transferDateTime } : null);
             setOrders(prev => prev.map(o =>
-                o.id === currentOrder.id ? { ...o, slip_url: publicUrl } : o
+                o.id === currentOrder.id ? { ...o, slip_url: publicUrl, transfer_datetime: transferDateTime } : o
             ));
+
+            // Reset form
+            setSlipFile(null);
+            setSlipPreview(null);
+            setTransferDateTime('');
+            setTermsAccepted(false);
 
             alert('อัพโหลดสลิปสำเร็จ! รอการตรวจสอบจากแอดมิน');
         } catch (error) {
@@ -229,6 +293,10 @@ export default function CreditsPage() {
         if (!error) {
             setCurrentOrder(null);
             setSelectedPackage(null);
+            setSlipFile(null);
+            setSlipPreview(null);
+            setTransferDateTime('');
+            setTermsAccepted(false);
             setOrders(prev => prev.filter(o => o.id !== currentOrder.id));
         }
     };
@@ -254,11 +322,38 @@ export default function CreditsPage() {
                 return <CreditCard className="w-4 h-4 text-blue-600" />;
             case 'ad_click':
             case 'ad_impression':
+            case 'daily_boost':
                 return <Coins className="w-4 h-4 text-orange-600" />;
+            case 'subscription_purchase':
+            case 'subscription_renewal':
+                return <Crown className="w-4 h-4 text-purple-600" />;
             default:
                 return <History className="w-4 h-4 text-gray-600" />;
         }
     };
+
+    const getTransactionTypeName = (type: string): string => {
+        switch (type) {
+            case 'welcome_bonus': return 'โบนัสต้อนรับ';
+            case 'topup': return 'เติมเครดิต';
+            case 'ad_click': return 'คลิกโฆษณา';
+            case 'ad_impression': return 'แสดงโฆษณา';
+            case 'daily_boost': return 'บูสต์รายวัน';
+            case 'subscription_purchase': return 'ซื้อแพ็คเกจ';
+            case 'subscription_renewal': return 'ต่ออายุแพ็คเกจ';
+            case 'refund': return 'คืนเครดิต';
+            case 'admin_adjustment': return 'ปรับปรุงโดยแอดมิน';
+            default: return type;
+        }
+    };
+
+    const filteredTransactions = transactions.filter(tx => {
+        if (transactionFilter === 'all') return true;
+        if (transactionFilter === 'topup') return ['topup', 'welcome_bonus'].includes(tx.type);
+        if (transactionFilter === 'ads') return ['ad_click', 'ad_impression', 'daily_boost'].includes(tx.type);
+        if (transactionFilter === 'subscription') return ['subscription_purchase', 'subscription_renewal'].includes(tx.type);
+        return true;
+    });
 
     if (loading) {
         return (
@@ -282,6 +377,14 @@ export default function CreditsPage() {
                             <p className="text-blue-100 text-sm mt-1">เครดิต</p>
                         </div>
                         <Coins className="w-16 h-16 text-blue-200" />
+                    </div>
+                    <div className="mt-4 pt-4 border-t border-blue-400/30">
+                        <Link href="/dashboard/subscription">
+                            <Button variant="secondary" size="sm" className="bg-white/20 hover:bg-white/30 text-white border-none">
+                                <Crown className="w-4 h-4 mr-2" />
+                                ซื้อแพ็คเกจร้านรับรอง (99-999 เครดิต)
+                            </Button>
+                        </Link>
                     </div>
                 </CardContent>
             </Card>
@@ -326,33 +429,96 @@ export default function CreditsPage() {
                                     </p>
                                 </div>
 
+                                {/* Transfer DateTime */}
+                                <div className="space-y-2">
+                                    <Label htmlFor="transfer-datetime" className="flex items-center gap-2">
+                                        <Calendar className="w-4 h-4" />
+                                        วันเวลาที่โอนเงิน *
+                                    </Label>
+                                    <Input
+                                        id="transfer-datetime"
+                                        type="datetime-local"
+                                        value={transferDateTime}
+                                        onChange={(e) => setTransferDateTime(e.target.value)}
+                                        max={new Date().toISOString().slice(0, 16)}
+                                        className="max-w-xs"
+                                    />
+                                </div>
+
                                 {/* Upload Slip */}
                                 <div className="border-2 border-dashed border-gray-200 rounded-xl p-6 text-center">
-                                    <Upload className="w-10 h-10 text-gray-400 mx-auto mb-3" />
-                                    <p className="text-gray-600 mb-3">อัพโหลดสลิปการโอนเงิน</p>
-                                    <input
-                                        type="file"
-                                        accept="image/*"
-                                        className="hidden"
-                                        id="slip-upload"
-                                        onChange={(e) => {
-                                            const file = e.target.files?.[0];
-                                            if (file) uploadSlip(file);
-                                        }}
-                                    />
-                                    <label htmlFor="slip-upload">
-                                        <Button asChild disabled={uploadingSlip}>
-                                            <span>
-                                                {uploadingSlip ? (
-                                                    <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                                                ) : (
-                                                    <Upload className="w-4 h-4 mr-2" />
-                                                )}
-                                                เลือกไฟล์
-                                            </span>
-                                        </Button>
-                                    </label>
+                                    {slipPreview ? (
+                                        <div className="space-y-4">
+                                            <Image
+                                                src={slipPreview}
+                                                alt="Slip preview"
+                                                width={200}
+                                                height={300}
+                                                className="mx-auto rounded-lg object-contain max-h-64"
+                                            />
+                                            <Button
+                                                variant="outline"
+                                                size="sm"
+                                                onClick={() => {
+                                                    setSlipFile(null);
+                                                    setSlipPreview(null);
+                                                }}
+                                            >
+                                                เปลี่ยนรูป
+                                            </Button>
+                                        </div>
+                                    ) : (
+                                        <>
+                                            <Upload className="w-10 h-10 text-gray-400 mx-auto mb-3" />
+                                            <p className="text-gray-600 mb-3">อัพโหลดสลิปการโอนเงิน</p>
+                                            <input
+                                                type="file"
+                                                accept="image/*"
+                                                className="hidden"
+                                                id="slip-upload"
+                                                onChange={(e) => {
+                                                    const file = e.target.files?.[0];
+                                                    if (file) handleSlipSelect(file);
+                                                }}
+                                            />
+                                            <label htmlFor="slip-upload">
+                                                <Button asChild variant="outline">
+                                                    <span>
+                                                        <Upload className="w-4 h-4 mr-2" />
+                                                        เลือกไฟล์
+                                                    </span>
+                                                </Button>
+                                            </label>
+                                        </>
+                                    )}
                                 </div>
+
+                                {/* Terms Checkbox */}
+                                <div className="flex items-start space-x-3 p-4 bg-amber-50 rounded-lg border border-amber-200">
+                                    <Checkbox
+                                        id="terms"
+                                        checked={termsAccepted}
+                                        onCheckedChange={(checked) => setTermsAccepted(checked === true)}
+                                    />
+                                    <Label htmlFor="terms" className="text-sm text-amber-800 cursor-pointer leading-relaxed">
+                                        ข้าพเจ้ายอมรับว่าเครดิตใช้สำหรับทำธุรกรรมในเว็บไซต์เท่านั้น
+                                        ไม่สามารถถอน/โอนออกเป็นเงินสดได้ และเครดิตไม่มีวันหมดอายุ
+                                    </Label>
+                                </div>
+
+                                {/* Submit Button */}
+                                <Button
+                                    onClick={uploadSlip}
+                                    disabled={uploadingSlip || !slipFile || !transferDateTime || !termsAccepted}
+                                    className="w-full bg-blue-600 hover:bg-blue-700"
+                                >
+                                    {uploadingSlip ? (
+                                        <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                                    ) : (
+                                        <CheckCircle className="w-4 h-4 mr-2" />
+                                    )}
+                                    ยืนยันการชำระเงิน
+                                </Button>
 
                                 <Button
                                     variant="outline"
@@ -457,37 +623,69 @@ export default function CreditsPage() {
             {transactions.length > 0 && (
                 <Card>
                     <CardHeader>
-                        <CardTitle className="flex items-center gap-2">
-                            <Coins className="w-5 h-5 text-orange-600" />
-                            ประวัติการใช้เครดิต
-                        </CardTitle>
+                        <div className="flex items-center justify-between flex-wrap gap-4">
+                            <CardTitle className="flex items-center gap-2">
+                                <Coins className="w-5 h-5 text-orange-600" />
+                                ประวัติการใช้เครดิต
+                            </CardTitle>
+                            {/* Filter Buttons */}
+                            <div className="flex items-center gap-2">
+                                <Filter className="w-4 h-4 text-gray-500" />
+                                <div className="flex gap-1">
+                                    {[
+                                        { value: 'all', label: 'ทั้งหมด' },
+                                        { value: 'topup', label: 'เติมเครดิต' },
+                                        { value: 'ads', label: 'โฆษณา' },
+                                        { value: 'subscription', label: 'ร้านรับรอง' },
+                                    ].map((filter) => (
+                                        <Button
+                                            key={filter.value}
+                                            variant={transactionFilter === filter.value ? 'default' : 'outline'}
+                                            size="sm"
+                                            onClick={() => setTransactionFilter(filter.value as TransactionFilter)}
+                                            className={transactionFilter === filter.value ? 'bg-blue-600' : ''}
+                                        >
+                                            {filter.label}
+                                        </Button>
+                                    ))}
+                                </div>
+                            </div>
+                        </div>
                     </CardHeader>
                     <CardContent>
                         <div className="space-y-2">
-                            {transactions.map((tx) => (
-                                <div
-                                    key={tx.id}
-                                    className="flex items-center justify-between p-3 border-b last:border-0"
-                                >
-                                    <div className="flex items-center gap-3">
-                                        {getTransactionIcon(tx.type)}
-                                        <div>
-                                            <p className="font-medium text-sm">{tx.description || tx.type}</p>
+                            {filteredTransactions.length > 0 ? (
+                                filteredTransactions.map((tx) => (
+                                    <div
+                                        key={tx.id}
+                                        className="flex items-center justify-between p-3 border-b last:border-0"
+                                    >
+                                        <div className="flex items-center gap-3">
+                                            {getTransactionIcon(tx.type)}
+                                            <div>
+                                                <p className="font-medium text-sm">
+                                                    {tx.description || getTransactionTypeName(tx.type)}
+                                                </p>
+                                                <p className="text-xs text-gray-500">
+                                                    {new Date(tx.created_at).toLocaleString('th-TH')}
+                                                </p>
+                                            </div>
+                                        </div>
+                                        <div className="text-right">
+                                            <p className={`font-semibold ${tx.amount > 0 ? 'text-green-600' : 'text-red-600'}`}>
+                                                {tx.amount > 0 ? '+' : ''}{tx.amount.toLocaleString()}
+                                            </p>
                                             <p className="text-xs text-gray-500">
-                                                {new Date(tx.created_at).toLocaleString('th-TH')}
+                                                คงเหลือ {tx.balance_after.toLocaleString()}
                                             </p>
                                         </div>
                                     </div>
-                                    <div className="text-right">
-                                        <p className={`font-semibold ${tx.amount > 0 ? 'text-green-600' : 'text-red-600'}`}>
-                                            {tx.amount > 0 ? '+' : ''}{tx.amount.toLocaleString()}
-                                        </p>
-                                        <p className="text-xs text-gray-500">
-                                            คงเหลือ {tx.balance_after.toLocaleString()}
-                                        </p>
-                                    </div>
-                                </div>
-                            ))}
+                                ))
+                            ) : (
+                                <p className="text-center text-gray-500 py-4">
+                                    ไม่พบรายการในหมวดนี้
+                                </p>
+                            )}
                         </div>
                     </CardContent>
                 </Card>

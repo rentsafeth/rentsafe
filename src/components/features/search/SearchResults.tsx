@@ -78,21 +78,29 @@ export default function SearchResults() {
 
     const supabase = createClient();
 
-    // Handle search form submission
+    // Handle search form submission - only search when button is clicked
     const handleSearch = () => {
+        // For blacklist, require query
+        if (searchType === 'blacklist' && !searchQuery.trim()) {
+            return;
+        }
+
+        // Update URL without triggering navigation reload
         const params = new URLSearchParams();
         params.set('type', searchType);
         if (searchQuery) params.set('q', searchQuery);
         if (selectedProvince && searchType === 'rental') params.set('province', selectedProvince);
 
-        if (searchQuery || (searchType === 'rental' && selectedProvince)) {
-            router.push(`/search?${params.toString()}`);
-        }
+        // Update URL for sharing/bookmarking
+        window.history.replaceState({}, '', `/search?${params.toString()}`);
+
+        // Execute search
+        fetchResults();
     };
 
     // Sort results - boosted/PPC shops first, then by selected sort
     const sortResults = (results: SearchResult[]): SearchResult[] => {
-        if (type !== 'rental') return results;
+        if (searchType !== 'rental') return results;
 
         return [...results].sort((a, b) => {
             // First priority: Ad score (boosted/PPC shops)
@@ -174,176 +182,177 @@ export default function SearchResults() {
         }
     };
 
-    useEffect(() => {
-        async function fetchResults() {
-            setLoading(true);
-            setResults([]);
+    // Track if this is initial load from URL params
+    const [hasSearched, setHasSearched] = useState(false);
 
-            try {
-                if (type === 'rental') {
-                    // Search for Rental Shops - support both text query and province filter
-                    let shopQuery = supabase
-                        .from('shops')
-                        .select('*')
-                        .eq('verification_status', 'verified')
-                        .eq('is_active', true);
+    const fetchResults = async () => {
+        setLoading(true);
+        setResults([]);
+        setHasSearched(true);
 
-                    // Filter by province if provided
-                    if (province) {
-                        shopQuery = shopQuery.contains('service_provinces', [province]);
-                    }
+        try {
+            if (searchType === 'rental') {
+                // Search for Rental Shops - support both text query and province filter
+                let shopQuery = supabase
+                    .from('shops')
+                    .select('*')
+                    .eq('verification_status', 'verified')
+                    .eq('is_active', true);
 
-                    // Filter by text query if provided (search by shop name)
-                    if (query) {
-                        shopQuery = shopQuery.ilike('name', `%${query}%`);
-                    }
-
-                    const { data: shops } = await shopQuery;
-
-                    if (shops) {
-                        // Get ad settings for all shops
-                        const shopIds = shops.map(s => s.id);
-                        const { data: adSettings } = await supabase
-                            .from('shop_ad_settings')
-                            .select('*')
-                            .in('shop_id', shopIds);
-
-                        // Get subscription status for all shops (ร้านรับรอง)
-                        const { data: subscriptions } = await supabase
-                            .from('shop_subscriptions')
-                            .select('shop_id, status, ends_at')
-                            .in('shop_id', shopIds)
-                            .eq('status', 'active');
-
-                        const adSettingsMap: Record<string, any> = {};
-                        adSettings?.forEach(s => {
-                            adSettingsMap[s.shop_id] = s;
-                        });
-
-                        // Create a set of verified pro shops (active subscription)
-                        const verifiedProShops = new Set<string>();
-                        subscriptions?.forEach(s => {
-                            if (s.status === 'active' && new Date(s.ends_at) > new Date()) {
-                                verifiedProShops.add(s.shop_id);
-                            }
-                        });
-
-                        // Map shops with ad info
-                        const shopResults = shops.map(shop => {
-                            const settings = adSettingsMap[shop.id];
-                            let adScore = 0;
-                            let isBoosted = false;
-                            let isPPC = false;
-                            const isVerifiedPro = verifiedProShops.has(shop.id);
-
-                            // ร้านรับรอง gets priority in sorting
-                            if (isVerifiedPro) {
-                                adScore += 300;
-                            }
-
-                            if (settings) {
-                                // Check boost
-                                if (settings.boost_active && settings.boost_expires_at &&
-                                    new Date(settings.boost_expires_at) > new Date()) {
-                                    adScore += 500;
-                                    isBoosted = true;
-                                }
-                                // Check PPC
-                                if (settings.ppc_enabled) {
-                                    adScore += settings.ppc_bid * 10;
-                                    isPPC = true;
-                                }
-                            }
-
-                            return {
-                                type: 'shop' as const,
-                                data: shop,
-                                adScore,
-                                isBoosted,
-                                isPPC,
-                                isVerifiedPro
-                            };
-                        });
-
-                        setResults(shopResults);
-
-                        // Record impressions after a short delay
-                        setTimeout(() => recordImpressions(shopResults), 500);
-                    }
-
-                } else if (query) {
-                    // Search for Blacklist entries first
-                    const { data: blacklistEntries } = await supabase
-                        .from('blacklist_entries')
-                        .select('*')
-                        .or(`bank_account_no.ilike.%${query}%,shop_names.cs.{${query}}`)
-                        .order('total_reports', { ascending: false });
-
-                    // Also search by phone in arrays
-                    const { data: blacklistByPhone } = await supabase
-                        .from('blacklist_entries')
-                        .select('*')
-                        .contains('phone_numbers', [query]);
-
-                    // Search in Shops (registered shops) - but only with reports
-                    const { data: shops } = await supabase
-                        .from('shops')
-                        .select('*')
-                        .or(`name.ilike.%${query}%,bank_account_no.ilike.%${query}%,phone_number.ilike.%${query}%`)
-                        .gt('report_count', 0);
-
-                    const combinedResults: SearchResult[] = [];
-                    const seenIds = new Set<string>();
-
-                    // Add blacklist entries
-                    if (blacklistEntries) {
-                        blacklistEntries.forEach(entry => {
-                            if (!seenIds.has(entry.id)) {
-                                seenIds.add(entry.id);
-                                combinedResults.push({ type: 'blacklist', data: entry });
-                            }
-                        });
-                    }
-
-                    if (blacklistByPhone) {
-                        blacklistByPhone.forEach(entry => {
-                            if (!seenIds.has(entry.id)) {
-                                seenIds.add(entry.id);
-                                combinedResults.push({ type: 'blacklist', data: entry });
-                            }
-                        });
-                    }
-
-                    // Add shops with reports
-                    if (shops) {
-                        shops.forEach(shop => combinedResults.push({ type: 'shop', data: shop }));
-                    }
-
-                    setResults(combinedResults);
+                // Filter by province if provided
+                if (selectedProvince) {
+                    shopQuery = shopQuery.contains('service_provinces', [selectedProvince]);
                 }
-            } catch (error) {
-                console.error(error);
-            } finally {
-                setLoading(false);
-            }
-        }
 
-        if (query || (type === 'rental' && (province || query))) {
-            fetchResults();
-        } else if (type === 'rental') {
-            // For rental type without filters, show all verified shops
+                // Filter by text query if provided (search by shop name)
+                if (searchQuery) {
+                    shopQuery = shopQuery.ilike('name', `%${searchQuery}%`);
+                }
+
+                const { data: shops } = await shopQuery;
+
+                if (shops) {
+                    // Get ad settings for all shops
+                    const shopIds = shops.map(s => s.id);
+                    const { data: adSettings } = await supabase
+                        .from('shop_ad_settings')
+                        .select('*')
+                        .in('shop_id', shopIds);
+
+                    // Get subscription status for all shops (ร้านรับรอง)
+                    const { data: subscriptions } = await supabase
+                        .from('shop_subscriptions')
+                        .select('shop_id, status, ends_at')
+                        .in('shop_id', shopIds)
+                        .eq('status', 'active');
+
+                    const adSettingsMap: Record<string, any> = {};
+                    adSettings?.forEach(s => {
+                        adSettingsMap[s.shop_id] = s;
+                    });
+
+                    // Create a set of verified pro shops (active subscription)
+                    const verifiedProShops = new Set<string>();
+                    subscriptions?.forEach(s => {
+                        if (s.status === 'active' && new Date(s.ends_at) > new Date()) {
+                            verifiedProShops.add(s.shop_id);
+                        }
+                    });
+
+                    // Map shops with ad info
+                    const shopResults = shops.map(shop => {
+                        const settings = adSettingsMap[shop.id];
+                        let adScore = 0;
+                        let isBoosted = false;
+                        let isPPC = false;
+                        const isVerifiedPro = verifiedProShops.has(shop.id);
+
+                        // ร้านรับรอง gets priority in sorting
+                        if (isVerifiedPro) {
+                            adScore += 300;
+                        }
+
+                        if (settings) {
+                            // Check boost
+                            if (settings.boost_active && settings.boost_expires_at &&
+                                new Date(settings.boost_expires_at) > new Date()) {
+                                adScore += 500;
+                                isBoosted = true;
+                            }
+                            // Check PPC
+                            if (settings.ppc_enabled) {
+                                adScore += settings.ppc_bid * 10;
+                                isPPC = true;
+                            }
+                        }
+
+                        return {
+                            type: 'shop' as const,
+                            data: shop,
+                            adScore,
+                            isBoosted,
+                            isPPC,
+                            isVerifiedPro
+                        };
+                    });
+
+                    setResults(shopResults);
+
+                    // Record impressions after a short delay
+                    setTimeout(() => recordImpressions(shopResults), 500);
+                }
+
+            } else if (searchQuery) {
+                // Search for Blacklist entries first
+                const { data: blacklistEntries } = await supabase
+                    .from('blacklist_entries')
+                    .select('*')
+                    .or(`bank_account_no.ilike.%${searchQuery}%,shop_names.cs.{${searchQuery}}`)
+                    .order('total_reports', { ascending: false });
+
+                // Also search by phone in arrays
+                const { data: blacklistByPhone } = await supabase
+                    .from('blacklist_entries')
+                    .select('*')
+                    .contains('phone_numbers', [searchQuery]);
+
+                // Search in Shops (registered shops) - but only with reports
+                const { data: shops } = await supabase
+                    .from('shops')
+                    .select('*')
+                    .or(`name.ilike.%${searchQuery}%,bank_account_no.ilike.%${searchQuery}%,phone_number.ilike.%${searchQuery}%`)
+                    .gt('report_count', 0);
+
+                const combinedResults: SearchResult[] = [];
+                const seenIds = new Set<string>();
+
+                // Add blacklist entries
+                if (blacklistEntries) {
+                    blacklistEntries.forEach(entry => {
+                        if (!seenIds.has(entry.id)) {
+                            seenIds.add(entry.id);
+                            combinedResults.push({ type: 'blacklist', data: entry });
+                        }
+                    });
+                }
+
+                if (blacklistByPhone) {
+                    blacklistByPhone.forEach(entry => {
+                        if (!seenIds.has(entry.id)) {
+                            seenIds.add(entry.id);
+                            combinedResults.push({ type: 'blacklist', data: entry });
+                        }
+                    });
+                }
+
+                // Add shops with reports
+                if (shops) {
+                    shops.forEach(shop => combinedResults.push({ type: 'shop', data: shop }));
+                }
+
+                setResults(combinedResults);
+            } else {
+                // Blacklist search without query - show nothing
+                setResults([]);
+            }
+        } catch (error) {
+            console.error(error);
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    // Only auto-search on initial load if URL has search params
+    useEffect(() => {
+        if (query || province) {
+            // URL has search params, do initial search
             fetchResults();
         } else {
             setLoading(false);
         }
-    }, [query, type, province, supabase]);
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, []); // Only run once on mount
 
-    // Update form state when URL params change
-    useEffect(() => {
-        setSearchQuery(query || '');
-        setSelectedProvince(province || '');
-        setSearchType(type as 'blacklist' | 'rental');
-    }, [query, province, type]);
 
     const formatMoney = (amount: number) => {
         return new Intl.NumberFormat('th-TH', {
@@ -355,7 +364,7 @@ export default function SearchResults() {
 
     // Filter results based on filters
     const filteredResults = results.filter(r => {
-        if (type !== 'rental' || r.type !== 'shop') return true;
+        if (searchType !== 'rental' || r.type !== 'shop') return true;
 
         // Apply filters
         if (filterTaxInvoice && !r.data.can_issue_tax_invoice) return false;
@@ -368,13 +377,14 @@ export default function SearchResults() {
 
     const sortedResults = sortResults(filteredResults);
 
-    // Search form component
-    const SearchForm = () => (
+    // Search form JSX (inline to prevent focus loss on re-render)
+    const searchFormJSX = (
         <Card className="mb-6">
             <CardContent className="pt-6">
                 {/* Search Type Tabs */}
                 <div className="flex gap-2 mb-4">
                     <button
+                        type="button"
                         onClick={() => setSearchType('blacklist')}
                         className={`flex-1 py-2 px-4 rounded-lg font-medium transition-all ${
                             searchType === 'blacklist'
@@ -386,6 +396,7 @@ export default function SearchResults() {
                         {isThai ? 'ตรวจสอบ Blacklist' : 'Check Blacklist'}
                     </button>
                     <button
+                        type="button"
                         onClick={() => setSearchType('rental')}
                         className={`flex-1 py-2 px-4 rounded-lg font-medium transition-all ${
                             searchType === 'rental'
@@ -440,6 +451,7 @@ export default function SearchResults() {
                     )}
 
                     <Button
+                        type="button"
                         onClick={handleSearch}
                         className={`w-full py-3 font-semibold ${
                             searchType === 'blacklist'
@@ -458,7 +470,7 @@ export default function SearchResults() {
     if (loading) {
         return (
             <>
-                <SearchForm />
+                {searchFormJSX}
                 <div className="flex justify-center py-12"><Loader2 className="h-8 w-8 animate-spin text-blue-600" /></div>
             </>
         );
@@ -467,7 +479,7 @@ export default function SearchResults() {
     if (results.length === 0) {
         return (
             <>
-                <SearchForm />
+                {searchFormJSX}
                 <div className="text-center py-12 bg-slate-50 rounded-lg border border-dashed">
                     <SearchX className="h-12 w-12 text-slate-400 mx-auto mb-3" />
                     <h3 className="text-lg font-medium text-slate-900">{t('noResults')}</h3>
@@ -479,7 +491,7 @@ export default function SearchResults() {
 
     return (
         <div className="space-y-6">
-            <SearchForm />
+            {searchFormJSX}
 
             {/* Results Header with Sort */}
             <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
@@ -493,7 +505,7 @@ export default function SearchResults() {
                 </h2>
 
                 {/* Sort Controls - only for rental type */}
-                {type === 'rental' && results.length > 1 && (
+                {searchType === 'rental' && results.length > 1 && (
                     <div className="flex items-center gap-2">
                         <SlidersHorizontal className="w-4 h-4 text-gray-500" />
                         <span className="text-sm text-gray-500">{isThai ? 'เรียงตาม:' : 'Sort by:'}</span>
@@ -512,7 +524,7 @@ export default function SearchResults() {
             </div>
 
             {/* Filters - only for rental type */}
-            {type === 'rental' && (
+            {searchType === 'rental' && (
                 <div className="flex flex-wrap gap-3">
                     <label className={`flex items-center gap-2 px-3 py-2 rounded-lg border cursor-pointer transition-all ${
                         filterPayOnPickup
