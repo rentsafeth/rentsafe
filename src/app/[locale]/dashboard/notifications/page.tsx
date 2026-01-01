@@ -16,6 +16,7 @@ import {
     Crown,
     XCircle,
     Info,
+    Gift,
 } from 'lucide-react';
 import Link from 'next/link';
 
@@ -40,6 +41,7 @@ const NOTIFICATION_ICONS: Record<string, any> = {
     payment: CreditCard,
     warning: AlertTriangle,
     info: Info,
+    welcome_bonus: Gift,
 };
 
 const NOTIFICATION_COLORS: Record<string, string> = {
@@ -52,6 +54,7 @@ const NOTIFICATION_COLORS: Record<string, string> = {
     payment: 'text-green-600 bg-green-100',
     warning: 'text-orange-600 bg-orange-100',
     info: 'text-blue-600 bg-blue-100',
+    welcome_bonus: 'text-pink-600 bg-pink-100',
 };
 
 export default function NotificationsPage() {
@@ -142,6 +145,8 @@ export default function NotificationsPage() {
             case 'subscription_expired':
             case 'subscription_expiring':
                 return '/dashboard/subscription';
+            case 'welcome_bonus':
+                return '/dashboard/credits';
             default:
                 return null;
         }
@@ -202,9 +207,8 @@ export default function NotificationsPage() {
 
                                     const content = (
                                         <div
-                                            className={`flex items-start gap-4 p-4 hover:bg-gray-50 transition-colors cursor-pointer ${
-                                                !notification.is_read ? 'bg-blue-50/50' : ''
-                                            }`}
+                                            className={`flex items-start gap-4 p-4 hover:bg-gray-50 transition-colors cursor-pointer ${!notification.is_read ? 'bg-blue-50/50' : ''
+                                                }`}
                                             onClick={() => !notification.is_read && markAsRead(notification.id)}
                                         >
                                             <div className={`w-10 h-10 rounded-full flex items-center justify-center flex-shrink-0 ${colorClass}`}>

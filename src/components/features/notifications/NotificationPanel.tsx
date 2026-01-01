@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { createClient } from '@/lib/supabase/client';
-import { Bell, X, CheckCircle, AlertTriangle, Info, ShieldAlert, Crown, ChevronRight, Loader2 } from 'lucide-react';
+import { Bell, X, CheckCircle, AlertTriangle, Info, ShieldAlert, Crown, ChevronRight, Loader2, Gift } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import {
@@ -18,7 +18,7 @@ interface Notification {
     id: string;
     title: string;
     message: string;
-    type: 'announcement' | 'warning' | 'blacklist_new' | 'subscription' | 'system';
+    type: 'announcement' | 'warning' | 'blacklist_new' | 'subscription' | 'system' | 'welcome_bonus';
     severity: 'info' | 'warning' | 'danger' | 'success';
     action_url?: string;
     action_label?: string;
@@ -62,6 +62,13 @@ const typeConfig = {
         bgColor: 'bg-gray-50',
         borderColor: 'border-gray-200',
         iconColor: 'text-gray-500',
+    },
+    welcome_bonus: {
+        icon: Gift,
+        label: 'ของขวัญ',
+        bgColor: 'bg-pink-50',
+        borderColor: 'border-pink-200',
+        iconColor: 'text-pink-500',
     },
 };
 
@@ -173,9 +180,8 @@ export default function NotificationPanel({ maxItems = 5, showViewAll = true }: 
 
         return (
             <div
-                className={`p-3 rounded-lg border transition-all ${config.bgColor} ${config.borderColor} ${
-                    !notification.is_read ? 'ring-2 ring-blue-300' : ''
-                }`}
+                className={`p-3 rounded-lg border transition-all ${config.bgColor} ${config.borderColor} ${!notification.is_read ? 'ring-2 ring-blue-300' : ''
+                    }`}
                 onClick={() => {
                     if (!notification.is_read) {
                         markAsRead([notification.id]);
