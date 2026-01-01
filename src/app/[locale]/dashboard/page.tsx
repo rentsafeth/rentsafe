@@ -51,6 +51,7 @@ export default async function DashboardPage() {
     let reportsCount = 0;
     let subscription: any = null;
     let daysRemaining = 0;
+    let totalViews = 0;
 
     if (shop) {
         // Get subscription status
@@ -85,6 +86,14 @@ export default async function DashboardPage() {
             .eq('shop_id', shop.id);
 
         reportsCount = count || 0;
+
+        // Get total views (ad impressions)
+        const { data: adsData } = await supabase
+            .from('ads')
+            .select('impressions')
+            .eq('shop_id', shop.id);
+
+        totalViews = adsData?.reduce((acc, ad) => acc + (ad.impressions || 0), 0) || 0;
     }
 
     // Calculate days since registration
@@ -296,7 +305,7 @@ export default async function DashboardPage() {
                                             <Eye className="w-5 h-5 text-purple-600" />
                                         </div>
                                         <div>
-                                            <p className="text-2xl font-bold text-purple-600">-</p>
+                                            <p className="text-2xl font-bold text-purple-600">{totalViews.toLocaleString()}</p>
                                             <p className="text-xs text-slate-500">ยอดเข้าชม</p>
                                         </div>
                                     </div>

@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import {
@@ -92,6 +92,8 @@ export default function NotificationsPage() {
                 prev.map(n => n.id === notificationId ? { ...n, is_read: true } : n)
             );
             setUnreadCount(prev => Math.max(0, prev - 1));
+            // Dispatch event to update global badge
+            window.dispatchEvent(new CustomEvent('notificationsUpdated'));
         } catch (error) {
             console.error('Error marking as read:', error);
         }
@@ -108,6 +110,8 @@ export default function NotificationsPage() {
 
             setNotifications(prev => prev.map(n => ({ ...n, is_read: true })));
             setUnreadCount(0);
+            // Dispatch event to update global badge
+            window.dispatchEvent(new CustomEvent('notificationsUpdated'));
         } catch (error) {
             console.error('Error marking all as read:', error);
         } finally {

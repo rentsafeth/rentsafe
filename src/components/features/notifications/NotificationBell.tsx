@@ -11,9 +11,17 @@ export default function NotificationBell() {
     useEffect(() => {
         fetchUnreadCount();
 
+        // Listen for updates
+        const handleUpdate = () => fetchUnreadCount();
+        window.addEventListener('notificationsUpdated', handleUpdate);
+
         // Poll every 30 seconds
         const interval = setInterval(fetchUnreadCount, 30000);
-        return () => clearInterval(interval);
+
+        return () => {
+            clearInterval(interval);
+            window.removeEventListener('notificationsUpdated', handleUpdate);
+        };
     }, []);
 
     const fetchUnreadCount = async () => {

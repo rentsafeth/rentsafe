@@ -27,16 +27,24 @@ export default function ShareShopButton({
 
     const handleShare = async () => {
         const shareUrl = `${window.location.origin}/th/shop/${shopId}`;
-        const shareText = isVerifiedPro
+
+        // Text for clipboard (includes URL)
+        const clipboardText = isVerifiedPro
             ? `${shopName} ร้านรับรอง👑 ยืนยันตัวตนแล้ว\n${shareUrl}\nเช็คก่อนเช่า ปลอดภัยแน่นอน`
             : `${shopName} ยืนยันตัวตนแล้ว\n${shareUrl}\nเช็คก่อนเช่า ปลอดภัยแน่นอน`;
 
-        // Check if it's a desktop browser (no navigator.share or explicit request to copy)
-        const isDesktop = !navigator.share;
+        // Text for native share (URL passed separately)
+        const mobileShareText = isVerifiedPro
+            ? `${shopName} ร้านรับรอง👑 ยืนยันตัวตนแล้ว\nเช็คก่อนเช่า ปลอดภัยแน่นอน`
+            : `${shopName} ยืนยันตัวตนแล้ว\nเช็คก่อนเช่า ปลอดภัยแน่นอน`;
 
-        if (isDesktop) {
+        // Detect mobile device
+        const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
+
+        // If it's NOT mobile, prefer copy to clipboard
+        if (!isMobile) {
             try {
-                await navigator.clipboard.writeText(shareText);
+                await navigator.clipboard.writeText(clipboardText);
                 setCopied(true);
                 toast.success('คัดลอกลิงก์แล้ว', {
                     description: 'คุณสามารถนำไปวางเพื่อแชร์ได้ทันที'
@@ -54,13 +62,24 @@ export default function ShareShopButton({
             try {
                 await navigator.share({
                     title: shopName,
-                    text: shareText,
+                    text: mobileShareText,
                     url: shareUrl,
                 });
             } catch (err) {
                 if ((err as Error).name !== 'AbortError') {
                     console.error('Error sharing:', err);
                 }
+            }
+        } else {
+            // Fallback for mobile browsers without share support
+            try {
+                await navigator.clipboard.writeText(clipboardText);
+                setCopied(true);
+                toast.success('คัดลอกลิงก์แล้ว');
+                setTimeout(() => setCopied(false), 2000);
+            } catch (err) {
+                console.error('Error copying:', err);
+                toast.error('ไม่สามารถคัดลอกลิงก์ได้');
             }
         }
     };

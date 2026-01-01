@@ -27,18 +27,18 @@ export default async function AdminDashboardPage() {
 
     return (
         <div className="space-y-8">
-            <h1 className="text-3xl font-bold text-slate-900">Dashboard Overview</h1>
+            <h1 className="text-3xl font-bold text-slate-900">ภาพรวมระบบ</h1>
 
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
                 <Link href="/admin/shops">
                     <Card className="hover:shadow-lg transition-shadow cursor-pointer h-full">
                         <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                            <CardTitle className="text-sm font-medium">Pending Verifications</CardTitle>
+                            <CardTitle className="text-sm font-medium">รอตรวจสอบร้านค้า</CardTitle>
                             <Store className="h-4 w-4 text-yellow-500" />
                         </CardHeader>
                         <CardContent>
                             <div className="text-2xl font-bold">{pendingShops || 0}</div>
-                            <p className="text-xs text-muted-foreground">Shops waiting for approval</p>
+                            <p className="text-xs text-muted-foreground">ร้านค้าที่รอการอนุมัติ</p>
                         </CardContent>
                     </Card>
                 </Link>
@@ -46,12 +46,12 @@ export default async function AdminDashboardPage() {
                 <Link href="/admin/reports">
                     <Card className="hover:shadow-lg transition-shadow cursor-pointer h-full">
                         <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                            <CardTitle className="text-sm font-medium">Pending Reports</CardTitle>
+                            <CardTitle className="text-sm font-medium">รอตรวจสอบรายงาน</CardTitle>
                             <ShieldAlert className="h-4 w-4 text-red-500" />
                         </CardHeader>
                         <CardContent>
                             <div className="text-2xl font-bold">{pendingReports || 0}</div>
-                            <p className="text-xs text-muted-foreground">Reports waiting for moderation</p>
+                            <p className="text-xs text-muted-foreground">รายงานที่รอการตรวจสอบ</p>
                         </CardContent>
                     </Card>
                 </Link>
@@ -59,24 +59,24 @@ export default async function AdminDashboardPage() {
                 <Link href="/admin/shops/manage">
                     <Card className="hover:shadow-lg transition-shadow cursor-pointer h-full">
                         <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                            <CardTitle className="text-sm font-medium">Total Shops</CardTitle>
+                            <CardTitle className="text-sm font-medium">ร้านค้าทั้งหมด</CardTitle>
                             <CheckCircle className="h-4 w-4 text-green-500" />
                         </CardHeader>
                         <CardContent>
                             <div className="text-2xl font-bold">{totalShops || 0}</div>
-                            <p className="text-xs text-muted-foreground">Registered rental shops</p>
+                            <p className="text-xs text-muted-foreground">ร้านเช่ารถที่ลงทะเบียน</p>
                         </CardContent>
                     </Card>
                 </Link>
 
                 <Card>
                     <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                        <CardTitle className="text-sm font-medium">Total Users</CardTitle>
+                        <CardTitle className="text-sm font-medium">ผู้ใช้งานทั้งหมด</CardTitle>
                         <Users className="h-4 w-4 text-blue-500" />
                     </CardHeader>
                     <CardContent>
                         <div className="text-2xl font-bold">{totalUsers || 0}</div>
-                        <p className="text-xs text-muted-foreground">Registered accounts</p>
+                        <p className="text-xs text-muted-foreground">บัญชีผู้ใช้ในระบบ</p>
                     </CardContent>
                 </Card>
             </div>

@@ -164,6 +164,9 @@ export default function NotificationPanel({ maxItems = 5, showViewAll = true }: 
             if (showAllModal) {
                 loadAllNotifications();
             }
+
+            // Dispatch event to update global badge
+            window.dispatchEvent(new CustomEvent('notificationsUpdated'));
         } catch (error) {
             console.error('Error marking notifications as read:', error);
         }
