@@ -69,7 +69,7 @@ export default function ReportForm({ userId }: { userId: string }) {
                 const { data } = await supabase
                     .from('shops')
                     .select('*')
-                    .eq('shop_code', prefilledShopId)
+                    .eq('id', prefilledShopId)
                     .single();
                 if (data) {
                     setShopInfo(data);
