@@ -65,6 +65,7 @@ export default function SearchResults() {
     const type = searchParams.get('type') || 'blacklist';
     const province = searchParams.get('province');
     const t = useTranslations('SearchPage');
+    const tHome = useTranslations('HomePage');
 
     const [results, setResults] = useState<SearchResult[]>([]);
     const [loading, setLoading] = useState(true);
@@ -384,28 +385,30 @@ export default function SearchResults() {
         <Card className="mb-8 shadow-lg border-0 bg-white/80 backdrop-blur-sm">
             <CardContent className="p-6">
                 {/* Search Type Tabs - Modern Design */}
-                <div className="flex gap-3 mb-6">
+                <div className="flex gap-2 sm:gap-3 mb-6">
                     <button
                         type="button"
                         onClick={() => setSearchType('blacklist')}
-                        className={`flex-1 py-4 px-6 rounded-xl font-semibold transition-all duration-300 flex items-center justify-center gap-3 ${searchType === 'blacklist'
+                        className={`flex-1 py-3 sm:py-4 px-2 sm:px-4 rounded-xl font-semibold transition-all duration-300 flex items-center justify-center gap-2 ${searchType === 'blacklist'
                             ? 'bg-gradient-to-r from-red-600 to-red-500 text-white shadow-lg shadow-red-500/30 scale-[1.02]'
                             : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
                             }`}
                     >
                         <ShieldAlert className="w-5 h-5" />
-                        <span>{t('checkBlacklist')}</span>
+                        <span className="hidden sm:inline">{tHome('checkBlacklist')}</span>
+                        <span className="sm:hidden text-sm">{tHome('checkBlacklist').split(' ')[0]}</span>
                     </button>
                     <button
                         type="button"
                         onClick={() => setSearchType('rental')}
-                        className={`flex-1 py-4 px-6 rounded-xl font-semibold transition-all duration-300 flex items-center justify-center gap-3 ${searchType === 'rental'
+                        className={`flex-1 py-3 sm:py-4 px-2 sm:px-4 rounded-xl font-semibold transition-all duration-300 flex items-center justify-center gap-2 ${searchType === 'rental'
                             ? 'bg-gradient-to-r from-blue-500 to-indigo-500 text-white shadow-lg shadow-blue-500/30 scale-[1.02]'
                             : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
                             }`}
                     >
                         <Star className="w-5 h-5" />
-                        <span>{isThai ? 'ค้นหารถเช่า' : 'Find Car Rental'}</span>
+                        <span className="hidden sm:inline">{tHome('findRental')}</span>
+                        <span className="sm:hidden text-sm">{tHome('findRental').split(' ')[0]}</span>
                     </button>
                 </div>
 
@@ -457,7 +460,7 @@ export default function SearchResults() {
                 </div>
             </CardContent>
         </Card>
-    ), [searchType, searchQuery, selectedProvince, isThai]);
+    ), [searchType, searchQuery, selectedProvince, isThai, tHome]);
 
     // No Results Component with Report CTA
     const NoResultsView = () => (
