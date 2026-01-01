@@ -7,7 +7,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import {
     CheckCircle, MapPin, Phone, MessageCircle, AlertTriangle,
     Calendar, Star, Building2, CreditCard, Globe, ShieldCheck,
-    Clock, Users, ExternalLink
+    Clock, Users, ExternalLink, Crown
 } from 'lucide-react';
 import Link from 'next/link';
 import Image from 'next/image';
@@ -218,18 +218,22 @@ export default async function ShopProfilePage({ params }: { params: Promise<{ id
                                 <div className="flex-1">
                                     <div className="flex items-center gap-3 mb-2 flex-wrap">
                                         <h1 className="text-2xl md:text-3xl font-bold text-slate-900">{shop.name}</h1>
-                                        {shop.verification_status === 'verified' && (
+                                        {isVerifiedPro ? (
+                                            <Badge className="bg-gradient-to-r from-yellow-400 to-orange-400 text-white hover:from-yellow-500 hover:to-orange-500 px-3 py-1">
+                                                <Crown className="w-4 h-4 mr-1" />
+                                                ร้านรับรอง
+                                            </Badge>
+                                        ) : shop.verification_status === 'verified' ? (
                                             <Badge className="bg-green-100 text-green-700 hover:bg-green-100 border-green-200 px-3 py-1">
                                                 <ShieldCheck className="w-4 h-4 mr-1" />
                                                 ร้านค้ายืนยันตัวตนแล้ว
                                             </Badge>
-                                        )}
-                                        {shop.verification_status === 'pending' && (
+                                        ) : shop.verification_status === 'pending' ? (
                                             <Badge variant="outline" className="text-yellow-600 border-yellow-200 bg-yellow-50">
                                                 <Clock className="w-4 h-4 mr-1" />
                                                 รอการตรวจสอบ
                                             </Badge>
-                                        )}
+                                        ) : null}
                                     </div>
                                     {shop.description && (
                                         <p className="text-slate-600 max-w-2xl mb-4">{shop.description}</p>

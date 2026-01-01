@@ -101,6 +101,9 @@ END;
 $$ LANGUAGE plpgsql SECURITY DEFINER;
 
 -- Also fix process_auto_renewals function
+-- Must drop first because return type is changing
+DROP FUNCTION IF EXISTS process_auto_renewals();
+
 CREATE OR REPLACE FUNCTION process_auto_renewals() RETURNS TABLE (
     shop_id TEXT,
     status TEXT,
