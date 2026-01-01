@@ -2,7 +2,7 @@ import { Metadata } from 'next'
 import { getTranslations } from 'next-intl/server'
 import { createClient } from '@/lib/supabase/server'
 import HeroSection from '@/components/features/home/HeroSection'
-import { Shield, Search, AlertTriangle, CheckCircle, Star, Building2 } from 'lucide-react'
+import { Shield, Search, AlertTriangle, CheckCircle, Star, Building2, Users, BarChart3 } from 'lucide-react'
 import Link from 'next/link'
 import Image from 'next/image'
 
@@ -39,17 +39,29 @@ export default async function HomePage({ params }: { params: Promise<{ locale: s
     const t = await getTranslations({ locale, namespace: 'HomePage' })
     const supabase = await createClient()
 
+    // Increment visitor count (fire and forget)
+    supabase.rpc('increment_site_visitor').then(({ error }) => {
+        if (error) console.error('Error incrementing visitor:', error)
+    })
+
     // Fetch real stats from database
-    const [shopsResult, usersResult, reportsResult] = await Promise.all([
+    const [shopsResult, usersResult, reportsResult, todayStats, totalStats] = await Promise.all([
         supabase.from('shops').select('id', { count: 'exact', head: true }),
         supabase.from('profiles').select('id', { count: 'exact', head: true }),
         supabase.from('reports').select('id', { count: 'exact', head: true }),
+        supabase.from('site_daily_stats').select('visitor_count').eq('date', new Date().toISOString().split('T')[0]).maybeSingle(),
+        supabase.from('site_daily_stats').select('visitor_count'), // We'll sum this up manually or use .sum() if available but simple select is fine for small scale
     ])
+
+    const totalVisitors = totalStats.data?.reduce((sum, row) => sum + row.visitor_count, 0) || 0
+    const todayVisitors = todayStats.data?.visitor_count || 0
 
     const stats = {
         shops: shopsResult.count || 0,
         users: usersResult.count || 0,
         reports: reportsResult.count || 0,
+        todayVisitors,
+        totalVisitors
     }
 
     // Fetch verified shops (limit 3)
@@ -287,6 +299,33 @@ export default async function HomePage({ params }: { params: Promise<{ locale: s
                             {t('noReports')}
                         </div>
                     )}
+                </div>
+            </section>
+
+            {/* Visitor Stats Section */}
+            <section className="py-8 bg-slate-50 border-t border-slate-200">
+                <div className="container mx-auto px-4">
+                    <div className="flex flex-col sm:flex-row items-center justify-center gap-8 md:gap-16 text-center">
+                        <div className="flex items-center gap-3">
+                            <div className="p-2 bg-blue-100 rounded-lg">
+                                <Users className="w-5 h-5 text-blue-600" />
+                            </div>
+                            <div className="text-left">
+                                <p className="text-sm text-slate-500 font-medium">เข้าชมวันนี้</p>
+                                <p className="text-xl font-bold text-slate-900">{stats.todayVisitors.toLocaleString()}</p>
+                            </div>
+                        </div>
+                        <div className="w-px h-10 bg-slate-200 hidden sm:block"></div>
+                        <div className="flex items-center gap-3">
+                            <div className="p-2 bg-purple-100 rounded-lg">
+                                <BarChart3 className="w-5 h-5 text-purple-600" />
+                            </div>
+                            <div className="text-left">
+                                <p className="text-sm text-slate-500 font-medium">เข้าชมทั้งหมด</p>
+                                <p className="text-xl font-bold text-slate-900">{stats.totalVisitors.toLocaleString()}</p>
+                            </div>
+                        </div>
+                    </div>
                 </div>
             </section>
 
