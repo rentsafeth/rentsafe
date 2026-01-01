@@ -560,30 +560,26 @@ export default function AdsPage() {
                     return (
                         <div
                             key={schedule.id}
-                            className={`flex items-center justify-between p-4 rounded-lg border ${
-                                status === 'active'
+                            className={`flex items-center justify-between p-4 rounded-lg border ${status === 'active'
                                     ? 'bg-green-50 border-green-200'
                                     : status === 'pending'
-                                    ? 'bg-blue-50 border-blue-200'
-                                    : 'bg-gray-50 border-gray-200'
-                            }`}
+                                        ? 'bg-blue-50 border-blue-200'
+                                        : 'bg-gray-50 border-gray-200'
+                                }`}
                         >
                             <div className="flex items-center gap-4">
-                                <div className={`p-2 rounded-full ${
-                                    status === 'active'
+                                <div className={`p-2 rounded-full ${status === 'active'
                                         ? 'bg-green-100'
                                         : status === 'pending'
-                                        ? 'bg-blue-100'
-                                        : 'bg-gray-100'
-                                }`}>
+                                            ? 'bg-blue-100'
+                                            : 'bg-gray-100'
+                                    }`}>
                                     {type === 'boost' ? (
-                                        <Zap className={`w-5 h-5 ${
-                                            status === 'active' ? 'text-green-600' : status === 'pending' ? 'text-blue-600' : 'text-gray-600'
-                                        }`} />
+                                        <Zap className={`w-5 h-5 ${status === 'active' ? 'text-green-600' : status === 'pending' ? 'text-blue-600' : 'text-gray-600'
+                                            }`} />
                                     ) : (
-                                        <MousePointer className={`w-5 h-5 ${
-                                            status === 'active' ? 'text-green-600' : status === 'pending' ? 'text-blue-600' : 'text-gray-600'
-                                        }`} />
+                                        <MousePointer className={`w-5 h-5 ${status === 'active' ? 'text-green-600' : status === 'pending' ? 'text-blue-600' : 'text-gray-600'
+                                            }`} />
                                     )}
                                 </div>
                                 <div>
@@ -816,33 +812,30 @@ export default function AdsPage() {
                 <TabsList className="grid w-full grid-cols-3 h-14 p-1 bg-gray-100">
                     <TabsTrigger
                         value="boost"
-                        className={`flex items-center gap-2 h-full transition-all ${
-                            activeTab === 'boost'
+                        className={`flex items-center gap-2 h-full transition-all ${activeTab === 'boost'
                                 ? 'bg-gradient-to-r from-yellow-400 to-orange-500 text-white shadow-lg'
                                 : 'hover:bg-gray-200'
-                        }`}
+                            }`}
                     >
                         <Zap className="w-4 h-4" />
                         Daily Boost
                     </TabsTrigger>
                     <TabsTrigger
                         value="ppc"
-                        className={`flex items-center gap-2 h-full transition-all ${
-                            activeTab === 'ppc'
+                        className={`flex items-center gap-2 h-full transition-all ${activeTab === 'ppc'
                                 ? 'bg-gradient-to-r from-blue-500 to-indigo-600 text-white shadow-lg'
                                 : 'hover:bg-gray-200'
-                        }`}
+                            }`}
                     >
                         <MousePointer className="w-4 h-4" />
                         Pay Per Click
                     </TabsTrigger>
                     <TabsTrigger
                         value="stats"
-                        className={`flex items-center gap-2 h-full transition-all ${
-                            activeTab === 'stats'
+                        className={`flex items-center gap-2 h-full transition-all ${activeTab === 'stats'
                                 ? 'bg-gradient-to-r from-purple-500 to-pink-600 text-white shadow-lg'
                                 : 'hover:bg-gray-200'
-                        }`}
+                            }`}
                     >
                         <BarChart3 className="w-4 h-4" />
                         สถิติ
@@ -969,16 +962,17 @@ export default function AdsPage() {
                                     </div>
                                 </div>
 
-                                <div className="flex items-center justify-between p-4 bg-gray-50 rounded-lg">
+                                <div className={`flex items-center justify-between p-4 rounded-xl transition-all duration-300 ${adSettings.ppc_enabled ? 'bg-green-50 border border-green-200 shadow-sm' : 'bg-gray-50 border border-transparent'}`}>
                                     <div>
-                                        <Label className="text-base font-medium">เปิดใช้งาน PPC</Label>
-                                        <p className="text-sm text-gray-500">เมื่อเปิด จะหักเครดิตอัตโนมัติเมื่อมีคนคลิก</p>
+                                        <Label className={`text-base font-bold transition-colors ${adSettings.ppc_enabled ? 'text-green-800' : 'text-gray-700'}`}>เปิดใช้งาน PPC</Label>
+                                        <p className={`text-sm transition-colors ${adSettings.ppc_enabled ? 'text-green-600' : 'text-gray-500'}`}>เมื่อเปิด จะหักเครดิตอัตโนมัติเมื่อมีคนคลิก</p>
                                     </div>
                                     <Switch
                                         checked={adSettings.ppc_enabled}
                                         onCheckedChange={(checked) =>
                                             setAdSettings(prev => ({ ...prev, ppc_enabled: checked }))
                                         }
+                                        className="data-[state=checked]:bg-green-500"
                                     />
                                 </div>
 
@@ -1040,7 +1034,11 @@ export default function AdsPage() {
                                     </div>
                                 )}
 
-                                <Button onClick={savePPCSettings} disabled={saving} className="w-full bg-blue-500 hover:bg-blue-600">
+                                <Button
+                                    onClick={savePPCSettings}
+                                    disabled={saving}
+                                    className="w-full h-12 text-lg font-bold bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 shadow-lg shadow-blue-500/30 transition-all duration-300"
+                                >
                                     {saving && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
                                     บันทึกการตั้งค่า PPC
                                 </Button>
@@ -1380,10 +1378,9 @@ export default function AdsPage() {
             <AlertDialog open={toastModal.open} onOpenChange={(open) => setToastModal(prev => ({ ...prev, open }))}>
                 <AlertDialogContent className="max-w-sm">
                     <AlertDialogHeader>
-                        <AlertDialogTitle className={`flex items-center gap-2 ${
-                            toastModal.type === 'success' ? 'text-green-600' :
-                            toastModal.type === 'error' ? 'text-red-600' : 'text-yellow-600'
-                        }`}>
+                        <AlertDialogTitle className={`flex items-center gap-2 ${toastModal.type === 'success' ? 'text-green-600' :
+                                toastModal.type === 'error' ? 'text-red-600' : 'text-yellow-600'
+                            }`}>
                             {toastModal.type === 'success' && <CheckCircle className="w-5 h-5" />}
                             {toastModal.type === 'error' && <AlertCircle className="w-5 h-5" />}
                             {toastModal.type === 'warning' && <AlertCircle className="w-5 h-5" />}
@@ -1398,7 +1395,7 @@ export default function AdsPage() {
                             onClick={() => setToastModal(prev => ({ ...prev, open: false }))}
                             className={
                                 toastModal.type === 'success' ? 'bg-green-600 hover:bg-green-700' :
-                                toastModal.type === 'error' ? 'bg-red-600 hover:bg-red-700' : 'bg-yellow-600 hover:bg-yellow-700'
+                                    toastModal.type === 'error' ? 'bg-red-600 hover:bg-red-700' : 'bg-yellow-600 hover:bg-yellow-700'
                             }
                         >
                             ตกลง
