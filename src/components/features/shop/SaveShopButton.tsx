@@ -94,8 +94,8 @@ export default function SaveShopButton({ shopId, className, variant = 'default' 
                 onClick={toggleSave}
                 disabled={loading}
                 className={`p-2 rounded-full transition-colors ${isSaved
-                    ? 'bg-blue-100 text-blue-600 hover:bg-blue-200'
-                    : 'bg-gray-100 text-gray-500 hover:bg-gray-200'
+                    ? 'bg-yellow-100 text-yellow-600 hover:bg-yellow-200 border border-yellow-200'
+                    : 'bg-gray-100 text-gray-500 hover:bg-gray-200 border border-transparent'
                     } disabled:opacity-50 ${className}`}
                 title={isSaved ? 'ยกเลิกบันทึก' : 'บันทึกร้านนี้'}
             >
@@ -109,7 +109,7 @@ export default function SaveShopButton({ shopId, className, variant = 'default' 
             onClick={toggleSave}
             disabled={loading}
             variant={isSaved ? 'default' : 'outline'}
-            className={`${isSaved ? 'bg-blue-600 hover:bg-blue-700' : ''} ${className}`}
+            className={`${isSaved ? 'bg-yellow-500 hover:bg-yellow-600 text-white border-yellow-600' : ''} ${className}`}
         >
             <Bookmark className={`w-4 h-4 mr-2 ${isSaved ? 'fill-current' : ''}`} />
             {isSaved ? 'บันทึกแล้ว' : 'บันทึกร้าน'}

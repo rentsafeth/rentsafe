@@ -14,6 +14,7 @@ import Image from 'next/image';
 import { PROVINCES } from '@/lib/constants/provinces';
 import SaveShopButton from '@/components/features/shop/SaveShopButton';
 import ShopServiceBadges from '@/components/features/shop/ShopServiceBadges';
+import ShareShopButton from '@/components/features/shop/ShareShopButton';
 
 const BASE_URL = 'https://rentsafe.in.th';
 
@@ -98,6 +99,16 @@ export default async function ShopProfilePage({ params }: { params: Promise<{ id
     const avgRating = reviewsCount > 0
         ? (reviewsData?.reduce((acc, r) => acc + r.rating, 0) || 0) / reviewsCount
         : 0;
+
+    // Check if shop is verified pro
+    const { data: subData } = await supabase
+        .from('shop_subscriptions')
+        .select('status, ends_at')
+        .eq('shop_id', id)
+        .eq('status', 'active')
+        .maybeSingle();
+
+    const isVerifiedPro = !!(subData && new Date(subData.ends_at) > new Date());
 
     const getProvinceLabel = (value: string) => {
         return PROVINCES.find(p => p.value === value)?.label || value;
@@ -260,8 +271,14 @@ export default async function ShopProfilePage({ params }: { params: Promise<{ id
                                     </div>
                                 </div>
 
-                                <div className="flex gap-3">
+                                <div className="flex gap-3 items-center">
                                     <SaveShopButton shopId={shop.id} variant="icon" />
+                                    <ShareShopButton
+                                        shopName={shop.name}
+                                        shopId={shop.id}
+                                        isVerifiedPro={isVerifiedPro}
+                                        size="icon"
+                                    />
                                     <Link href={`/report?shop_id=${shop.id}`}>
                                         <Button variant="outline" className="text-red-600 border-red-200 hover:bg-red-50">
                                             <AlertTriangle className="w-4 h-4 mr-2" />

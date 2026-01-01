@@ -5,8 +5,9 @@ import Image from 'next/image';
 import {
     Building2, Edit, ExternalLink, Clock, CheckCircle, XCircle,
     Star, AlertTriangle, Eye, Calendar, Phone, MessageCircle,
-    Globe, MapPin, Coins, Megaphone, Crown, Shield, Search
+    Globe, MapPin, Coins, Megaphone, Crown, Shield
 } from 'lucide-react';
+import ShareShopButton from '@/components/features/shop/ShareShopButton';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent } from '@/components/ui/card';
@@ -239,6 +240,14 @@ export default async function DashboardPage() {
                                                 <span className="hidden sm:inline">ดูหน้าร้าน</span>
                                             </Button>
                                         </Link>
+                                        <ShareShopButton
+                                            shopName={shop.name}
+                                            shopId={shop.id}
+                                            isVerifiedPro={!!subscription}
+                                            variant="outline"
+                                            size="sm"
+                                            className="border-blue-200 text-blue-600 hover:bg-blue-50"
+                                        />
                                     </div>
                                 </div>
 
