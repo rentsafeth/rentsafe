@@ -113,11 +113,8 @@ export default function CreditsPage() {
                 setTopupEnabled(s.value === true || s.value === 'true');
             }
             if (s.key === 'promptpay_number') {
-                // Format phone number with dashes for promptpay.io (xxx-xxx-xxxx)
-                let num = typeof s.value === 'string' ? s.value.replace(/"/g, '').replace(/-/g, '') : String(s.value);
-                if (num.length === 10) {
-                    num = `${num.slice(0, 3)}-${num.slice(3, 6)}-${num.slice(6)}`;
-                }
+                // Clean phone number (remove quotes and dashes)
+                const num = typeof s.value === 'string' ? s.value.replace(/"/g, '').replace(/-/g, '') : String(s.value);
                 setPromptpayNumber(num);
             }
         });
@@ -485,7 +482,7 @@ export default function CreditsPage() {
                                     {/* QR Code */}
                                     <div className="inline-block p-4 bg-white rounded-xl shadow-sm mb-4">
                                         <Image
-                                            src={`https://promptpay.io/${promptpayNumber}/${currentOrder.amount}`}
+                                            src={`https://promptpay.io/${promptpayNumber}.png/${currentOrder.amount}`}
                                             alt="PromptPay QR"
                                             width={200}
                                             height={200}
@@ -611,7 +608,7 @@ export default function CreditsPage() {
                                     {/* QR Code */}
                                     <div className="inline-block p-4 bg-white rounded-xl shadow-sm mb-4">
                                         <Image
-                                            src={`https://promptpay.io/${promptpayNumber}/${selectedPackage.price}`}
+                                            src={`https://promptpay.io/${promptpayNumber}.png/${selectedPackage.price}`}
                                             alt="PromptPay QR"
                                             width={200}
                                             height={200}
