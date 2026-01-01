@@ -107,7 +107,7 @@ export default async function AdminShopDetailPage({ params }: PageProps) {
                 `;
 
             await resend.emails.send({
-                from: 'RentSafe Team <noreply@send.rentsafe.in.th>',
+                from: 'RentSafe Team <noreply@rentsafe.in.th>',
                 to: email,
                 subject: subject,
                 html: htmlContent
