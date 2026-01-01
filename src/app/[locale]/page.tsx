@@ -302,33 +302,6 @@ export default async function HomePage({ params }: { params: Promise<{ locale: s
                 </div>
             </section>
 
-            {/* Visitor Stats Section */}
-            <section className="py-8 bg-slate-50 border-t border-slate-200">
-                <div className="container mx-auto px-4">
-                    <div className="flex flex-col sm:flex-row items-center justify-center gap-8 md:gap-16 text-center">
-                        <div className="flex items-center gap-3">
-                            <div className="p-2 bg-blue-100 rounded-lg">
-                                <Users className="w-5 h-5 text-blue-600" />
-                            </div>
-                            <div className="text-left">
-                                <p className="text-sm text-slate-500 font-medium">เข้าชมวันนี้</p>
-                                <p className="text-xl font-bold text-slate-900">{stats.todayVisitors.toLocaleString()}</p>
-                            </div>
-                        </div>
-                        <div className="w-px h-10 bg-slate-200 hidden sm:block"></div>
-                        <div className="flex items-center gap-3">
-                            <div className="p-2 bg-purple-100 rounded-lg">
-                                <BarChart3 className="w-5 h-5 text-purple-600" />
-                            </div>
-                            <div className="text-left">
-                                <p className="text-sm text-slate-500 font-medium">เข้าชมทั้งหมด</p>
-                                <p className="text-xl font-bold text-slate-900">{stats.totalVisitors.toLocaleString()}</p>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </section>
-
             {/* CTA Section */}
             <section className="py-16 md:py-24 bg-gradient-to-br from-gray-900 to-gray-800">
                 <div className="container mx-auto px-4 text-center">
@@ -352,6 +325,33 @@ export default async function HomePage({ params }: { params: Promise<{ locale: s
                         >
                             {t('ctaSearch')}
                         </Link>
+                    </div>
+                </div>
+            </section>
+
+            {/* Visitor Stats Section - Bottom of page */}
+            <section className="py-6 bg-gray-900 border-t border-gray-800">
+                <div className="container mx-auto px-4">
+                    <div className="flex flex-col sm:flex-row items-center justify-center gap-8 md:gap-16 text-center">
+                        <div className="flex items-center gap-3">
+                            <div className="p-2 bg-gray-800 rounded-lg">
+                                <Users className="w-4 h-4 text-blue-400" />
+                            </div>
+                            <div className="text-left">
+                                <p className="text-xs text-gray-400 font-medium">เข้าชมวันนี้</p>
+                                <p className="text-lg font-bold text-white">{stats.todayVisitors.toLocaleString()}</p>
+                            </div>
+                        </div>
+                        <div className="w-px h-8 bg-gray-800 hidden sm:block"></div>
+                        <div className="flex items-center gap-3">
+                            <div className="p-2 bg-gray-800 rounded-lg">
+                                <BarChart3 className="w-4 h-4 text-purple-400" />
+                            </div>
+                            <div className="text-left">
+                                <p className="text-xs text-gray-400 font-medium">เข้าชมทั้งหมด</p>
+                                <p className="text-lg font-bold text-white">{stats.totalVisitors.toLocaleString()}</p>
+                            </div>
+                        </div>
                     </div>
                 </div>
             </section>
