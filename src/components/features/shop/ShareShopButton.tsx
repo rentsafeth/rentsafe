@@ -41,7 +41,7 @@ export default function ShareShopButton({
         // Detect mobile device
         const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
 
-        // If it's NOT mobile, prefer copy to clipboard
+        // If it's NOT mobile, ALWAYS use copy to clipboard (ignore navigator.share on desktop)
         if (!isMobile) {
             try {
                 await navigator.clipboard.writeText(clipboardText);

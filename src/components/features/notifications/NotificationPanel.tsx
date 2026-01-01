@@ -254,7 +254,10 @@ export default function NotificationPanel({ maxItems = 5, showViewAll = true }: 
                         <Button
                             variant="ghost"
                             size="sm"
-                            onClick={() => markAsRead()}
+                            onClick={(e) => {
+                                e.stopPropagation();
+                                markAsRead();
+                            }}
                             className="text-xs text-gray-500 hover:text-gray-700"
                         >
                             อ่านทั้งหมด

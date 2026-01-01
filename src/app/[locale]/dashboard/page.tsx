@@ -88,12 +88,12 @@ export default async function DashboardPage() {
         reportsCount = count || 0;
 
         // Get total views (ad impressions)
-        const { data: adsData } = await supabase
-            .from('ads')
+        const { data: statsData } = await supabase
+            .from('ad_stats_daily')
             .select('impressions')
             .eq('shop_id', shop.id);
 
-        totalViews = adsData?.reduce((acc, ad) => acc + (ad.impressions || 0), 0) || 0;
+        totalViews = statsData?.reduce((acc, stat) => acc + (stat.impressions || 0), 0) || 0;
     }
 
     // Calculate days since registration
