@@ -513,9 +513,9 @@ export default function AdsPage() {
         }
     };
 
-    const boostPrice = parseInt(systemSettings.daily_boost_price) || 50;
-    const minPPC = parseInt(systemSettings.min_ppc_bid) || 1;
-    const maxPPC = parseInt(systemSettings.max_ppc_bid) || 100;
+    const boostPrice = parseInt(systemSettings?.daily_boost_price || '50');
+    const minPPC = parseInt(systemSettings?.min_ppc_bid || '1');
+    const maxPPC = parseInt(systemSettings?.max_ppc_bid || '100');
 
     const isBoostActive = adSettings.boost_active &&
         adSettings.boost_expires_at &&
