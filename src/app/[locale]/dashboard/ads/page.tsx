@@ -914,7 +914,7 @@ export default function AdsPage() {
                                         <Button
                                             className="w-full h-12 text-lg bg-gradient-to-r from-yellow-500 to-orange-500 hover:from-yellow-600 hover:to-orange-600"
                                             onClick={() => setBoostDialog(true)}
-                                            disabled={shop?.credit_balance < boostPrice}
+                                            disabled={(shop?.credit_balance || 0) < boostPrice}
                                         >
                                             <Zap className="w-5 h-5 mr-2" />
                                             ซื้อ Daily Boost ทันที
