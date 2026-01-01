@@ -11,7 +11,7 @@ import {
     Loader2, ShieldAlert, CheckCircle, MapPin, SearchX, AlertTriangle,
     CreditCard, Phone, Star, Search, SlidersHorizontal, Zap, Receipt,
     FileText, Banknote, Crown, MessageCircle, Heart, Gift, Sparkles,
-    ShieldCheck, TrendingUp, Users, AlertCircle, ExternalLink
+    ShieldCheck, TrendingUp, Users, AlertCircle, ExternalLink, LayoutGrid, List
 } from 'lucide-react';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import Link from 'next/link';
@@ -84,6 +84,9 @@ export default function SearchResults() {
 
     // Track if this is initial load from URL params
     const [hasSearched, setHasSearched] = useState(false);
+
+    // View mode: list (compact) or grid (full card)
+    const [viewMode, setViewMode] = useState<'list' | 'grid'>('list');
 
     const supabase = createClient();
 
@@ -756,6 +759,89 @@ export default function SearchResults() {
         </Card>
     );
 
+    // Shop List Item (Compact View)
+    const ShopListItem = ({ result }: { result: SearchResult }) => (
+        <div className={`group flex items-center gap-3 p-3 sm:p-4 rounded-xl border transition-all duration-200 hover:shadow-md ${result.isVerifiedPro
+                ? 'bg-gradient-to-r from-yellow-50/50 to-white border-yellow-200 hover:border-yellow-300'
+                : 'bg-white border-slate-200 hover:border-slate-300'
+            }`}>
+            {/* Badges (compact) */}
+            <div className="flex flex-col gap-1 min-w-0 flex-1">
+                <div className="flex items-center gap-1.5 flex-wrap">
+                    {result.isVerifiedPro && (
+                        <Badge className="bg-gradient-to-r from-yellow-400 to-orange-400 text-white border-0 shadow-sm px-2 py-0.5 text-xs">
+                            <Crown className="w-3 h-3 mr-0.5" />
+                            {isThai ? 'ร้านรับรอง' : 'Verified'}
+                        </Badge>
+                    )}
+                    {(result.isBoosted || result.isPPC) && (
+                        <Badge className="bg-gradient-to-r from-yellow-100 to-orange-100 text-orange-700 border-orange-200 px-2 py-0.5 text-xs">
+                            <Zap className="w-3 h-3 mr-0.5" />
+                            {isThai ? 'แนะนำ' : 'Featured'}
+                        </Badge>
+                    )}
+                    {result.data.pay_on_pickup && (
+                        <Badge variant="outline" className="bg-emerald-50 text-emerald-700 border-emerald-200 px-2 py-0.5 text-xs hidden sm:flex">
+                            <Banknote className="w-3 h-3 mr-0.5" />
+                            {isThai ? 'จ่ายตอนรับรถ' : 'Pay on Pickup'}
+                        </Badge>
+                    )}
+                </div>
+                <Link href={`/shop/${result.data.id}`} onClick={() => handleShopClick(result)} className="block">
+                    <h3 className="font-semibold text-slate-800 group-hover:text-blue-600 transition-colors truncate text-sm sm:text-base">
+                        {result.data.name}
+                    </h3>
+                </Link>
+                <div className="flex items-center gap-2 text-xs text-slate-500">
+                    <span className="flex items-center gap-0.5">
+                        <MapPin className="w-3 h-3" />
+                        {result.data.service_provinces?.[0] || '-'}
+                    </span>
+                    <span className="flex items-center gap-0.5">
+                        <Star className="w-3 h-3 text-yellow-500 fill-yellow-500" />
+                        {result.data.rating_average?.toFixed(1) || '0.0'}
+                        <span className="text-slate-400">({result.data.review_count || 0})</span>
+                    </span>
+                </div>
+            </div>
+
+            {/* Action Buttons */}
+            <div className="flex items-center gap-2 flex-shrink-0">
+                {result.isVerifiedPro && (
+                    <>
+                        {result.data.phone_number && (
+                            <a
+                                href={`tel:${result.data.phone_number}`}
+                                className="inline-flex items-center justify-center w-9 h-9 rounded-full bg-green-100 text-green-600 hover:bg-green-200 transition-colors"
+                                onClick={() => handleShopClick(result)}
+                            >
+                                <Phone className="w-4 h-4" />
+                            </a>
+                        )}
+                        {result.data.line_id && (
+                            <a
+                                href={result.data.line_id.startsWith('@')
+                                    ? `https://line.me/R/ti/p/${result.data.line_id}`
+                                    : `https://line.me/R/ti/p/~${result.data.line_id}`}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="inline-flex items-center justify-center w-9 h-9 rounded-full bg-[#06C755]/10 text-[#06C755] hover:bg-[#06C755]/20 transition-colors"
+                                onClick={() => handleShopClick(result)}
+                            >
+                                <MessageCircle className="w-4 h-4" />
+                            </a>
+                        )}
+                    </>
+                )}
+                <Link href={`/shop/${result.data.id}`} onClick={() => handleShopClick(result)}>
+                    <Button variant="outline" size="sm" className="border-slate-200 hover:bg-slate-50 text-xs sm:text-sm">
+                        {isThai ? 'ดูหน้าร้าน' : 'View'}
+                    </Button>
+                </Link>
+            </div>
+        </div>
+    );
+
     // Filters Component
     const FiltersSection = () => (
         <div className="flex flex-wrap gap-3 mb-6">
@@ -861,33 +947,55 @@ export default function SearchResults() {
                     </div>
                 </div>
 
-                {/* Sort Controls */}
-                {searchType === 'rental' && results.length > 1 && (
-                    <div className="flex items-center gap-2">
-                        <SlidersHorizontal className="w-4 h-4 text-slate-500" />
-                        <select
-                            value={sortBy}
-                            onChange={(e) => setSortBy(e.target.value as SortOption)}
-                            className="px-3 py-2 border border-slate-200 rounded-lg text-sm focus:outline-none focus:border-blue-400 bg-white cursor-pointer"
-                        >
-                            <option value="rating">{isThai ? 'คะแนนสูงสุด' : 'Highest Rating'}</option>
-                            <option value="reviews">{isThai ? 'รีวิวมากสุด' : 'Most Reviews'}</option>
-                            <option value="name">{isThai ? 'ชื่อ ก-ฮ' : 'Name A-Z'}</option>
-                            <option value="newest">{isThai ? 'ใหม่ล่าสุด' : 'Newest'}</option>
-                        </select>
-                    </div>
-                )}
+                {/* View Mode Toggle & Sort Controls */}
+                <div className="flex items-center gap-3">
+                    {searchType === 'rental' && (
+                        <div className="flex items-center border border-slate-200 rounded-lg overflow-hidden">
+                            <button
+                                onClick={() => setViewMode('list')}
+                                className={`p-2 transition-colors ${viewMode === 'list' ? 'bg-blue-600 text-white' : 'bg-white text-slate-500 hover:bg-slate-50'}`}
+                                title={isThai ? 'มุมมองรายการ' : 'List View'}
+                            >
+                                <List className="w-4 h-4" />
+                            </button>
+                            <button
+                                onClick={() => setViewMode('grid')}
+                                className={`p-2 transition-colors ${viewMode === 'grid' ? 'bg-blue-600 text-white' : 'bg-white text-slate-500 hover:bg-slate-50'}`}
+                                title={isThai ? 'มุมมองการ์ด' : 'Grid View'}
+                            >
+                                <LayoutGrid className="w-4 h-4" />
+                            </button>
+                        </div>
+                    )}
+                    {searchType === 'rental' && results.length > 1 && (
+                        <div className="flex items-center gap-2">
+                            <SlidersHorizontal className="w-4 h-4 text-slate-500 hidden sm:block" />
+                            <select
+                                value={sortBy}
+                                onChange={(e) => setSortBy(e.target.value as SortOption)}
+                                className="px-3 py-2 border border-slate-200 rounded-lg text-sm focus:outline-none focus:border-blue-400 bg-white cursor-pointer"
+                            >
+                                <option value="rating">{isThai ? 'คะแนนสูงสุด' : 'Highest Rating'}</option>
+                                <option value="reviews">{isThai ? 'รีวิวมากสุด' : 'Most Reviews'}</option>
+                                <option value="name">{isThai ? 'ชื่อ ก-ฮ' : 'Name A-Z'}</option>
+                                <option value="newest">{isThai ? 'ใหม่ล่าสุด' : 'Newest'}</option>
+                            </select>
+                        </div>
+                    )}
+                </div>
             </div>
 
             {/* Filters */}
             {searchType === 'rental' && <FiltersSection />}
 
-            {/* Results Grid */}
-            <div className="grid grid-cols-1 gap-4">
+            {/* Results Grid/List */}
+            <div className={viewMode === 'grid' ? 'grid grid-cols-1 gap-4' : 'flex flex-col gap-3'}>
                 {sortedResults.map((result, index) => (
                     result.type === 'blacklist'
                         ? <BlacklistCard key={index} result={result} />
-                        : <ShopCard key={index} result={result} />
+                        : viewMode === 'grid'
+                            ? <ShopCard key={index} result={result} />
+                            : <ShopListItem key={index} result={result} />
                 ))}
             </div>
         </div>
