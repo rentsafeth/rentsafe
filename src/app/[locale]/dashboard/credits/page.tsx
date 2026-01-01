@@ -113,7 +113,12 @@ export default function CreditsPage() {
                 setTopupEnabled(s.value === true || s.value === 'true');
             }
             if (s.key === 'promptpay_number') {
-                setPromptpayNumber(typeof s.value === 'string' ? s.value.replace(/"/g, '') : s.value);
+                // Format phone number with dashes for promptpay.io (xxx-xxx-xxxx)
+                let num = typeof s.value === 'string' ? s.value.replace(/"/g, '').replace(/-/g, '') : String(s.value);
+                if (num.length === 10) {
+                    num = `${num.slice(0, 3)}-${num.slice(3, 6)}-${num.slice(6)}`;
+                }
+                setPromptpayNumber(num);
             }
         });
 
