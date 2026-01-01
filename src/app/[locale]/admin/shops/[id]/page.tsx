@@ -7,6 +7,7 @@ import Link from 'next/link';
 import { revalidatePath } from 'next/cache';
 import { redirect, notFound } from 'next/navigation';
 import Image from 'next/image';
+import { Resend } from 'resend';
 
 interface PageProps {
     params: Promise<{ id: string }>;
@@ -70,27 +71,61 @@ export default async function AdminShopDetailPage({ params }: PageProps) {
         const status = formData.get('status') as string;
         const shopName = formData.get('shopName') as string;
 
-        // In production, use a proper email service like Resend, SendGrid, etc.
-        // For now, we'll just update the timestamp to track that email was sent
-        await supabase
-            .from('shops')
-            .update({
-                verification_email_sent_at: new Date().toISOString()
-            })
-            .eq('id', shopId);
+        const resend = new Resend(process.env.RESEND_API_KEY);
 
-        // TODO: Implement actual email sending here
-        // Example with Resend:
-        // await resend.emails.send({
-        //     from: 'RentSafe <noreply@rentsafe.in.th>',
-        //     to: email,
-        //     subject: status === 'verified'
-        //         ? `ร้าน ${shopName} ได้รับการยืนยันแล้ว!`
-        //         : `การลงทะเบียนร้าน ${shopName} ต้องการเอกสารเพิ่มเติม`,
-        //     html: `...email content...`
-        // });
+        try {
+            const subject = status === 'verified'
+                ? `🎉 ยินดีด้วย! ร้าน ${shopName} ได้รับการอนุมัติแล้ว`
+                : `⚠️ แจ้งผลการตรวจสอบร้าน ${shopName}`;
 
-        revalidatePath(`/admin/shops/${shopId}`);
+            const htmlContent = status === 'verified'
+                ? `
+                    <div style="font-family: sans-serif; max-width: 600px; margin: 0 auto;">
+                        <h1 style="color: #16a34a;">ยินดีด้วย! ร้านค้าของคุณได้รับการอนุมัติแล้ว</h1>
+                        <p>สวัสดีคุณเจ้าของร้าน <strong>${shopName}</strong>,</p>
+                        <p>ทีมงาน RentSafe ได้ทำการตรวจสอบเอกสารของคุณเรียบร้อยแล้ว และมีความยินดีที่จะแจ้งให้ทราบว่าร้านค้าของคุณได้รับการอนุมัติให้เป็น Partner กับเราอย่างเป็นทางการ</p>
+                        <p>คุณสามารถเข้าสู่ระบบเพื่อจัดการร้านค้า เพิ่มรถเช่า และเริ่มรับลูกค้าได้ทันที</p>
+                        <div style="margin: 30px 0;">
+                            <a href="https://rentsafe.in.th/dashboard" style="background-color: #2563eb; color: white; padding: 12px 24px; text-decoration: none; border-radius: 6px; font-weight: bold;">ไปที่ Dashboard ร้านค้า</a>
+                        </div>
+                        <p>ขอบคุณที่ไว้วางใจ RentSafe</p>
+                    </div>
+                `
+                : `
+                    <div style="font-family: sans-serif; max-width: 600px; margin: 0 auto;">
+                        <h1 style="color: #dc2626;">แจ้งผลการตรวจสอบเอกสาร</h1>
+                        <p>สวัสดีคุณเจ้าของร้าน <strong>${shopName}</strong>,</p>
+                        <p>ทีมงาน RentSafe ได้ตรวจสอบเอกสารของคุณแล้ว แต่ยังไม่สามารถอนุมัติได้ในขณะนี้ เนื่องจาก:</p>
+                        <blockquote style="background: #f3f4f6; padding: 15px; border-left: 4px solid #dc2626; margin: 20px 0;">
+                            ${formData.get('notes') || 'เอกสารไม่ครบถ้วนหรือไม่ชัดเจน กรุณาตรวจสอบและอัปโหลดใหม่'}
+                        </blockquote>
+                        <p>กรุณาแก้ไขข้อมูลหรืออัปโหลดเอกสารเพิ่มเติมผ่านทาง Dashboard</p>
+                        <div style="margin: 30px 0;">
+                            <a href="https://rentsafe.in.th/dashboard/settings" style="background-color: #4b5563; color: white; padding: 12px 24px; text-decoration: none; border-radius: 6px; font-weight: bold;">แก้ไขข้อมูลร้านค้า</a>
+                        </div>
+                    </div>
+                `;
+
+            await resend.emails.send({
+                from: 'RentSafe Team <noreply@rentsafe.in.th>',
+                to: email,
+                subject: subject,
+                html: htmlContent
+            });
+
+            // Update timestamp only if email sent successfully
+            await supabase
+                .from('shops')
+                .update({
+                    verification_email_sent_at: new Date().toISOString()
+                })
+                .eq('id', shopId);
+
+            revalidatePath(`/admin/shops/${shopId}`);
+        } catch (error) {
+            console.error('Failed to send email:', error);
+            // ใน production ควรมีการ handle error ที่ดีกว่านี้ เช่น show toast
+        }
     }
 
     const owner = shop.profiles as { id: string; email: string; full_name: string; avatar_url: string } | null;
@@ -472,6 +507,7 @@ export default async function AdminShopDetailPage({ params }: PageProps) {
                                     <input type="hidden" name="email" value={owner.email} />
                                     <input type="hidden" name="status" value={shop.verification_status} />
                                     <input type="hidden" name="shopName" value={shop.name} />
+                                    <input type="hidden" name="notes" value={shop.verification_notes || ''} />
 
                                     <div className="flex items-center gap-4">
                                         <Button type="submit" variant="outline">
