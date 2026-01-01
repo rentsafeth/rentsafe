@@ -13,6 +13,7 @@ import Link from 'next/link';
 import Image from 'next/image';
 import { PROVINCES } from '@/lib/constants/provinces';
 import SaveShopButton from '@/components/features/shop/SaveShopButton';
+import ShopServiceBadges from '@/components/features/shop/ShopServiceBadges';
 
 const BASE_URL = 'https://rentsafe.in.th';
 
@@ -168,347 +169,353 @@ export default async function ShopProfilePage({ params }: { params: Promise<{ id
             <div className="min-h-screen bg-gradient-to-b from-slate-50 to-white">
                 <div className="container mx-auto px-4 py-8">
                     {/* Hero Header Section */}
-                <div className="bg-white rounded-2xl shadow-sm border overflow-hidden mb-8">
-                    {/* Top Banner / Cover Image */}
-                    <div className="h-48 md:h-64 bg-gradient-to-r from-blue-600 via-blue-500 to-cyan-500 relative">
-                        {shop.cover_url ? (
-                            <Image
-                                src={shop.cover_url}
-                                alt={`${shop.name} cover`}
-                                fill
-                                className="object-cover"
-                                priority
-                            />
-                        ) : (
-                            <div className="absolute inset-0 bg-[url('/pattern.svg')] opacity-10"></div>
-                        )}
-                    </div>
-
-                    {/* Shop Info */}
-                    <div className="px-6 pb-6 -mt-16 relative">
-                        {/* Shop Logo / Avatar */}
-                        <div className="w-28 h-28 md:w-32 md:h-32 bg-white rounded-2xl shadow-lg border-4 border-white overflow-hidden mb-4 relative">
-                            {shop.logo_url ? (
+                    <div className="bg-white rounded-2xl shadow-sm border overflow-hidden mb-8">
+                        {/* Top Banner / Cover Image */}
+                        <div className="h-48 md:h-64 bg-gradient-to-r from-blue-600 via-blue-500 to-cyan-500 relative">
+                            {shop.cover_url ? (
                                 <Image
-                                    src={shop.logo_url}
-                                    alt={`${shop.name} logo`}
+                                    src={shop.cover_url}
+                                    alt={`${shop.name} cover`}
                                     fill
                                     className="object-cover"
+                                    priority
                                 />
                             ) : (
-                                <div className="w-full h-full flex items-center justify-center">
-                                    <Building2 className="w-12 h-12 text-blue-600" />
-                                </div>
+                                <div className="absolute inset-0 bg-[url('/pattern.svg')] opacity-10"></div>
                             )}
                         </div>
 
-                        <div className="flex flex-col lg:flex-row lg:items-start lg:justify-between gap-4">
-                            <div className="flex-1">
-                                <div className="flex items-center gap-3 mb-2 flex-wrap">
-                                    <h1 className="text-2xl md:text-3xl font-bold text-slate-900">{shop.name}</h1>
-                                    {shop.verification_status === 'verified' && (
-                                        <Badge className="bg-green-100 text-green-700 hover:bg-green-100 border-green-200 px-3 py-1">
-                                            <ShieldCheck className="w-4 h-4 mr-1" />
-                                            ร้านค้ายืนยันตัวตนแล้ว
-                                        </Badge>
-                                    )}
-                                    {shop.verification_status === 'pending' && (
-                                        <Badge variant="outline" className="text-yellow-600 border-yellow-200 bg-yellow-50">
-                                            <Clock className="w-4 h-4 mr-1" />
-                                            รอการตรวจสอบ
-                                        </Badge>
-                                    )}
-                                </div>
-                                {shop.description && (
-                                    <p className="text-slate-600 max-w-2xl mb-4">{shop.description}</p>
-                                )}
-
-                                {/* Service Provinces Badges */}
-                                {shop.service_provinces && shop.service_provinces.length > 0 && (
-                                    <div className="flex flex-wrap gap-2 mb-4">
-                                        {shop.service_provinces.map((province: string) => (
-                                            <Badge key={province} className="bg-orange-50 text-orange-700 border-orange-200 hover:bg-orange-100 font-normal px-3 py-1">
-                                                <MapPin className="w-3 h-3 mr-1" />
-                                                {getProvinceLabel(province)}
-                                            </Badge>
-                                        ))}
+                        {/* Shop Info */}
+                        <div className="px-6 pb-6 -mt-16 relative">
+                            {/* Shop Logo / Avatar */}
+                            <div className="w-28 h-28 md:w-32 md:h-32 bg-white rounded-2xl shadow-lg border-4 border-white overflow-hidden mb-4 relative">
+                                {shop.logo_url ? (
+                                    <Image
+                                        src={shop.logo_url}
+                                        alt={`${shop.name} logo`}
+                                        fill
+                                        className="object-cover"
+                                    />
+                                ) : (
+                                    <div className="w-full h-full flex items-center justify-center">
+                                        <Building2 className="w-12 h-12 text-blue-600" />
                                     </div>
                                 )}
-
-                                {/* Quick Stats */}
-                                <div className="flex flex-wrap gap-4 text-sm">
-                                    <div className="flex items-center gap-1.5 text-slate-500">
-                                        <Calendar className="w-4 h-4" />
-                                        <span>ลงทะเบียนเมื่อ {registrationDate}</span>
-                                        <Badge variant="secondary" className="ml-1 text-xs">
-                                            {daysSinceRegistration} วัน
-                                        </Badge>
-                                    </div>
-                                    {shop.business_type && (
-                                        <div className="flex items-center gap-1.5 text-slate-500">
-                                            <Building2 className="w-4 h-4" />
-                                            <span>{shop.business_type === 'company' ? 'นิติบุคคล' : 'บุคคลธรรมดา'}</span>
-                                        </div>
-                                    )}
-                                </div>
                             </div>
 
-                            <div className="flex gap-3">
-                                <SaveShopButton shopId={shop.id} variant="icon" />
-                                <Link href={`/report?shop_id=${shop.id}`}>
-                                    <Button variant="outline" className="text-red-600 border-red-200 hover:bg-red-50">
-                                        <AlertTriangle className="w-4 h-4 mr-2" />
-                                        แจ้งความผิดปกติ
-                                    </Button>
-                                </Link>
+                            <div className="flex flex-col lg:flex-row lg:items-start lg:justify-between gap-4">
+                                <div className="flex-1">
+                                    <div className="flex items-center gap-3 mb-2 flex-wrap">
+                                        <h1 className="text-2xl md:text-3xl font-bold text-slate-900">{shop.name}</h1>
+                                        {shop.verification_status === 'verified' && (
+                                            <Badge className="bg-green-100 text-green-700 hover:bg-green-100 border-green-200 px-3 py-1">
+                                                <ShieldCheck className="w-4 h-4 mr-1" />
+                                                ร้านค้ายืนยันตัวตนแล้ว
+                                            </Badge>
+                                        )}
+                                        {shop.verification_status === 'pending' && (
+                                            <Badge variant="outline" className="text-yellow-600 border-yellow-200 bg-yellow-50">
+                                                <Clock className="w-4 h-4 mr-1" />
+                                                รอการตรวจสอบ
+                                            </Badge>
+                                        )}
+                                    </div>
+                                    {shop.description && (
+                                        <p className="text-slate-600 max-w-2xl mb-4">{shop.description}</p>
+                                    )}
+
+                                    {/* Service Provinces Badges */}
+                                    {shop.service_provinces && shop.service_provinces.length > 0 && (
+                                        <div className="flex flex-wrap gap-2 mb-4">
+                                            {shop.service_provinces.map((province: string) => (
+                                                <Badge key={province} className="bg-orange-50 text-orange-700 border-orange-200 hover:bg-orange-100 font-normal px-3 py-1">
+                                                    <MapPin className="w-3 h-3 mr-1" />
+                                                    {getProvinceLabel(province)}
+                                                </Badge>
+                                            ))}
+                                        </div>
+                                    )}
+
+                                    {/* Quick Stats */}
+                                    <div className="flex flex-wrap gap-4 text-sm">
+                                        <div className="flex items-center gap-1.5 text-slate-500">
+                                            <Calendar className="w-4 h-4" />
+                                            <span>ลงทะเบียนเมื่อ {registrationDate}</span>
+                                            <Badge variant="secondary" className="ml-1 text-xs">
+                                                {daysSinceRegistration} วัน
+                                            </Badge>
+                                        </div>
+                                        {shop.business_type && (
+                                            <div className="flex items-center gap-1.5 text-slate-500">
+                                                <Building2 className="w-4 h-4" />
+                                                <span>{shop.business_type === 'company' ? 'นิติบุคคล' : 'บุคคลธรรมดา'}</span>
+                                            </div>
+                                        )}
+                                        <ShopServiceBadges
+                                            canIssueTaxInvoice={shop.can_issue_tax_invoice}
+                                            canIssueWithholdingTax={shop.can_issue_withholding_tax}
+                                            payOnPickup={shop.pay_on_pickup}
+                                            acceptCreditCard={shop.accept_credit_card}
+                                        />
+                                    </div>
+                                </div>
+
+                                <div className="flex gap-3">
+                                    <SaveShopButton shopId={shop.id} variant="icon" />
+                                    <Link href={`/report?shop_id=${shop.id}`}>
+                                        <Button variant="outline" className="text-red-600 border-red-200 hover:bg-red-50">
+                                            <AlertTriangle className="w-4 h-4 mr-2" />
+                                            แจ้งความผิดปกติ
+                                        </Button>
+                                    </Link>
+                                </div>
                             </div>
                         </div>
                     </div>
-                </div>
 
-                {/* Stats Cards */}
-                <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
-                    <Card className="bg-gradient-to-br from-blue-50 to-white border-blue-100">
-                        <CardContent className="pt-6">
-                            <div className="flex items-center gap-3">
-                                <div className="p-2.5 bg-blue-100 rounded-xl">
-                                    <Calendar className="w-5 h-5 text-blue-600" />
-                                </div>
-                                <div>
-                                    <p className="text-2xl font-bold text-blue-600">{daysSinceRegistration}</p>
-                                    <p className="text-xs text-slate-500">วันที่ลงทะเบียน</p>
-                                </div>
-                            </div>
-                        </CardContent>
-                    </Card>
-
-                    <Card className="bg-gradient-to-br from-yellow-50 to-white border-yellow-100">
-                        <CardContent className="pt-6">
-                            <div className="flex items-center gap-3">
-                                <div className="p-2.5 bg-yellow-100 rounded-xl">
-                                    <Star className="w-5 h-5 text-yellow-600" />
-                                </div>
-                                <div>
-                                    <p className="text-2xl font-bold text-yellow-600">
-                                        {avgRating > 0 ? avgRating.toFixed(1) : '-'}
-                                    </p>
-                                    <p className="text-xs text-slate-500">คะแนนรีวิว ({reviewsCount})</p>
-                                </div>
-                            </div>
-                        </CardContent>
-                    </Card>
-
-                    <Card className="bg-gradient-to-br from-green-50 to-white border-green-100">
-                        <CardContent className="pt-6">
-                            <div className="flex items-center gap-3">
-                                <div className="p-2.5 bg-green-100 rounded-xl">
-                                    <ShieldCheck className="w-5 h-5 text-green-600" />
-                                </div>
-                                <div>
-                                    <p className="text-2xl font-bold text-green-600">
-                                        {shop.verification_status === 'verified' ? 'ยืนยันแล้ว' : 'รอตรวจสอบ'}
-                                    </p>
-                                    <p className="text-xs text-slate-500">สถานะร้านค้า</p>
-                                </div>
-                            </div>
-                        </CardContent>
-                    </Card>
-
-                    <Card className="bg-gradient-to-br from-red-50 to-white border-red-100">
-                        <CardContent className="pt-6">
-                            <div className="flex items-center gap-3">
-                                <div className="p-2.5 bg-red-100 rounded-xl">
-                                    <AlertTriangle className="w-5 h-5 text-red-600" />
-                                </div>
-                                <div>
-                                    <p className="text-2xl font-bold text-red-600">{reportsCount || 0}</p>
-                                    <p className="text-xs text-slate-500">รายงานความผิดปกติ</p>
-                                </div>
-                            </div>
-                        </CardContent>
-                    </Card>
-                </div>
-
-                <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-                    {/* Left Column */}
-                    <div className="space-y-6">
-                        {/* Contact Info */}
-                        <Card>
-                            <CardHeader className="pb-3">
-                                <CardTitle className="text-lg flex items-center gap-2">
-                                    <Phone className="w-5 h-5 text-blue-600" />
-                                    ข้อมูลการติดต่อ
-                                </CardTitle>
-                            </CardHeader>
-                            <CardContent className="space-y-4">
-                                {shop.phone_number && (
-                                    <a href={`tel:${shop.phone_number}`} className="flex items-center gap-3 p-3 bg-slate-50 rounded-lg hover:bg-slate-100 transition-colors">
-                                        <div className="p-2 bg-blue-100 rounded-lg">
-                                            <Phone className="w-4 h-4 text-blue-600" />
-                                        </div>
-                                        <div>
-                                            <p className="text-sm text-slate-500">โทรศัพท์</p>
-                                            <p className="font-medium text-slate-900">{shop.phone_number}</p>
-                                        </div>
-                                    </a>
-                                )}
-
-                                {shop.line_id && (
-                                    <div className="flex items-center gap-3 p-3 bg-slate-50 rounded-lg">
-                                        <div className="p-2 bg-green-100 rounded-lg">
-                                            <MessageCircle className="w-4 h-4 text-green-600" />
-                                        </div>
-                                        <div>
-                                            <p className="text-sm text-slate-500">Line ID</p>
-                                            <p className="font-medium text-slate-900">{shop.line_id}</p>
-                                        </div>
+                    {/* Stats Cards */}
+                    <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
+                        <Card className="bg-gradient-to-br from-blue-50 to-white border-blue-100">
+                            <CardContent className="pt-6">
+                                <div className="flex items-center gap-3">
+                                    <div className="p-2.5 bg-blue-100 rounded-xl">
+                                        <Calendar className="w-5 h-5 text-blue-600" />
                                     </div>
-                                )}
-
-                                {shop.facebook_url && (
-                                    <a href={shop.facebook_url} target="_blank" rel="noopener noreferrer"
-                                        className="flex items-center gap-3 p-3 bg-slate-50 rounded-lg hover:bg-slate-100 transition-colors">
-                                        <div className="p-2 bg-blue-100 rounded-lg">
-                                            <Globe className="w-4 h-4 text-blue-600" />
-                                        </div>
-                                        <div className="flex-1 min-w-0">
-                                            <p className="text-sm text-slate-500">Facebook</p>
-                                            <p className="font-medium text-blue-600 truncate">{shop.facebook_url}</p>
-                                        </div>
-                                        <ExternalLink className="w-4 h-4 text-slate-400" />
-                                    </a>
-                                )}
-
-                                {shop.website && (
-                                    <a href={shop.website} target="_blank" rel="noopener noreferrer"
-                                        className="flex items-center gap-3 p-3 bg-slate-50 rounded-lg hover:bg-slate-100 transition-colors">
-                                        <div className="p-2 bg-purple-100 rounded-lg">
-                                            <Globe className="w-4 h-4 text-purple-600" />
-                                        </div>
-                                        <div className="flex-1 min-w-0">
-                                            <p className="text-sm text-slate-500">เว็บไซต์</p>
-                                            <p className="font-medium text-purple-600 truncate">{shop.website}</p>
-                                        </div>
-                                        <ExternalLink className="w-4 h-4 text-slate-400" />
-                                    </a>
-                                )}
-
-                                {!shop.phone_number && !shop.line_id && !shop.facebook_url && !shop.website && (
-                                    <p className="text-slate-500 text-center py-4">ไม่มีข้อมูลการติดต่อ</p>
-                                )}
+                                    <div>
+                                        <p className="text-2xl font-bold text-blue-600">{daysSinceRegistration}</p>
+                                        <p className="text-xs text-slate-500">วันที่ลงทะเบียน</p>
+                                    </div>
+                                </div>
                             </CardContent>
                         </Card>
 
-                        {/* Bank Account Info */}
-                        {(shop.bank_name || shop.bank_account_no) && (
+                        <Card className="bg-gradient-to-br from-yellow-50 to-white border-yellow-100">
+                            <CardContent className="pt-6">
+                                <div className="flex items-center gap-3">
+                                    <div className="p-2.5 bg-yellow-100 rounded-xl">
+                                        <Star className="w-5 h-5 text-yellow-600" />
+                                    </div>
+                                    <div>
+                                        <p className="text-2xl font-bold text-yellow-600">
+                                            {avgRating > 0 ? avgRating.toFixed(1) : '-'}
+                                        </p>
+                                        <p className="text-xs text-slate-500">คะแนนรีวิว ({reviewsCount})</p>
+                                    </div>
+                                </div>
+                            </CardContent>
+                        </Card>
+
+                        <Card className="bg-gradient-to-br from-green-50 to-white border-green-100">
+                            <CardContent className="pt-6">
+                                <div className="flex items-center gap-3">
+                                    <div className="p-2.5 bg-green-100 rounded-xl">
+                                        <ShieldCheck className="w-5 h-5 text-green-600" />
+                                    </div>
+                                    <div>
+                                        <p className="text-2xl font-bold text-green-600">
+                                            {shop.verification_status === 'verified' ? 'ยืนยันแล้ว' : 'รอตรวจสอบ'}
+                                        </p>
+                                        <p className="text-xs text-slate-500">สถานะร้านค้า</p>
+                                    </div>
+                                </div>
+                            </CardContent>
+                        </Card>
+
+                        <Card className="bg-gradient-to-br from-red-50 to-white border-red-100">
+                            <CardContent className="pt-6">
+                                <div className="flex items-center gap-3">
+                                    <div className="p-2.5 bg-red-100 rounded-xl">
+                                        <AlertTriangle className="w-5 h-5 text-red-600" />
+                                    </div>
+                                    <div>
+                                        <p className="text-2xl font-bold text-red-600">{reportsCount || 0}</p>
+                                        <p className="text-xs text-slate-500">รายงานความผิดปกติ</p>
+                                    </div>
+                                </div>
+                            </CardContent>
+                        </Card>
+                    </div>
+
+                    <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+                        {/* Left Column */}
+                        <div className="space-y-6">
+                            {/* Contact Info */}
                             <Card>
                                 <CardHeader className="pb-3">
                                     <CardTitle className="text-lg flex items-center gap-2">
-                                        <CreditCard className="w-5 h-5 text-green-600" />
-                                        ข้อมูลบัญชีธนาคาร
+                                        <Phone className="w-5 h-5 text-blue-600" />
+                                        ข้อมูลการติดต่อ
+                                    </CardTitle>
+                                </CardHeader>
+                                <CardContent className="space-y-4">
+                                    {shop.phone_number && (
+                                        <a href={`tel:${shop.phone_number}`} className="flex items-center gap-3 p-3 bg-slate-50 rounded-lg hover:bg-slate-100 transition-colors">
+                                            <div className="p-2 bg-blue-100 rounded-lg">
+                                                <Phone className="w-4 h-4 text-blue-600" />
+                                            </div>
+                                            <div>
+                                                <p className="text-sm text-slate-500">โทรศัพท์</p>
+                                                <p className="font-medium text-slate-900">{shop.phone_number}</p>
+                                            </div>
+                                        </a>
+                                    )}
+
+                                    {shop.line_id && (
+                                        <div className="flex items-center gap-3 p-3 bg-slate-50 rounded-lg">
+                                            <div className="p-2 bg-green-100 rounded-lg">
+                                                <MessageCircle className="w-4 h-4 text-green-600" />
+                                            </div>
+                                            <div>
+                                                <p className="text-sm text-slate-500">Line ID</p>
+                                                <p className="font-medium text-slate-900">{shop.line_id}</p>
+                                            </div>
+                                        </div>
+                                    )}
+
+                                    {shop.facebook_url && (
+                                        <a href={shop.facebook_url} target="_blank" rel="noopener noreferrer"
+                                            className="flex items-center gap-3 p-3 bg-slate-50 rounded-lg hover:bg-slate-100 transition-colors">
+                                            <div className="p-2 bg-blue-100 rounded-lg">
+                                                <Globe className="w-4 h-4 text-blue-600" />
+                                            </div>
+                                            <div className="flex-1 min-w-0">
+                                                <p className="text-sm text-slate-500">Facebook</p>
+                                                <p className="font-medium text-blue-600 truncate">{shop.facebook_url}</p>
+                                            </div>
+                                            <ExternalLink className="w-4 h-4 text-slate-400" />
+                                        </a>
+                                    )}
+
+                                    {shop.website && (
+                                        <a href={shop.website} target="_blank" rel="noopener noreferrer"
+                                            className="flex items-center gap-3 p-3 bg-slate-50 rounded-lg hover:bg-slate-100 transition-colors">
+                                            <div className="p-2 bg-purple-100 rounded-lg">
+                                                <Globe className="w-4 h-4 text-purple-600" />
+                                            </div>
+                                            <div className="flex-1 min-w-0">
+                                                <p className="text-sm text-slate-500">เว็บไซต์</p>
+                                                <p className="font-medium text-purple-600 truncate">{shop.website}</p>
+                                            </div>
+                                            <ExternalLink className="w-4 h-4 text-slate-400" />
+                                        </a>
+                                    )}
+
+                                    {!shop.phone_number && !shop.line_id && !shop.facebook_url && !shop.website && (
+                                        <p className="text-slate-500 text-center py-4">ไม่มีข้อมูลการติดต่อ</p>
+                                    )}
+                                </CardContent>
+                            </Card>
+
+                            {/* Bank Account Info */}
+                            {(shop.bank_name || shop.bank_account_no) && (
+                                <Card>
+                                    <CardHeader className="pb-3">
+                                        <CardTitle className="text-lg flex items-center gap-2">
+                                            <CreditCard className="w-5 h-5 text-green-600" />
+                                            ข้อมูลบัญชีธนาคาร
+                                        </CardTitle>
+                                    </CardHeader>
+                                    <CardContent>
+                                        <div className="bg-gradient-to-r from-green-50 to-emerald-50 rounded-xl p-4 border border-green-100">
+                                            <div className="space-y-3">
+                                                {shop.bank_name && (
+                                                    <div>
+                                                        <p className="text-xs text-slate-500 mb-0.5">ธนาคาร</p>
+                                                        <p className="font-semibold text-slate-900">{getBankDisplayName(shop.bank_name)}</p>
+                                                    </div>
+                                                )}
+                                                {shop.bank_account_no && (
+                                                    <div>
+                                                        <p className="text-xs text-slate-500 mb-0.5">เลขบัญชี</p>
+                                                        <p className="font-mono font-semibold text-slate-900 tracking-wider">{shop.bank_account_no}</p>
+                                                    </div>
+                                                )}
+                                                {shop.bank_account_name && (
+                                                    <div>
+                                                        <p className="text-xs text-slate-500 mb-0.5">ชื่อบัญชี</p>
+                                                        <p className="font-semibold text-slate-900">{shop.bank_account_name}</p>
+                                                    </div>
+                                                )}
+                                            </div>
+                                        </div>
+                                        <p className="text-xs text-slate-400 mt-3 text-center">
+                                            * กรุณาตรวจสอบข้อมูลให้ถูกต้องก่อนโอนเงิน
+                                        </p>
+                                    </CardContent>
+                                </Card>
+                            )}
+
+                        </div>
+
+                        {/* Right Column - Reports History */}
+                        <div className="lg:col-span-2 space-y-6">
+                            <Card>
+                                <CardHeader>
+                                    <CardTitle className="flex items-center gap-2">
+                                        <AlertTriangle className="w-5 h-5 text-red-600" />
+                                        ประวัติการรายงานความผิดปกติ
                                     </CardTitle>
                                 </CardHeader>
                                 <CardContent>
-                                    <div className="bg-gradient-to-r from-green-50 to-emerald-50 rounded-xl p-4 border border-green-100">
-                                        <div className="space-y-3">
-                                            {shop.bank_name && (
-                                                <div>
-                                                    <p className="text-xs text-slate-500 mb-0.5">ธนาคาร</p>
-                                                    <p className="font-semibold text-slate-900">{getBankDisplayName(shop.bank_name)}</p>
-                                                </div>
-                                            )}
-                                            {shop.bank_account_no && (
-                                                <div>
-                                                    <p className="text-xs text-slate-500 mb-0.5">เลขบัญชี</p>
-                                                    <p className="font-mono font-semibold text-slate-900 tracking-wider">{shop.bank_account_no}</p>
-                                                </div>
-                                            )}
-                                            {shop.bank_account_name && (
-                                                <div>
-                                                    <p className="text-xs text-slate-500 mb-0.5">ชื่อบัญชี</p>
-                                                    <p className="font-semibold text-slate-900">{shop.bank_account_name}</p>
-                                                </div>
-                                            )}
+                                    {reportsCount && reportsCount > 0 ? (
+                                        <div className="text-center py-8 bg-red-50 rounded-xl border border-red-100">
+                                            <AlertTriangle className="w-12 h-12 text-red-500 mx-auto mb-3" />
+                                            <p className="text-red-700 font-medium">พบรายงานความผิดปกติ {reportsCount} รายการ</p>
+                                            <p className="text-sm text-red-600 mt-1">กรุณาตรวจสอบข้อมูลให้ดีก่อนทำธุรกรรม</p>
                                         </div>
-                                    </div>
-                                    <p className="text-xs text-slate-400 mt-3 text-center">
-                                        * กรุณาตรวจสอบข้อมูลให้ถูกต้องก่อนโอนเงิน
-                                    </p>
+                                    ) : (
+                                        <div className="text-center py-12 bg-gradient-to-b from-green-50 to-white rounded-xl border border-green-100">
+                                            <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                                                <CheckCircle className="w-8 h-8 text-green-600" />
+                                            </div>
+                                            <p className="text-green-700 font-medium text-lg">ไม่พบรายงานความผิดปกติ</p>
+                                            <p className="text-sm text-slate-500 mt-2">ร้านนี้มีประวัติขาวสะอาด</p>
+                                        </div>
+                                    )}
                                 </CardContent>
                             </Card>
-                        )}
 
-                    </div>
-
-                    {/* Right Column - Reports History */}
-                    <div className="lg:col-span-2 space-y-6">
-                        <Card>
-                            <CardHeader>
-                                <CardTitle className="flex items-center gap-2">
-                                    <AlertTriangle className="w-5 h-5 text-red-600" />
-                                    ประวัติการรายงานความผิดปกติ
-                                </CardTitle>
-                            </CardHeader>
-                            <CardContent>
-                                {reportsCount && reportsCount > 0 ? (
-                                    <div className="text-center py-8 bg-red-50 rounded-xl border border-red-100">
-                                        <AlertTriangle className="w-12 h-12 text-red-500 mx-auto mb-3" />
-                                        <p className="text-red-700 font-medium">พบรายงานความผิดปกติ {reportsCount} รายการ</p>
-                                        <p className="text-sm text-red-600 mt-1">กรุณาตรวจสอบข้อมูลให้ดีก่อนทำธุรกรรม</p>
-                                    </div>
-                                ) : (
-                                    <div className="text-center py-12 bg-gradient-to-b from-green-50 to-white rounded-xl border border-green-100">
-                                        <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4">
-                                            <CheckCircle className="w-8 h-8 text-green-600" />
-                                        </div>
-                                        <p className="text-green-700 font-medium text-lg">ไม่พบรายงานความผิดปกติ</p>
-                                        <p className="text-sm text-slate-500 mt-2">ร้านนี้มีประวัติขาวสะอาด</p>
-                                    </div>
-                                )}
-                            </CardContent>
-                        </Card>
-
-                        {/* Reviews Section */}
-                        <Card>
-                            <CardHeader>
-                                <CardTitle className="flex items-center gap-2">
-                                    <Star className="w-5 h-5 text-yellow-500" />
-                                    รีวิวจากผู้ใช้งาน
-                                </CardTitle>
-                            </CardHeader>
-                            <CardContent>
-                                {reviewsCount > 0 ? (
-                                    <div className="space-y-4">
-                                        <div className="flex items-center gap-4 p-4 bg-yellow-50 rounded-xl border border-yellow-100">
-                                            <div className="text-center">
-                                                <p className="text-4xl font-bold text-yellow-600">{avgRating.toFixed(1)}</p>
-                                                <div className="flex gap-0.5 mt-1">
-                                                    {[1, 2, 3, 4, 5].map((star) => (
-                                                        <Star
-                                                            key={star}
-                                                            className={`w-4 h-4 ${star <= Math.round(avgRating) ? 'text-yellow-500 fill-yellow-500' : 'text-slate-300'}`}
-                                                        />
-                                                    ))}
+                            {/* Reviews Section */}
+                            <Card>
+                                <CardHeader>
+                                    <CardTitle className="flex items-center gap-2">
+                                        <Star className="w-5 h-5 text-yellow-500" />
+                                        รีวิวจากผู้ใช้งาน
+                                    </CardTitle>
+                                </CardHeader>
+                                <CardContent>
+                                    {reviewsCount > 0 ? (
+                                        <div className="space-y-4">
+                                            <div className="flex items-center gap-4 p-4 bg-yellow-50 rounded-xl border border-yellow-100">
+                                                <div className="text-center">
+                                                    <p className="text-4xl font-bold text-yellow-600">{avgRating.toFixed(1)}</p>
+                                                    <div className="flex gap-0.5 mt-1">
+                                                        {[1, 2, 3, 4, 5].map((star) => (
+                                                            <Star
+                                                                key={star}
+                                                                className={`w-4 h-4 ${star <= Math.round(avgRating) ? 'text-yellow-500 fill-yellow-500' : 'text-slate-300'}`}
+                                                            />
+                                                        ))}
+                                                    </div>
+                                                </div>
+                                                <div className="flex-1">
+                                                    <p className="text-slate-600">จาก {reviewsCount} รีวิว</p>
                                                 </div>
                                             </div>
-                                            <div className="flex-1">
-                                                <p className="text-slate-600">จาก {reviewsCount} รีวิว</p>
-                                            </div>
                                         </div>
-                                    </div>
-                                ) : (
-                                    <div className="text-center py-12 bg-slate-50 rounded-xl border border-dashed border-slate-200">
-                                        <Users className="w-12 h-12 text-slate-300 mx-auto mb-3" />
-                                        <p className="text-slate-500">ยังไม่มีรีวิวสำหรับร้านนี้</p>
-                                        <p className="text-sm text-slate-400 mt-1">เป็นคนแรกที่รีวิวร้านนี้</p>
-                                    </div>
-                                )}
-                            </CardContent>
-                        </Card>
+                                    ) : (
+                                        <div className="text-center py-12 bg-slate-50 rounded-xl border border-dashed border-slate-200">
+                                            <Users className="w-12 h-12 text-slate-300 mx-auto mb-3" />
+                                            <p className="text-slate-500">ยังไม่มีรีวิวสำหรับร้านนี้</p>
+                                            <p className="text-sm text-slate-400 mt-1">เป็นคนแรกที่รีวิวร้านนี้</p>
+                                        </div>
+                                    )}
+                                </CardContent>
+                            </Card>
+                        </div>
                     </div>
                 </div>
             </div>
-        </div>
         </>
     );
 }
