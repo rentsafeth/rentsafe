@@ -25,7 +25,7 @@ export default function AdminSidebar() {
     };
 
     return (
-        <div className="w-64 bg-slate-900 text-white min-h-screen p-4 flex flex-col">
+        <div className="hidden md:flex w-64 bg-slate-900 text-white min-h-screen p-4 flex-col">
             <div className="mb-8 px-2">
                 <h1 className="text-2xl font-bold">RentSafe Admin</h1>
                 <p className="text-slate-400 text-sm">Management Console</p>
