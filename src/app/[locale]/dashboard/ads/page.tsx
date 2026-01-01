@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import { createClient } from '@/lib/supabase/client';
 import { useRouter } from 'next/navigation';
+import { useLocale } from 'next-intl';
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -76,6 +77,7 @@ interface Schedule {
 
 export default function AdsPage() {
     const router = useRouter();
+    const locale = useLocale();
     const supabase = createClient();
 
     const [loading, setLoading] = useState(true);
@@ -655,7 +657,7 @@ export default function AdsPage() {
                     <span className="font-semibold text-lg">
                         {(shop?.credit_balance || 0).toLocaleString()} เครดิต
                     </span>
-                    <Link href="/dashboard/credits">
+                    <Link href={`/${locale}/dashboard/credits`}>
                         <Button variant="outline" size="sm">เติมเครดิต</Button>
                     </Link>
                 </div>

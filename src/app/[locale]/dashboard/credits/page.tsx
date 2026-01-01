@@ -29,6 +29,7 @@ interface CreditPackage {
 interface CreditOrder {
     id: string;
     reference_code: string;
+    package_id: string;
     amount: number;
     credits_to_add: number;
     status: string;
@@ -66,7 +67,6 @@ export default function CreditsPage() {
     const [selectedPackage, setSelectedPackage] = useState<CreditPackage | null>(null);
     const [currentOrder, setCurrentOrder] = useState<CreditOrder | null>(null);
     const [uploadingSlip, setUploadingSlip] = useState(false);
-    const [creatingOrder, setCreatingOrder] = useState(false);
 
     // New states for enhanced features
     const [transferDateTime, setTransferDateTime] = useState('');
@@ -136,12 +136,9 @@ export default function CreditsPage() {
 
         setOrders(ordersData || []);
 
-        // Check for pending order without slip
-        const pendingOrder = ordersData?.find(o => o.status === 'pending' && !o.slip_url);
-        if (pendingOrder) {
-            setCurrentOrder(pendingOrder);
-            setSelectedPackage(packages.find(p => p.id === pendingOrder.package_id) || null);
-        }
+        // Note: We no longer auto-load pending orders
+        // User must explicitly select a package to create/continue an order
+        // This prevents confusion when navigating from other pages
 
         // Get recent transactions
         const { data: transactionsData } = await supabase
@@ -156,37 +153,14 @@ export default function CreditsPage() {
         setLoading(false);
     };
 
-    const createOrder = async (pkg: CreditPackage) => {
-        if (!shop) return;
-        setCreatingOrder(true);
-
-        try {
-            // Generate reference code
-            const refCode = `RS-${new Date().toISOString().slice(0, 10).replace(/-/g, '')}-${Math.random().toString(36).substring(2, 6).toUpperCase()}`;
-
-            const { data, error } = await supabase
-                .from('credit_orders')
-                .insert({
-                    shop_id: shop.id,
-                    package_id: pkg.id,
-                    reference_code: refCode,
-                    amount: pkg.price,
-                    credits_to_add: pkg.credits + pkg.bonus_credits,
-                })
-                .select('*, credit_packages(name)')
-                .single();
-
-            if (error) throw error;
-
-            setCurrentOrder(data);
-            setSelectedPackage(pkg);
-            setOrders(prev => [data, ...prev]);
-        } catch (error) {
-            console.error('Error creating order:', error);
-            alert('เกิดข้อผิดพลาดในการสร้างคำสั่งซื้อ');
-        } finally {
-            setCreatingOrder(false);
-        }
+    // Just select package, don't create order yet
+    const selectPackage = (pkg: CreditPackage) => {
+        setSelectedPackage(pkg);
+        // Reset form
+        setSlipFile(null);
+        setSlipPreview(null);
+        setTransferDateTime('');
+        setTermsAccepted(false);
     };
 
     // Calculate file hash for duplicate detection
@@ -206,7 +180,98 @@ export default function CreditsPage() {
         reader.readAsDataURL(file);
     };
 
-    const uploadSlip = async () => {
+    const submitTopup = async () => {
+        if (!selectedPackage || !shop || !slipFile) return;
+        if (!transferDateTime) {
+            alert('กรุณาระบุวันเวลาที่โอนเงิน');
+            return;
+        }
+        if (!termsAccepted) {
+            alert('กรุณายอมรับเงื่อนไขการใช้เครดิต');
+            return;
+        }
+
+        setUploadingSlip(true);
+
+        try {
+            // Calculate file hash
+            const slipHash = await calculateFileHash(slipFile);
+
+            // Check for duplicate slip
+            const { data: existingSlip } = await supabase
+                .rpc('check_duplicate_slip', { p_slip_hash: slipHash });
+
+            if (existingSlip) {
+                alert('สลิปนี้เคยถูกใช้แล้ว กรุณาอัพโหลดสลิปที่ถูกต้อง');
+                setUploadingSlip(false);
+                return;
+            }
+
+            // Generate reference code
+            const refCode = `RS-${new Date().toISOString().slice(0, 10).replace(/-/g, '')}-${Math.random().toString(36).substring(2, 6).toUpperCase()}`;
+
+            // Create order first
+            const { data: orderData, error: orderError } = await supabase
+                .from('credit_orders')
+                .insert({
+                    shop_id: shop.id,
+                    package_id: selectedPackage.id,
+                    reference_code: refCode,
+                    amount: selectedPackage.price,
+                    credits_to_add: selectedPackage.credits + selectedPackage.bonus_credits,
+                    transfer_datetime: transferDateTime,
+                    slip_hash: slipHash
+                })
+                .select('*, credit_packages(name)')
+                .single();
+
+            if (orderError) throw orderError;
+
+            // Upload slip to storage
+            const fileExt = slipFile.name.split('.').pop();
+            const fileName = `${shop.id}/${orderData.id}.${fileExt}`;
+
+            const { error: uploadError } = await supabase.storage
+                .from('payment-slips')
+                .upload(fileName, slipFile, { upsert: true });
+
+            if (uploadError) throw uploadError;
+
+            // Get public URL
+            const { data: { publicUrl } } = supabase.storage
+                .from('payment-slips')
+                .getPublicUrl(fileName);
+
+            // Update order with slip URL
+            const { error: updateError } = await supabase
+                .from('credit_orders')
+                .update({ slip_url: publicUrl })
+                .eq('id', orderData.id);
+
+            if (updateError) throw updateError;
+
+            // Update local state
+            const finalOrder = { ...orderData, slip_url: publicUrl };
+            setOrders(prev => [finalOrder, ...prev]);
+
+            // Reset form
+            setSelectedPackage(null);
+            setSlipFile(null);
+            setSlipPreview(null);
+            setTransferDateTime('');
+            setTermsAccepted(false);
+
+            alert('ส่งคำขอเติมเครดิตสำเร็จ! รอการตรวจสอบจากแอดมิน');
+        } catch (error) {
+            console.error('Submit error:', error);
+            alert('เกิดข้อผิดพลาด กรุณาลองใหม่อีกครั้ง');
+        } finally {
+            setUploadingSlip(false);
+        }
+    };
+
+    // For continuing pending orders (legacy support)
+    const uploadSlipForOrder = async () => {
         if (!currentOrder || !shop || !slipFile) return;
         if (!transferDateTime) {
             alert('กรุณาระบุวันเวลาที่โอนเงิน');
@@ -261,7 +326,8 @@ export default function CreditsPage() {
             if (updateError) throw updateError;
 
             // Update local state
-            setCurrentOrder(prev => prev ? { ...prev, slip_url: publicUrl, transfer_datetime: transferDateTime } : null);
+            setCurrentOrder(null);
+            setSelectedPackage(null);
             setOrders(prev => prev.map(o =>
                 o.id === currentOrder.id ? { ...o, slip_url: publicUrl, transfer_datetime: transferDateTime } : o
             ));
@@ -400,20 +466,21 @@ export default function CreditsPage() {
                     </CardHeader>
                     <CardContent>
                         {currentOrder && !currentOrder.slip_url ? (
-                            // Show QR and upload section
+                            // Continue pending order (legacy support)
                             <div className="space-y-6">
                                 <div className="text-center p-6 bg-slate-50 rounded-xl">
+                                    <p className="text-sm text-orange-600 mb-2">ดำเนินการต่อคำสั่งซื้อที่ค้างไว้</p>
                                     <h3 className="font-semibold mb-2">
-                                        แพ็คเกจ: {selectedPackage?.name}
+                                        แพ็คเกจ: {selectedPackage?.name || currentOrder.credit_packages?.name}
                                     </h3>
                                     <p className="text-2xl font-bold text-blue-600 mb-4">
-                                        {selectedPackage?.price.toLocaleString()} บาท
+                                        {currentOrder.amount?.toLocaleString()} บาท
                                     </p>
 
                                     {/* QR Code */}
                                     <div className="inline-block p-4 bg-white rounded-xl shadow-sm mb-4">
                                         <Image
-                                            src={`https://promptpay.io/${promptpayNumber}/${selectedPackage?.price}`}
+                                            src={`https://promptpay.io/${promptpayNumber}/${currentOrder.amount}`}
                                             alt="PromptPay QR"
                                             width={200}
                                             height={200}
@@ -424,8 +491,131 @@ export default function CreditsPage() {
                                     <p className="text-sm text-gray-600 mb-2">
                                         Reference: <span className="font-mono font-bold">{currentOrder.reference_code}</span>
                                     </p>
+                                </div>
+
+                                {/* Transfer DateTime */}
+                                <div className="space-y-2">
+                                    <Label htmlFor="transfer-datetime" className="flex items-center gap-2">
+                                        <Calendar className="w-4 h-4" />
+                                        วันเวลาที่โอนเงิน *
+                                    </Label>
+                                    <Input
+                                        id="transfer-datetime"
+                                        type="datetime-local"
+                                        value={transferDateTime}
+                                        onChange={(e) => setTransferDateTime(e.target.value)}
+                                        max={new Date().toISOString().slice(0, 16)}
+                                        className="max-w-xs"
+                                    />
+                                </div>
+
+                                {/* Upload Slip */}
+                                <div className="border-2 border-dashed border-gray-200 rounded-xl p-6 text-center">
+                                    {slipPreview ? (
+                                        <div className="space-y-4">
+                                            <Image
+                                                src={slipPreview}
+                                                alt="Slip preview"
+                                                width={200}
+                                                height={300}
+                                                className="mx-auto rounded-lg object-contain max-h-64"
+                                            />
+                                            <Button
+                                                variant="outline"
+                                                size="sm"
+                                                onClick={() => {
+                                                    setSlipFile(null);
+                                                    setSlipPreview(null);
+                                                }}
+                                            >
+                                                เปลี่ยนรูป
+                                            </Button>
+                                        </div>
+                                    ) : (
+                                        <>
+                                            <Upload className="w-10 h-10 text-gray-400 mx-auto mb-3" />
+                                            <p className="text-gray-600 mb-3">อัพโหลดสลิปการโอนเงิน</p>
+                                            <input
+                                                type="file"
+                                                accept="image/*"
+                                                className="hidden"
+                                                id="slip-upload-legacy"
+                                                onChange={(e) => {
+                                                    const file = e.target.files?.[0];
+                                                    if (file) handleSlipSelect(file);
+                                                }}
+                                            />
+                                            <label htmlFor="slip-upload-legacy">
+                                                <Button asChild variant="outline">
+                                                    <span>
+                                                        <Upload className="w-4 h-4 mr-2" />
+                                                        เลือกไฟล์
+                                                    </span>
+                                                </Button>
+                                            </label>
+                                        </>
+                                    )}
+                                </div>
+
+                                {/* Terms Checkbox */}
+                                <div className="flex items-start space-x-3 p-4 bg-amber-50 rounded-lg border border-amber-200">
+                                    <Checkbox
+                                        id="terms-legacy"
+                                        checked={termsAccepted}
+                                        onCheckedChange={(checked) => setTermsAccepted(checked === true)}
+                                    />
+                                    <Label htmlFor="terms-legacy" className="text-sm text-amber-800 cursor-pointer leading-relaxed">
+                                        ข้าพเจ้ายอมรับว่าเครดิตใช้สำหรับทำธุรกรรมในเว็บไซต์เท่านั้น
+                                        ไม่สามารถถอน/โอนออกเป็นเงินสดได้ และเครดิตไม่มีวันหมดอายุ
+                                    </Label>
+                                </div>
+
+                                {/* Submit Button */}
+                                <Button
+                                    onClick={uploadSlipForOrder}
+                                    disabled={uploadingSlip || !slipFile || !transferDateTime || !termsAccepted}
+                                    className="w-full bg-blue-600 hover:bg-blue-700"
+                                >
+                                    {uploadingSlip ? (
+                                        <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                                    ) : (
+                                        <CheckCircle className="w-4 h-4 mr-2" />
+                                    )}
+                                    ยืนยันการชำระเงิน
+                                </Button>
+
+                                <Button
+                                    variant="outline"
+                                    onClick={cancelOrder}
+                                    className="w-full"
+                                >
+                                    ยกเลิกคำสั่งซื้อนี้
+                                </Button>
+                            </div>
+                        ) : selectedPackage && !currentOrder ? (
+                            // New flow: Show QR and upload form (order not created yet)
+                            <div className="space-y-6">
+                                <div className="text-center p-6 bg-slate-50 rounded-xl">
+                                    <h3 className="font-semibold mb-2">
+                                        แพ็คเกจ: {selectedPackage.name}
+                                    </h3>
+                                    <p className="text-2xl font-bold text-blue-600 mb-4">
+                                        {selectedPackage.price.toLocaleString()} บาท
+                                    </p>
+
+                                    {/* QR Code */}
+                                    <div className="inline-block p-4 bg-white rounded-xl shadow-sm mb-4">
+                                        <Image
+                                            src={`https://promptpay.io/${promptpayNumber}/${selectedPackage.price}`}
+                                            alt="PromptPay QR"
+                                            width={200}
+                                            height={200}
+                                            className="mx-auto"
+                                        />
+                                    </div>
+
                                     <p className="text-xs text-gray-500">
-                                        กรุณาระบุ Reference ในช่องหมายเหตุการโอน
+                                        สแกน QR Code เพื่อโอนเงินผ่าน PromptPay
                                     </p>
                                 </div>
 
@@ -508,7 +698,7 @@ export default function CreditsPage() {
 
                                 {/* Submit Button */}
                                 <Button
-                                    onClick={uploadSlip}
+                                    onClick={submitTopup}
                                     disabled={uploadingSlip || !slipFile || !transferDateTime || !termsAccepted}
                                     className="w-full bg-blue-600 hover:bg-blue-700"
                                 >
@@ -522,22 +712,16 @@ export default function CreditsPage() {
 
                                 <Button
                                     variant="outline"
-                                    onClick={cancelOrder}
+                                    onClick={() => {
+                                        setSelectedPackage(null);
+                                        setSlipFile(null);
+                                        setSlipPreview(null);
+                                        setTransferDateTime('');
+                                        setTermsAccepted(false);
+                                    }}
                                     className="w-full"
                                 >
-                                    ยกเลิก
-                                </Button>
-                            </div>
-                        ) : currentOrder && currentOrder.slip_url ? (
-                            // Show waiting for approval
-                            <div className="text-center py-8">
-                                <Clock className="w-12 h-12 text-yellow-500 mx-auto mb-4" />
-                                <h3 className="text-lg font-semibold mb-2">รอการตรวจสอบ</h3>
-                                <p className="text-gray-600 mb-4">
-                                    คำสั่งซื้อ {currentOrder.reference_code} กำลังรอการตรวจสอบจากแอดมิน
-                                </p>
-                                <Button variant="outline" onClick={() => setCurrentOrder(null)}>
-                                    ซื้อแพ็คเกจอื่น
+                                    เลือกแพ็คเกจอื่น
                                 </Button>
                             </div>
                         ) : (
@@ -546,8 +730,7 @@ export default function CreditsPage() {
                                 {packages.map((pkg) => (
                                     <button
                                         key={pkg.id}
-                                        onClick={() => createOrder(pkg)}
-                                        disabled={creatingOrder}
+                                        onClick={() => selectPackage(pkg)}
                                         className="p-4 border-2 rounded-xl hover:border-blue-500 hover:bg-blue-50 transition-all text-center relative"
                                     >
                                         {pkg.bonus_credits > 0 && (
@@ -611,11 +794,26 @@ export default function CreditsPage() {
                                             </p>
                                         )}
                                     </div>
-                                    <div className="text-right">
-                                        <p className={`font-semibold ${order.status === 'approved' ? 'text-green-600' : order.status === 'pending' ? 'text-yellow-600' : 'text-gray-400'}`}>
-                                            {order.status === 'approved' ? '+' : ''}{order.credits_to_add.toLocaleString()} เครดิต
-                                        </p>
-                                        {getStatusBadge(order.status)}
+                                    <div className="text-right flex items-center gap-2">
+                                        <div>
+                                            <p className={`font-semibold ${order.status === 'approved' ? 'text-green-600' : order.status === 'pending' ? 'text-yellow-600' : 'text-gray-400'}`}>
+                                                {order.status === 'approved' ? '+' : ''}{order.credits_to_add.toLocaleString()} เครดิต
+                                            </p>
+                                            {getStatusBadge(order.status)}
+                                        </div>
+                                        {/* Show continue button for pending orders without slip */}
+                                        {order.status === 'pending' && !order.slip_url && !currentOrder && (
+                                            <Button
+                                                size="sm"
+                                                variant="outline"
+                                                onClick={() => {
+                                                    setCurrentOrder(order);
+                                                    setSelectedPackage(packages.find(p => p.id === order.package_id) || null);
+                                                }}
+                                            >
+                                                ดำเนินการต่อ
+                                            </Button>
+                                        )}
                                     </div>
                                 </div>
                             ))}
