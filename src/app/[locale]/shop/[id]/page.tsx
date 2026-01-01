@@ -17,6 +17,7 @@ import ShopServiceBadges from '@/components/features/shop/ShopServiceBadges';
 import ShareShopButton from '@/components/features/shop/ShareShopButton';
 
 const BASE_URL = 'https://rentsafe.in.th';
+export const dynamic = 'force-dynamic';
 
 export async function generateMetadata({ params }: { params: Promise<{ id: string; locale: string }> }): Promise<Metadata> {
     const { id, locale } = await params;
