@@ -1,6 +1,8 @@
 import { createClient } from '@/lib/supabase/server';
 import { NextRequest, NextResponse } from 'next/server';
 
+export const dynamic = 'force-dynamic';
+
 // Cron job to check and expire subscriptions
 // Called by Vercel Cron daily at midnight (Thailand time = 17:00 UTC)
 

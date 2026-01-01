@@ -70,7 +70,7 @@
         "idCard": "เลขบัตรประชาชน (ถ้ามี)",
         "incidentDate": "วันที่เกิดเหตุ",
         "amountLost": "มูลค่าความเสียหาย (บาท)",
-        "description": "คำอธิบายเหตุการณ์",
+        "incidentDescription": "คำอธิบายเหตุการณ์",
         "descriptionPlaceholder": "เล่ารายละเอียดเหตุการณ์ที่เกิดขึ้น...",
         "evidence": "หลักฐาน (รูปภาพ/สลิป/แชท)",
         "evidenceHint": "คลิกเพื่ออัปโหลดรูปภาพหลักฐาน",
@@ -172,5 +172,29 @@
         "shopFeature3": "จัดการข้อมูลและรีวิว",
         "registerAsShop": "สมัครเป็นร้านค้า",
         "alreadyHaveAccount": "มีบัญชีอยู่แล้ว?"
+    },
+    "KarmaHistoryPage": {
+        "title": "ประวัติเครดิตปลอบใจ",
+        "subtitle": "Karma Transaction History",
+        "loading": "กำลังโหลด...",
+        "summary": {
+            "received": "รวมได้รับ",
+            "spent": "รวมใช้ไป"
+        },
+        "list": {
+            "title": "ประวัติทั้งหมด ({count} รายการ)",
+            "empty": "ยังไม่มีประวัติการได้รับเครดิต",
+            "balance": "คงเหลือ {amount}"
+        },
+        "types": {
+            "heart_received": "ได้รับหัวใจ",
+            "report_verified": "รายงานได้รับการยืนยัน",
+            "bonus": "โบนัส",
+            "reward_redeemed": "แลกของรางวัล"
+        },
+        "pagination": {
+            "pageInfo": "หน้า {page} จาก {totalPages}"
+        },
+        "viewSource": "ดูที่มา"
     }
 }

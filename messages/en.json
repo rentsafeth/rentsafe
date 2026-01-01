@@ -70,7 +70,7 @@
         "idCard": "ID Card Number (if available)",
         "incidentDate": "Incident Date",
         "amountLost": "Amount Lost (THB)",
-        "description": "Incident Description",
+        "incidentDescription": "Incident Description",
         "descriptionPlaceholder": "Describe what happened...",
         "evidence": "Evidence (Images/Slips/Chats)",
         "evidenceHint": "Click to upload evidence images",
@@ -172,5 +172,29 @@
         "shopFeature3": "Manage info and reviews",
         "registerAsShop": "Register as Shop",
         "alreadyHaveAccount": "Already have an account?"
+    },
+    "KarmaHistoryPage": {
+        "title": "Karma History",
+        "subtitle": "Karma Transaction History",
+        "loading": "Loading...",
+        "summary": {
+            "received": "Total Received",
+            "spent": "Total Spent"
+        },
+        "list": {
+            "title": "All Transactions ({count} items)",
+            "empty": "No karma history yet",
+            "balance": "Balance {amount}"
+        },
+        "types": {
+            "heart_received": "Heart Received",
+            "report_verified": "Report Verified",
+            "bonus": "Bonus",
+            "reward_redeemed": "Reward Redeemed"
+        },
+        "pagination": {
+            "pageInfo": "Page {page} of {totalPages}"
+        },
+        "viewSource": "View Source"
     }
 }

@@ -15,10 +15,16 @@ import {
     FileText,
     Image as ImageIcon,
     Plus,
-    MessageCircle
+    MessageCircle,
+    Heart,
+    Sparkles,
+    Gift,
+    Loader2
 } from 'lucide-react'
 import Link from 'next/link'
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
+import { createClient } from '@/lib/supabase/client'
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip'
 
 interface BlacklistEntry {
     id: string
@@ -45,6 +51,7 @@ interface Report {
     incident_date: string | null
     amount_lost: number | null
     created_at: string
+    heart_count?: number
     profiles: {
         full_name: string | null
         avatar_url: string | null
@@ -73,18 +80,143 @@ const severityLabels = {
     critical: 'อันตรายมาก',
 }
 
+// Heart Button Component
+function HeartButton({ reportId, reporterId, initialHeartCount = 0 }: {
+    reportId: string
+    reporterId: string
+    initialHeartCount?: number
+}) {
+    const [hasHearted, setHasHearted] = useState(false)
+    const [heartCount, setHeartCount] = useState(initialHeartCount)
+    const [isLoading, setIsLoading] = useState(false)
+    const [isOwnReport, setIsOwnReport] = useState(false)
+    const [isAuthenticated, setIsAuthenticated] = useState(false)
+
+    useEffect(() => {
+        checkHeartStatus()
+    }, [reportId])
+
+    const checkHeartStatus = async () => {
+        const supabase = createClient()
+        const { data: { user } } = await supabase.auth.getUser()
+
+        setIsAuthenticated(!!user)
+        if (user) {
+            setIsOwnReport(user.id === reporterId)
+
+            // Check if user has hearted this report
+            try {
+                const response = await fetch(`/api/karma/heart?report_id=${reportId}`)
+                const data = await response.json()
+                if (data.success) {
+                    setHasHearted(data.hasHearted)
+                    setHeartCount(data.heartCount)
+                }
+            } catch (error) {
+                console.error('Error checking heart status:', error)
+            }
+        }
+    }
+
+    const handleHeart = async () => {
+        if (isLoading || isOwnReport || !isAuthenticated) return
+
+        setIsLoading(true)
+        try {
+            const response = await fetch('/api/karma/heart', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ report_id: reportId })
+            })
+
+            const data = await response.json()
+            if (data.success) {
+                setHasHearted(data.action === 'added')
+                setHeartCount(data.heart_count)
+            }
+        } catch (error) {
+            console.error('Error toggling heart:', error)
+        } finally {
+            setIsLoading(false)
+        }
+    }
+
+    if (isOwnReport) {
+        return (
+            <TooltipProvider>
+                <Tooltip>
+                    <TooltipTrigger asChild>
+                        <div className="flex items-center gap-1.5 text-slate-400 cursor-not-allowed">
+                            <Heart className="w-5 h-5" />
+                            <span className="text-sm font-medium">{heartCount}</span>
+                        </div>
+                    </TooltipTrigger>
+                    <TooltipContent>
+                        <p>ไม่สามารถกดใจรายงานของตัวเองได้</p>
+                    </TooltipContent>
+                </Tooltip>
+            </TooltipProvider>
+        )
+    }
+
+    if (!isAuthenticated) {
+        return (
+            <TooltipProvider>
+                <Tooltip>
+                    <TooltipTrigger asChild>
+                        <Link href="/login" className="flex items-center gap-1.5 text-slate-400 hover:text-pink-500 transition-colors">
+                            <Heart className="w-5 h-5" />
+                            <span className="text-sm font-medium">{heartCount}</span>
+                        </Link>
+                    </TooltipTrigger>
+                    <TooltipContent>
+                        <p>เข้าสู่ระบบเพื่อกดให้กำลังใจ</p>
+                    </TooltipContent>
+                </Tooltip>
+            </TooltipProvider>
+        )
+    }
+
+    return (
+        <TooltipProvider>
+            <Tooltip>
+                <TooltipTrigger asChild>
+                    <button
+                        onClick={handleHeart}
+                        disabled={isLoading}
+                        className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full transition-all duration-200 ${
+                            hasHearted
+                                ? 'bg-pink-100 text-pink-600 hover:bg-pink-200'
+                                : 'bg-slate-100 text-slate-500 hover:bg-pink-50 hover:text-pink-500'
+                        }`}
+                    >
+                        {isLoading ? (
+                            <Loader2 className="w-5 h-5 animate-spin" />
+                        ) : (
+                            <Heart className={`w-5 h-5 ${hasHearted ? 'fill-pink-500' : ''}`} />
+                        )}
+                        <span className="text-sm font-medium">{heartCount}</span>
+                    </button>
+                </TooltipTrigger>
+                <TooltipContent>
+                    <p>{hasHearted ? 'ยกเลิกกำลังใจ' : 'กดให้กำลังใจ (+1 เครดิตให้ผู้รายงาน)'}</p>
+                </TooltipContent>
+            </Tooltip>
+        </TooltipProvider>
+    )
+}
+
 export default function BlacklistDetail({ entry, reports }: Props) {
     const t = useTranslations('BlacklistPage')
     const [expandedReport, setExpandedReport] = useState<string | null>(null)
 
-    // Mask name for privacy (e.g., "สมชาย ใจดี" -> "สม*** ใ***")
+    // Mask name for privacy
     const maskName = (name: string | null | undefined): string => {
         if (!name) return t('anonymousReporter')
 
         const parts = name.split(' ')
         return parts.map(part => {
             if (part.length <= 1) return part
-            // Show first character, mask the rest
             return part.charAt(0) + '*'.repeat(Math.min(part.length - 1, 3))
         }).join(' ')
     }
@@ -107,11 +239,11 @@ export default function BlacklistDetail({ entry, reports }: Props) {
     return (
         <div className="space-y-6">
             {/* Header Card */}
-            <Card className="border-red-200 bg-gradient-to-br from-red-50 to-orange-50">
+            <Card className="border-red-200 bg-gradient-to-br from-red-50 to-orange-50 overflow-hidden">
                 <CardHeader className="pb-4">
                     <div className="flex items-start justify-between">
                         <div className="flex items-center gap-3">
-                            <div className="w-14 h-14 bg-red-600 rounded-xl flex items-center justify-center">
+                            <div className="w-14 h-14 bg-red-600 rounded-xl flex items-center justify-center shadow-lg">
                                 <ShieldAlert className="w-8 h-8 text-white" />
                             </div>
                             <div>
@@ -123,7 +255,7 @@ export default function BlacklistDetail({ entry, reports }: Props) {
                                 </p>
                             </div>
                         </div>
-                        <Badge className={`${severityColors[entry.severity]} text-sm px-3 py-1`}>
+                        <Badge className={`${severityColors[entry.severity]} text-sm px-3 py-1 shadow-sm`}>
                             <AlertTriangle className="w-4 h-4 mr-1" />
                             {t(`severity.${entry.severity}`)}
                         </Badge>
@@ -132,21 +264,21 @@ export default function BlacklistDetail({ entry, reports }: Props) {
                 <CardContent>
                     {/* Stats */}
                     <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
-                        <div className="bg-white/80 rounded-lg p-4 text-center">
+                        <div className="bg-white/80 rounded-xl p-4 text-center shadow-sm">
                             <div className="text-2xl font-bold text-red-600">{entry.total_reports}</div>
                             <div className="text-sm text-slate-600">{t('totalReports')}</div>
                         </div>
-                        <div className="bg-white/80 rounded-lg p-4 text-center">
+                        <div className="bg-white/80 rounded-xl p-4 text-center shadow-sm">
                             <div className="text-2xl font-bold text-red-600">{formatMoney(entry.total_amount_lost)}</div>
                             <div className="text-sm text-slate-600">{t('totalLoss')}</div>
                         </div>
-                        <div className="bg-white/80 rounded-lg p-4 text-center">
+                        <div className="bg-white/80 rounded-xl p-4 text-center shadow-sm">
                             <div className="text-sm font-medium text-slate-800">
                                 {entry.first_reported_at ? formatDate(entry.first_reported_at) : '-'}
                             </div>
                             <div className="text-sm text-slate-600">{t('firstReport')}</div>
                         </div>
-                        <div className="bg-white/80 rounded-lg p-4 text-center">
+                        <div className="bg-white/80 rounded-xl p-4 text-center shadow-sm">
                             <div className="text-sm font-medium text-slate-800">
                                 {entry.last_reported_at ? formatDate(entry.last_reported_at) : '-'}
                             </div>
@@ -155,14 +287,14 @@ export default function BlacklistDetail({ entry, reports }: Props) {
                     </div>
 
                     {/* Identifiers */}
-                    <div className="bg-white/80 rounded-lg p-4 space-y-3">
+                    <div className="bg-white/80 rounded-xl p-4 space-y-3 shadow-sm">
                         <h4 className="font-semibold text-slate-800">{t('identifiers')}</h4>
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                             {entry.bank_account_no && (
                                 <div className="flex items-center gap-2 text-sm">
                                     <CreditCard className="w-4 h-4 text-slate-500" />
                                     <span className="text-slate-600">{t('bankAccount')}:</span>
-                                    <span className="font-mono font-medium text-red-700">{entry.bank_account_no}</span>
+                                    <span className="font-mono font-medium text-red-700 bg-red-50 px-2 py-0.5 rounded">{entry.bank_account_no}</span>
                                 </div>
                             )}
                             {entry.phone_numbers?.length > 0 && entry.phone_numbers.map((phone, i) => (
@@ -198,10 +330,31 @@ export default function BlacklistDetail({ entry, reports }: Props) {
                 </CardContent>
             </Card>
 
+            {/* Karma Info Banner */}
+            <div className="p-4 bg-gradient-to-r from-purple-50 to-pink-50 rounded-xl border border-purple-200">
+                <div className="flex items-center gap-3">
+                    <div className="w-10 h-10 bg-purple-100 rounded-lg flex items-center justify-center">
+                        <Sparkles className="w-5 h-5 text-purple-500" />
+                    </div>
+                    <div className="flex-1">
+                        <p className="text-sm font-medium text-purple-800">
+                            กดหัวใจเพื่อให้กำลังใจผู้รายงาน
+                        </p>
+                        <p className="text-xs text-purple-600">
+                            ทุกหัวใจที่กด = +1 เครดิตปลอบใจให้ผู้รายงาน
+                        </p>
+                    </div>
+                    <div className="flex items-center gap-2 px-3 py-2 bg-white/60 rounded-lg">
+                        <Gift className="w-4 h-4 text-amber-500" />
+                        <span className="text-xs font-medium text-amber-700">1 หัวใจ = 1 เครดิต</span>
+                    </div>
+                </div>
+            </div>
+
             {/* Add Report Button */}
             <div className="flex justify-end">
                 <Link href={`/report?blacklist_id=${entry.id}&bank=${entry.bank_account_no || ''}`}>
-                    <Button className="bg-red-600 hover:bg-red-700">
+                    <Button className="bg-gradient-to-r from-red-500 to-orange-500 hover:from-red-600 hover:to-orange-600 shadow-lg">
                         <Plus className="w-4 h-4 mr-2" />
                         {t('addReport')}
                     </Button>
@@ -223,11 +376,11 @@ export default function BlacklistDetail({ entry, reports }: Props) {
                     </Card>
                 ) : (
                     reports.map((report) => (
-                        <Card key={report.id} className="border-slate-200 hover:shadow-md transition-shadow">
+                        <Card key={report.id} className="border-slate-200 hover:shadow-lg transition-all duration-300 overflow-hidden">
                             <CardContent className="pt-6">
                                 <div className="flex items-start justify-between mb-4">
                                     <div className="flex items-center gap-3">
-                                        <div className="w-10 h-10 bg-red-100 rounded-full flex items-center justify-center">
+                                        <div className="w-10 h-10 bg-gradient-to-br from-red-100 to-orange-100 rounded-full flex items-center justify-center">
                                             <AlertTriangle className="w-5 h-5 text-red-600" />
                                         </div>
                                         <div>
@@ -239,12 +392,19 @@ export default function BlacklistDetail({ entry, reports }: Props) {
                                             </p>
                                         </div>
                                     </div>
-                                    {report.amount_lost && report.amount_lost > 0 && (
-                                        <Badge variant="outline" className="border-red-200 text-red-700">
-                                            <DollarSign className="w-3 h-3 mr-1" />
-                                            {formatMoney(report.amount_lost)}
-                                        </Badge>
-                                    )}
+                                    <div className="flex items-center gap-3">
+                                        {report.amount_lost && report.amount_lost > 0 && (
+                                            <Badge variant="outline" className="border-red-200 text-red-700 bg-red-50">
+                                                <DollarSign className="w-3 h-3 mr-1" />
+                                                {formatMoney(report.amount_lost)}
+                                            </Badge>
+                                        )}
+                                        <HeartButton
+                                            reportId={report.id}
+                                            reporterId={report.reporter_id}
+                                            initialHeartCount={report.heart_count || 0}
+                                        />
+                                    </div>
                                 </div>
 
                                 {/* Report Details */}

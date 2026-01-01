@@ -1,6 +1,8 @@
 import { createClient } from '@/lib/supabase/server';
 import { NextRequest, NextResponse } from 'next/server';
 
+export const dynamic = 'force-dynamic';
+
 // GET - Cron job to check low credit shops and send notifications
 export async function GET(request: NextRequest) {
     try {
