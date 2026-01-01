@@ -84,16 +84,15 @@ export default function HeroSection({ stats }: HeroSectionProps) {
 
                 {/* Search Card */}
                 <div className="max-w-2xl mx-auto">
-                    <div className="bg-white rounded-2xl md:rounded-3xl shadow-2xl p-4 sm:p-6 md:p-8">
+                    <div className="bg-white/80 backdrop-blur-sm rounded-2xl md:rounded-3xl shadow-2xl p-4 sm:p-6 md:p-8">
                         {/* Tabs */}
-                        <div className="flex gap-2 mb-6">
+                        <div className="flex gap-3 mb-6">
                             <button
                                 onClick={() => setActiveTab('blacklist')}
-                                className={`flex-1 flex items-center justify-center gap-2 py-3 px-4 rounded-xl font-medium transition-all ${
-                                    activeTab === 'blacklist'
-                                        ? 'bg-red-50 text-red-600 border-2 border-red-200'
-                                        : 'bg-gray-50 text-gray-600 border-2 border-transparent hover:bg-gray-100'
-                                }`}
+                                className={`flex-1 flex items-center justify-center gap-2 py-4 px-4 rounded-xl font-semibold transition-all duration-300 ${activeTab === 'blacklist'
+                                    ? 'bg-gradient-to-r from-red-600 to-red-500 text-white shadow-lg shadow-red-500/30 scale-[1.02]'
+                                    : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
+                                    }`}
                             >
                                 <ShieldAlert className="w-5 h-5" />
                                 <span className="hidden sm:inline">{t('checkBlacklist')}</span>
@@ -101,11 +100,10 @@ export default function HeroSection({ stats }: HeroSectionProps) {
                             </button>
                             <button
                                 onClick={() => setActiveTab('rental')}
-                                className={`flex-1 flex items-center justify-center gap-2 py-3 px-4 rounded-xl font-medium transition-all ${
-                                    activeTab === 'rental'
-                                        ? 'bg-blue-50 text-blue-600 border-2 border-blue-200'
-                                        : 'bg-gray-50 text-gray-600 border-2 border-transparent hover:bg-gray-100'
-                                }`}
+                                className={`flex-1 flex items-center justify-center gap-2 py-4 px-4 rounded-xl font-semibold transition-all duration-300 ${activeTab === 'rental'
+                                    ? 'bg-gradient-to-r from-blue-500 to-indigo-500 text-white shadow-lg shadow-blue-500/30 scale-[1.02]'
+                                    : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
+                                    }`}
                             >
                                 <Car className="w-5 h-5" />
                                 <span className="hidden sm:inline">{t('findRental')}</span>
@@ -115,8 +113,9 @@ export default function HeroSection({ stats }: HeroSectionProps) {
 
                         {/* Search Form - Blacklist */}
                         <div className={`space-y-4 ${activeTab === 'blacklist' ? '' : 'hidden'}`}>
-                            <div className="relative">
-                                <Search className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-gray-400" />
+                            <div className="relative group">
+                                <div className="absolute inset-0 rounded-xl opacity-0 group-focus-within:opacity-100 transition-opacity duration-300 -z-10 blur-xl bg-red-500/20"></div>
+                                <Search className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-gray-400 group-focus-within:text-gray-600 transition-colors" />
                                 <input
                                     type="text"
                                     inputMode="text"
@@ -128,13 +127,13 @@ export default function HeroSection({ stats }: HeroSectionProps) {
                                     value={searchQuery}
                                     onChange={(e) => setSearchQuery(e.target.value)}
                                     placeholder={t('searchPlaceholder')}
-                                    className="w-full pl-12 pr-4 py-4 text-base md:text-lg border-2 border-gray-200 rounded-xl focus:outline-none focus:border-red-500 focus:ring-2 focus:ring-red-500/20 transition-all"
+                                    className="w-full pl-12 pr-4 py-4 text-base md:text-lg border-2 border-slate-200 rounded-xl focus:outline-none focus:border-slate-400 transition-all bg-white"
                                     onKeyDown={(e) => e.key === 'Enter' && handleSearch()}
                                 />
                             </div>
                             <button
                                 onClick={handleSearch}
-                                className="w-full py-4 bg-red-600 hover:bg-red-700 text-white font-semibold rounded-xl transition-colors text-base md:text-lg"
+                                className="w-full py-4 bg-gradient-to-r from-red-600 to-red-500 hover:from-red-700 hover:to-red-600 text-white font-bold rounded-xl transition-all duration-300 shadow-lg shadow-red-500/30 text-base md:text-lg"
                             >
                                 {t('checkBlacklist')}
                             </button>
@@ -142,8 +141,9 @@ export default function HeroSection({ stats }: HeroSectionProps) {
 
                         {/* Search Form - Rental */}
                         <div className={`space-y-4 ${activeTab === 'rental' ? '' : 'hidden'}`}>
-                            <div className="relative">
-                                <Search className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-gray-400" />
+                            <div className="relative group">
+                                <div className="absolute inset-0 rounded-xl opacity-0 group-focus-within:opacity-100 transition-opacity duration-300 -z-10 blur-xl bg-blue-500/20"></div>
+                                <Search className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-gray-400 group-focus-within:text-gray-600 transition-colors" />
                                 <input
                                     type="text"
                                     inputMode="text"
@@ -155,7 +155,7 @@ export default function HeroSection({ stats }: HeroSectionProps) {
                                     value={rentalSearchQuery}
                                     onChange={(e) => setRentalSearchQuery(e.target.value)}
                                     placeholder="พิมพ์ชื่อร้านรถเช่า..."
-                                    className="w-full pl-12 pr-4 py-4 text-base md:text-lg border-2 border-gray-200 rounded-xl focus:outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 transition-all"
+                                    className="w-full pl-12 pr-4 py-4 text-base md:text-lg border-2 border-slate-200 rounded-xl focus:outline-none focus:border-slate-400 transition-all bg-white"
                                     onKeyDown={(e) => e.key === 'Enter' && handleSearch()}
                                 />
                             </div>
@@ -163,7 +163,7 @@ export default function HeroSection({ stats }: HeroSectionProps) {
                             <select
                                 value={selectedProvince}
                                 onChange={(e) => setSelectedProvince(e.target.value)}
-                                className="w-full px-4 py-4 text-base md:text-lg border-2 border-gray-200 rounded-xl focus:outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 transition-all appearance-none bg-white cursor-pointer"
+                                className="w-full px-4 py-4 text-base md:text-lg border-2 border-slate-200 rounded-xl focus:outline-none focus:border-blue-400 transition-all appearance-none bg-white cursor-pointer"
                             >
                                 <option value="">เลือกจังหวัด (ไม่บังคับ)</option>
                                 {ALL_PROVINCES.map((province) => (
@@ -174,7 +174,7 @@ export default function HeroSection({ stats }: HeroSectionProps) {
                             </select>
                             <button
                                 onClick={handleSearch}
-                                className="w-full py-4 bg-blue-600 hover:bg-blue-700 text-white font-semibold rounded-xl transition-colors text-base md:text-lg"
+                                className="w-full py-4 bg-gradient-to-r from-blue-500 to-indigo-500 hover:from-blue-600 hover:to-indigo-600 text-white font-bold rounded-xl transition-all duration-300 shadow-lg shadow-blue-500/30 text-base md:text-lg"
                             >
                                 {t('findRental')}
                             </button>

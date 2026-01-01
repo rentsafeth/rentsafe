@@ -389,12 +389,12 @@ export default function SearchResults() {
                         type="button"
                         onClick={() => setSearchType('blacklist')}
                         className={`flex-1 py-4 px-6 rounded-xl font-semibold transition-all duration-300 flex items-center justify-center gap-3 ${searchType === 'blacklist'
-                            ? 'bg-gradient-to-r from-red-500 to-orange-500 text-white shadow-lg shadow-red-500/30 scale-[1.02]'
+                            ? 'bg-gradient-to-r from-red-600 to-red-500 text-white shadow-lg shadow-red-500/30 scale-[1.02]'
                             : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
                             }`}
                     >
                         <ShieldAlert className="w-5 h-5" />
-                        <span>{isThai ? 'ตรวจสอบ Blacklist' : 'Check Blacklist'}</span>
+                        <span>{t('checkBlacklist')}</span>
                     </button>
                     <button
                         type="button"
@@ -447,7 +447,7 @@ export default function SearchResults() {
                         type="button"
                         onClick={handleSearch}
                         className={`w-full py-6 text-lg font-bold rounded-xl transition-all duration-300 ${searchType === 'blacklist'
-                            ? 'bg-gradient-to-r from-red-500 to-orange-500 hover:from-red-600 hover:to-orange-600 shadow-lg shadow-red-500/30'
+                            ? 'bg-gradient-to-r from-red-600 to-red-500 hover:from-red-700 hover:to-red-600 shadow-lg shadow-red-500/30'
                             : 'bg-gradient-to-r from-blue-500 to-indigo-500 hover:from-blue-600 hover:to-indigo-600 shadow-lg shadow-blue-500/30'
                             }`}
                     >
@@ -506,7 +506,7 @@ export default function SearchResults() {
                                 </div>
                             </div>
                             <Link href={`/report${searchQuery ? `?q=${encodeURIComponent(searchQuery)}` : ''}`}>
-                                <Button className="w-full bg-gradient-to-r from-red-500 to-orange-500 hover:from-red-600 hover:to-orange-600">
+                                <Button className="w-full bg-gradient-to-r from-red-600 to-red-500 hover:from-red-700 hover:to-red-600 shadow-lg shadow-red-500/30">
                                     <AlertTriangle className="w-4 h-4 mr-2" />
                                     {isThai ? 'รายงานมิจฉาชีพ' : 'Report Scammer'}
                                 </Button>
@@ -594,7 +594,7 @@ export default function SearchResults() {
                     {/* Action Button */}
                     <div className="flex flex-col gap-2">
                         <Link href={`/blacklist/${result.data.id}`}>
-                            <Button className="bg-gradient-to-r from-red-500 to-orange-500 hover:from-red-600 hover:to-orange-600 shadow-md">
+                            <Button className="bg-gradient-to-r from-red-600 to-red-500 hover:from-red-700 hover:to-red-600 shadow-md">
                                 <ExternalLink className="w-4 h-4 mr-2" />
                                 {t('viewDetails')}
                             </Button>
