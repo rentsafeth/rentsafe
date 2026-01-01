@@ -306,8 +306,8 @@ export default async function ShopProfilePage({ params }: { params: Promise<{ id
                     <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
                         <Card className="bg-gradient-to-br from-blue-50 to-white border-blue-100">
                             <CardContent className="pt-6">
-                                <div className="flex items-center gap-3">
-                                    <div className="p-2.5 bg-blue-100 rounded-xl">
+                                <div className="flex flex-col items-center text-center gap-2">
+                                    <div className="p-2.5 bg-blue-100 rounded-xl mb-1">
                                         <Calendar className="w-5 h-5 text-blue-600" />
                                     </div>
                                     <div>
@@ -320,8 +320,8 @@ export default async function ShopProfilePage({ params }: { params: Promise<{ id
 
                         <Card className="bg-gradient-to-br from-yellow-50 to-white border-yellow-100">
                             <CardContent className="pt-6">
-                                <div className="flex items-center gap-3">
-                                    <div className="p-2.5 bg-yellow-100 rounded-xl">
+                                <div className="flex flex-col items-center text-center gap-2">
+                                    <div className="p-2.5 bg-yellow-100 rounded-xl mb-1">
                                         <Star className="w-5 h-5 text-yellow-600" />
                                     </div>
                                     <div>
@@ -338,8 +338,8 @@ export default async function ShopProfilePage({ params }: { params: Promise<{ id
                             <Card className="bg-gradient-to-br from-emerald-50 to-white border-emerald-200 shadow-sm relative overflow-hidden">
                                 <div className="absolute top-0 right-0 w-16 h-16 bg-emerald-100 rounded-bl-full -mr-8 -mt-8 opacity-50"></div>
                                 <CardContent className="pt-6 relative z-10">
-                                    <div className="flex items-center gap-3">
-                                        <div className="p-2.5 bg-gradient-to-br from-emerald-400 to-green-500 rounded-xl shadow-sm">
+                                    <div className="flex flex-col items-center text-center gap-2">
+                                        <div className="p-2.5 bg-gradient-to-br from-emerald-400 to-green-500 rounded-xl shadow-sm mb-1">
                                             <Shield className="w-5 h-5 text-white" />
                                         </div>
                                         <div>
@@ -352,8 +352,8 @@ export default async function ShopProfilePage({ params }: { params: Promise<{ id
                         ) : (
                             <Card className="bg-gradient-to-br from-green-50 to-white border-green-100">
                                 <CardContent className="pt-6">
-                                    <div className="flex items-center gap-3">
-                                        <div className="p-2.5 bg-green-100 rounded-xl">
+                                    <div className="flex flex-col items-center text-center gap-2">
+                                        <div className="p-2.5 bg-green-100 rounded-xl mb-1">
                                             <ShieldCheck className="w-5 h-5 text-green-600" />
                                         </div>
                                         <div>
@@ -369,8 +369,8 @@ export default async function ShopProfilePage({ params }: { params: Promise<{ id
 
                         <Card className="bg-gradient-to-br from-red-50 to-white border-red-100">
                             <CardContent className="pt-6">
-                                <div className="flex items-center gap-3">
-                                    <div className="p-2.5 bg-red-100 rounded-xl">
+                                <div className="flex flex-col items-center text-center gap-2">
+                                    <div className="p-2.5 bg-red-100 rounded-xl mb-1">
                                         <AlertTriangle className="w-5 h-5 text-red-600" />
                                     </div>
                                     <div>
@@ -397,8 +397,8 @@ export default async function ShopProfilePage({ params }: { params: Promise<{ id
                                     {shop.phone_number && (
                                         <a href={`tel:${shop.phone_number}`}
                                             className={`flex items-center gap-3 p-3 rounded-lg transition-all ${isVerifiedPro
-                                                    ? 'bg-gradient-to-r from-blue-50 to-indigo-50 hover:from-blue-100 hover:to-indigo-100 border border-blue-100'
-                                                    : 'bg-slate-50 hover:bg-slate-100'
+                                                ? 'bg-gradient-to-r from-blue-50 to-indigo-50 hover:from-blue-100 hover:to-indigo-100 border border-blue-100'
+                                                : 'bg-slate-50 hover:bg-slate-100'
                                                 }`}>
                                             <div className="p-2 bg-blue-100 rounded-lg">
                                                 <Phone className="w-4 h-4 text-blue-600" />
@@ -412,8 +412,8 @@ export default async function ShopProfilePage({ params }: { params: Promise<{ id
 
                                     {shop.line_id && (
                                         <div className={`flex items-center gap-3 p-3 rounded-lg ${isVerifiedPro
-                                                ? 'bg-gradient-to-r from-green-50 to-emerald-50 border border-green-100'
-                                                : 'bg-slate-50'
+                                            ? 'bg-gradient-to-r from-green-50 to-emerald-50 border border-green-100'
+                                            : 'bg-slate-50'
                                             }`}>
                                             <div className="p-2 bg-green-100 rounded-lg">
                                                 <MessageCircle className="w-4 h-4 text-green-600" />
@@ -518,8 +518,8 @@ export default async function ShopProfilePage({ params }: { params: Promise<{ id
                                         </div>
                                     ) : (
                                         <div className={`text-center py-12 rounded-xl border ${isVerifiedPro
-                                                ? 'bg-gradient-to-b from-emerald-50 to-white border-emerald-100'
-                                                : 'bg-gradient-to-b from-green-50 to-white border-green-100'
+                                            ? 'bg-gradient-to-b from-emerald-50 to-white border-emerald-100'
+                                            : 'bg-gradient-to-b from-green-50 to-white border-green-100'
                                             }`}>
                                             <div className={`w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4 ${isVerifiedPro ? 'bg-emerald-100' : 'bg-green-100'
                                                 }`}>
