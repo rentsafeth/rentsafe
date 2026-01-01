@@ -123,6 +123,18 @@ export default function AdsPage() {
     const [boostDialog, setBoostDialog] = useState(false);
     const [buyingBoost, setBuyingBoost] = useState(false);
 
+    // Toast/notification modal state
+    const [toastModal, setToastModal] = useState<{
+        open: boolean;
+        type: 'success' | 'error' | 'warning';
+        title: string;
+        message: string;
+    }>({ open: false, type: 'success', title: '', message: '' });
+
+    const showToast = (type: 'success' | 'error' | 'warning', title: string, message: string) => {
+        setToastModal({ open: true, type, title, message });
+    };
+
     useEffect(() => {
         loadData();
     }, []);
@@ -236,10 +248,10 @@ export default function AdsPage() {
                 }, { onConflict: 'shop_id' });
 
             if (error) throw error;
-            alert('บันทึกการตั้งค่า PPC สำเร็จ');
+            showToast('success', 'สำเร็จ', 'บันทึกการตั้งค่า PPC สำเร็จ');
         } catch (error) {
             console.error('Error saving PPC settings:', error);
-            alert('เกิดข้อผิดพลาด');
+            showToast('error', 'เกิดข้อผิดพลาด', 'ไม่สามารถบันทึกการตั้งค่าได้');
         } finally {
             setSaving(false);
         }
@@ -267,15 +279,16 @@ export default function AdsPage() {
                     credit_balance: data.new_balance,
                 }));
                 setBoostDialog(false);
-                alert('ซื้อ Daily Boost สำเร็จ!');
+                showToast('success', 'สำเร็จ', 'ซื้อ Daily Boost สำเร็จ! ร้านของคุณจะแสดงผลก่อนร้านอื่นเป็นเวลา 24 ชั่วโมง');
             } else {
-                alert(data?.error === 'insufficient_credits'
-                    ? 'เครดิตไม่เพียงพอ'
-                    : 'เกิดข้อผิดพลาด');
+                showToast('error', 'ไม่สามารถซื้อได้',
+                    data?.error === 'insufficient_credits'
+                        ? 'เครดิตไม่เพียงพอ กรุณาเติมเครดิตก่อน'
+                        : 'เกิดข้อผิดพลาด กรุณาลองใหม่อีกครั้ง');
             }
         } catch (error) {
             console.error('Error purchasing boost:', error);
-            alert('เกิดข้อผิดพลาด');
+            showToast('error', 'เกิดข้อผิดพลาด', 'ไม่สามารถซื้อ Daily Boost ได้ กรุณาลองใหม่อีกครั้ง');
         } finally {
             setBuyingBoost(false);
         }
@@ -333,19 +346,19 @@ export default function AdsPage() {
 
         // Check credit balance (only for boost, PPC uses budget limit)
         if (type === 'boost' && !editingSchedule && totalCredits > shop.credit_balance) {
-            alert('เครดิตไม่เพียงพอ');
+            showToast('warning', 'เครดิตไม่เพียงพอ', 'กรุณาเติมเครดิตก่อนทำการจอง');
             return;
         }
 
         // Validate dates
         const today = new Date().toISOString().split('T')[0];
         if (scheduleForm.startDate < today && !editingSchedule) {
-            alert('วันเริ่มต้นต้องเป็นวันนี้หรือหลังจากนี้');
+            showToast('warning', 'วันที่ไม่ถูกต้อง', 'วันเริ่มต้นต้องเป็นวันนี้หรือหลังจากนี้');
             return;
         }
 
         if (scheduleForm.endDate < scheduleForm.startDate) {
-            alert('วันสิ้นสุดต้องมากกว่าหรือเท่ากับวันเริ่มต้น');
+            showToast('warning', 'วันที่ไม่ถูกต้อง', 'วันสิ้นสุดต้องมากกว่าหรือเท่ากับวันเริ่มต้น');
             return;
         }
 
@@ -360,7 +373,7 @@ export default function AdsPage() {
         });
 
         if (overlapping) {
-            alert('มีการจองที่ทับซ้อนกัน กรุณาเลือกวันอื่น');
+            showToast('warning', 'วันที่ทับซ้อน', 'มีการจองที่ทับซ้อนกัน กรุณาเลือกวันอื่น');
             return;
         }
 
@@ -427,10 +440,10 @@ export default function AdsPage() {
 
             setScheduleDialog(null);
             loadData();
-            alert(editingSchedule ? 'แก้ไขการจองสำเร็จ' : 'จองล่วงหน้าสำเร็จ');
+            showToast('success', 'สำเร็จ', editingSchedule ? 'แก้ไขการจองสำเร็จ' : 'จองล่วงหน้าสำเร็จ');
         } catch (error) {
             console.error('Error saving schedule:', error);
-            alert('เกิดข้อผิดพลาด');
+            showToast('error', 'เกิดข้อผิดพลาด', 'ไม่สามารถบันทึกการจองได้ กรุณาลองใหม่อีกครั้ง');
         } finally {
             setSavingSchedule(false);
         }
@@ -480,10 +493,10 @@ export default function AdsPage() {
 
             setDeleteDialog(null);
             loadData();
-            alert('ยกเลิกการจองสำเร็จ');
+            showToast('success', 'สำเร็จ', 'ยกเลิกการจองสำเร็จ เครดิตได้ถูกคืนกลับแล้ว');
         } catch (error) {
             console.error('Error cancelling schedule:', error);
-            alert('เกิดข้อผิดพลาด');
+            showToast('error', 'เกิดข้อผิดพลาด', 'ไม่สามารถยกเลิกการจองได้ กรุณาลองใหม่อีกครั้ง');
         } finally {
             setDeletingSchedule(false);
         }
@@ -1356,6 +1369,37 @@ export default function AdsPage() {
                         <Button variant="destructive" onClick={cancelSchedule} disabled={deletingSchedule}>
                             {deletingSchedule && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
                             ยืนยันยกเลิก
+                        </Button>
+                    </AlertDialogFooter>
+                </AlertDialogContent>
+            </AlertDialog>
+
+            {/* Toast/Notification Modal */}
+            <AlertDialog open={toastModal.open} onOpenChange={(open) => setToastModal(prev => ({ ...prev, open }))}>
+                <AlertDialogContent className="max-w-sm">
+                    <AlertDialogHeader>
+                        <AlertDialogTitle className={`flex items-center gap-2 ${
+                            toastModal.type === 'success' ? 'text-green-600' :
+                            toastModal.type === 'error' ? 'text-red-600' : 'text-yellow-600'
+                        }`}>
+                            {toastModal.type === 'success' && <CheckCircle className="w-5 h-5" />}
+                            {toastModal.type === 'error' && <AlertCircle className="w-5 h-5" />}
+                            {toastModal.type === 'warning' && <AlertCircle className="w-5 h-5" />}
+                            {toastModal.title}
+                        </AlertDialogTitle>
+                        <AlertDialogDescription>
+                            {toastModal.message}
+                        </AlertDialogDescription>
+                    </AlertDialogHeader>
+                    <AlertDialogFooter>
+                        <Button
+                            onClick={() => setToastModal(prev => ({ ...prev, open: false }))}
+                            className={
+                                toastModal.type === 'success' ? 'bg-green-600 hover:bg-green-700' :
+                                toastModal.type === 'error' ? 'bg-red-600 hover:bg-red-700' : 'bg-yellow-600 hover:bg-yellow-700'
+                            }
+                        >
+                            ตกลง
                         </Button>
                     </AlertDialogFooter>
                 </AlertDialogContent>

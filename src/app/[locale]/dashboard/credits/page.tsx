@@ -603,12 +603,17 @@ export default function CreditsPage() {
                                     <div>
                                         <p className="font-medium">{order.credit_packages?.name || 'แพ็คเกจ'}</p>
                                         <p className="text-sm text-gray-500">
-                                            {order.reference_code} • {new Date(order.created_at).toLocaleDateString('th-TH')}
+                                            {order.reference_code} • {new Date(order.created_at).toLocaleString('th-TH')}
                                         </p>
+                                        {order.transfer_datetime && (
+                                            <p className="text-xs text-gray-400">
+                                                โอนเมื่อ: {new Date(order.transfer_datetime).toLocaleString('th-TH')}
+                                            </p>
+                                        )}
                                     </div>
                                     <div className="text-right">
-                                        <p className="font-semibold text-blue-600">
-                                            +{order.credits_to_add.toLocaleString()} เครดิต
+                                        <p className={`font-semibold ${order.status === 'approved' ? 'text-green-600' : order.status === 'pending' ? 'text-yellow-600' : 'text-gray-400'}`}>
+                                            {order.status === 'approved' ? '+' : ''}{order.credits_to_add.toLocaleString()} เครดิต
                                         </p>
                                         {getStatusBadge(order.status)}
                                     </div>
