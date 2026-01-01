@@ -27,6 +27,7 @@ export default function ReportForm({ userId }: { userId: string }) {
     const [loading, setLoading] = useState(false);
     const [uploading, setUploading] = useState(false);
     const [blacklistInfo, setBlacklistInfo] = useState<any>(null);
+    const [shopInfo, setShopInfo] = useState<any>(null);
     const supabase = createClient();
 
     const formSchema = z.object({
@@ -61,6 +62,23 @@ export default function ReportForm({ userId }: { userId: string }) {
         fetchBlacklistInfo();
     }, [prefilledBlacklistId, supabase]);
 
+    // Fetch shop info if reporting a registered shop
+    useEffect(() => {
+        async function fetchShopInfo() {
+            if (prefilledShopId) {
+                const { data } = await supabase
+                    .from('shops')
+                    .select('*')
+                    .eq('shop_code', prefilledShopId)
+                    .single();
+                if (data) {
+                    setShopInfo(data);
+                }
+            }
+        }
+        fetchShopInfo();
+    }, [prefilledShopId, supabase]);
+
     const form = useForm<z.infer<typeof formSchema>>({
         resolver: zodResolver(formSchema),
         defaultValues: {
@@ -88,6 +106,18 @@ export default function ReportForm({ userId }: { userId: string }) {
             form.setValue('id_card', blacklistInfo.id_card_numbers?.[0] || '');
         }
     }, [blacklistInfo, form, prefilledBank]);
+
+    // Update form when shopInfo loads
+    useEffect(() => {
+        if (shopInfo) {
+            form.setValue('shop_name', shopInfo.name || '');
+            form.setValue('facebook_url', shopInfo.facebook_url || '');
+            form.setValue('line_id', shopInfo.line_id || '');
+            form.setValue('phone_number', shopInfo.phone_number || '');
+            form.setValue('bank_account_no', shopInfo.bank_account_no || '');
+            form.setValue('bank_account_name', shopInfo.bank_account_name || '');
+        }
+    }, [shopInfo, form]);
 
     async function onSubmit(values: z.infer<typeof formSchema>) {
         setLoading(true);
@@ -211,7 +241,29 @@ export default function ReportForm({ userId }: { userId: string }) {
 
                         {/* Shop Details */}
                         <div className="space-y-4">
-                            <h3 className="font-semibold text-lg">1. ข้อมูลร้านคู่กรณี</h3>
+                            <div className="flex items-center justify-between">
+                                <h3 className="font-semibold text-lg">1. ข้อมูลร้านคู่กรณี</h3>
+                                {shopInfo && (
+                                    <Badge className="bg-blue-100 text-blue-700 border-blue-200">
+                                        กำลังรายงานร้าน: {shopInfo.name}
+                                    </Badge>
+                                )}
+                            </div>
+
+                            {shopInfo && (
+                                <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-4">
+                                    <div className="flex items-start gap-3">
+                                        <Info className="w-5 h-5 text-blue-600 mt-0.5" />
+                                        <div>
+                                            <h4 className="font-semibold text-blue-800">ระบบดึงข้อมูลร้านให้อัตโนมัติ</h4>
+                                            <p className="text-sm text-blue-700 mt-1">
+                                                ระบบดึงข้อมูลร้าน <strong>{shopInfo.name}</strong> ({prefilledShopId}) ให้อัตโนมัติแล้ว กรุณากรอกเฉพาะรายละเอียดเหตุการณ์
+                                            </p>
+                                        </div>
+                                    </div>
+                                </div>
+                            )}
+
                             <FormField
                                 control={form.control}
                                 name="shop_name"
@@ -219,7 +271,7 @@ export default function ReportForm({ userId }: { userId: string }) {
                                     <FormItem>
                                         <FormLabel>ชื่อร้าน / ชื่อเพจ <span className="text-red-500">*</span></FormLabel>
                                         <FormControl>
-                                            <Input placeholder="ระบุชื่อร้านที่โกง..." {...field} />
+                                            <Input placeholder="ระบุชื่อร้านที่โกง..." {...field} disabled={!!shopInfo} className={shopInfo ? 'bg-slate-100' : ''} />
                                         </FormControl>
                                         <FormMessage />
                                     </FormItem>
@@ -234,7 +286,7 @@ export default function ReportForm({ userId }: { userId: string }) {
                                         <FormItem>
                                             <FormLabel>ลิงก์ Facebook / ชื่อเพจ</FormLabel>
                                             <FormControl>
-                                                <Input placeholder="https://facebook.com/..." {...field} />
+                                                <Input placeholder="https://facebook.com/..." {...field} disabled={!!shopInfo} className={shopInfo ? 'bg-slate-100' : ''} />
                                             </FormControl>
                                             <FormMessage />
                                         </FormItem>
@@ -247,7 +299,7 @@ export default function ReportForm({ userId }: { userId: string }) {
                                         <FormItem>
                                             <FormLabel>Line ID</FormLabel>
                                             <FormControl>
-                                                <Input placeholder="@..." {...field} />
+                                                <Input placeholder="@..." {...field} disabled={!!shopInfo} className={shopInfo ? 'bg-slate-100' : ''} />
                                             </FormControl>
                                             <FormMessage />
                                         </FormItem>
@@ -263,7 +315,7 @@ export default function ReportForm({ userId }: { userId: string }) {
                                         <FormItem>
                                             <FormLabel>เลขบัญชีที่โอนเงิน</FormLabel>
                                             <FormControl>
-                                                <Input placeholder="ระบุเลขบัญชี..." {...field} />
+                                                <Input placeholder="ระบุเลขบัญชี..." {...field} disabled={!!shopInfo} className={shopInfo ? 'bg-slate-100' : ''} />
                                             </FormControl>
                                             <FormMessage />
                                         </FormItem>
@@ -276,7 +328,7 @@ export default function ReportForm({ userId }: { userId: string }) {
                                         <FormItem>
                                             <FormLabel>ชื่อบัญชี</FormLabel>
                                             <FormControl>
-                                                <Input placeholder="ระบุชื่อเจ้าของบัญชี..." {...field} />
+                                                <Input placeholder="ระบุชื่อเจ้าของบัญชี..." {...field} disabled={!!shopInfo} className={shopInfo ? 'bg-slate-100' : ''} />
                                             </FormControl>
                                             <FormMessage />
                                         </FormItem>
@@ -291,7 +343,7 @@ export default function ReportForm({ userId }: { userId: string }) {
                                     <FormItem>
                                         <FormLabel>เลขบัตรประชาชน (ถ้ามี)</FormLabel>
                                         <FormControl>
-                                            <Input placeholder="ระบุเลขบัตรประชาชน..." {...field} />
+                                            <Input placeholder="ระบุเลขบัตรประชาชน..." {...field} disabled={!!shopInfo} className={shopInfo ? 'bg-slate-100' : ''} />
                                         </FormControl>
                                         <FormMessage />
                                     </FormItem>
