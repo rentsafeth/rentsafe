@@ -2,7 +2,7 @@
 
 import { createClient } from '@/lib/supabase/client';
 import { useSearchParams, useRouter, useParams } from 'next/navigation';
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useMemo, useCallback } from 'react';
 import { useTranslations } from 'next-intl';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -379,8 +379,8 @@ export default function SearchResults() {
         </div>
     );
 
-    // Search Form Component
-    const SearchForm = () => (
+    // Search Form Component - Memoized to prevent recreation on every render
+    const searchFormElement = useMemo(() => (
         <Card className="mb-8 shadow-lg border-0 bg-white/80 backdrop-blur-sm">
             <CardContent className="p-6">
                 {/* Search Type Tabs - Modern Design */}
@@ -388,11 +388,10 @@ export default function SearchResults() {
                     <button
                         type="button"
                         onClick={() => setSearchType('blacklist')}
-                        className={`flex-1 py-4 px-6 rounded-xl font-semibold transition-all duration-300 flex items-center justify-center gap-3 ${
-                            searchType === 'blacklist'
-                                ? 'bg-gradient-to-r from-red-500 to-orange-500 text-white shadow-lg shadow-red-500/30 scale-[1.02]'
-                                : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
-                        }`}
+                        className={`flex-1 py-4 px-6 rounded-xl font-semibold transition-all duration-300 flex items-center justify-center gap-3 ${searchType === 'blacklist'
+                            ? 'bg-gradient-to-r from-red-500 to-orange-500 text-white shadow-lg shadow-red-500/30 scale-[1.02]'
+                            : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
+                            }`}
                     >
                         <ShieldAlert className="w-5 h-5" />
                         <span>{isThai ? 'ตรวจสอบ Blacklist' : 'Check Blacklist'}</span>
@@ -400,11 +399,10 @@ export default function SearchResults() {
                     <button
                         type="button"
                         onClick={() => setSearchType('rental')}
-                        className={`flex-1 py-4 px-6 rounded-xl font-semibold transition-all duration-300 flex items-center justify-center gap-3 ${
-                            searchType === 'rental'
-                                ? 'bg-gradient-to-r from-blue-500 to-indigo-500 text-white shadow-lg shadow-blue-500/30 scale-[1.02]'
-                                : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
-                        }`}
+                        className={`flex-1 py-4 px-6 rounded-xl font-semibold transition-all duration-300 flex items-center justify-center gap-3 ${searchType === 'rental'
+                            ? 'bg-gradient-to-r from-blue-500 to-indigo-500 text-white shadow-lg shadow-blue-500/30 scale-[1.02]'
+                            : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
+                            }`}
                     >
                         <Star className="w-5 h-5" />
                         <span>{isThai ? 'ค้นหารถเช่า' : 'Find Car Rental'}</span>
@@ -414,9 +412,8 @@ export default function SearchResults() {
                 {/* Search Input - Modern Design */}
                 <div className="space-y-4">
                     <div className="relative group">
-                        <div className={`absolute inset-0 rounded-xl opacity-0 group-focus-within:opacity-100 transition-opacity duration-300 -z-10 blur-xl ${
-                            searchType === 'blacklist' ? 'bg-red-500/20' : 'bg-blue-500/20'
-                        }`}></div>
+                        <div className={`absolute inset-0 rounded-xl opacity-0 group-focus-within:opacity-100 transition-opacity duration-300 -z-10 blur-xl ${searchType === 'blacklist' ? 'bg-red-500/20' : 'bg-blue-500/20'
+                            }`}></div>
                         <Search className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-slate-400 group-focus-within:text-slate-600 transition-colors" />
                         <input
                             type="text"
@@ -449,11 +446,10 @@ export default function SearchResults() {
                     <Button
                         type="button"
                         onClick={handleSearch}
-                        className={`w-full py-6 text-lg font-bold rounded-xl transition-all duration-300 ${
-                            searchType === 'blacklist'
-                                ? 'bg-gradient-to-r from-red-500 to-orange-500 hover:from-red-600 hover:to-orange-600 shadow-lg shadow-red-500/30'
-                                : 'bg-gradient-to-r from-blue-500 to-indigo-500 hover:from-blue-600 hover:to-indigo-600 shadow-lg shadow-blue-500/30'
-                        }`}
+                        className={`w-full py-6 text-lg font-bold rounded-xl transition-all duration-300 ${searchType === 'blacklist'
+                            ? 'bg-gradient-to-r from-red-500 to-orange-500 hover:from-red-600 hover:to-orange-600 shadow-lg shadow-red-500/30'
+                            : 'bg-gradient-to-r from-blue-500 to-indigo-500 hover:from-blue-600 hover:to-indigo-600 shadow-lg shadow-blue-500/30'
+                            }`}
                     >
                         <Search className="w-5 h-5 mr-2" />
                         {isThai ? 'ค้นหา' : 'Search'}
@@ -461,7 +457,7 @@ export default function SearchResults() {
                 </div>
             </CardContent>
         </Card>
-    );
+    ), [searchType, searchQuery, selectedProvince, isThai]);
 
     // No Results Component with Report CTA
     const NoResultsView = () => (
@@ -611,11 +607,10 @@ export default function SearchResults() {
 
     // Shop Result Card
     const ShopCard = ({ result }: { result: SearchResult }) => (
-        <Card className={`group overflow-hidden hover:shadow-xl transition-all duration-300 ${
-            result.isVerifiedPro
-                ? 'border-l-4 border-l-yellow-500 bg-gradient-to-r from-white to-yellow-50/30'
-                : 'border-l-4 border-l-green-500 bg-gradient-to-r from-white to-green-50/30'
-        }`}>
+        <Card className={`group overflow-hidden hover:shadow-xl transition-all duration-300 ${result.isVerifiedPro
+            ? 'border-l-4 border-l-yellow-500 bg-gradient-to-r from-white to-yellow-50/30'
+            : 'border-l-4 border-l-green-500 bg-gradient-to-r from-white to-green-50/30'
+            }`}>
             <CardContent className="p-6">
                 <div className="flex flex-col md:flex-row md:items-start md:justify-between gap-4">
                     <div className="flex-1">
@@ -769,11 +764,10 @@ export default function SearchResults() {
             ].map(({ key, state, setter, icon: Icon, label, color }) => (
                 <label
                     key={key}
-                    className={`flex items-center gap-2 px-4 py-2.5 rounded-xl border-2 cursor-pointer transition-all duration-200 ${
-                        state
-                            ? `bg-${color}-50 border-${color}-300 text-${color}-700 shadow-sm`
-                            : 'bg-white border-slate-200 hover:border-slate-300 text-slate-600'
-                    }`}
+                    className={`flex items-center gap-2 px-4 py-2.5 rounded-xl border-2 cursor-pointer transition-all duration-200 ${state
+                        ? `bg-${color}-50 border-${color}-300 text-${color}-700 shadow-sm`
+                        : 'bg-white border-slate-200 hover:border-slate-300 text-slate-600'
+                        }`}
                 >
                     <input
                         type="checkbox"
@@ -794,7 +788,7 @@ export default function SearchResults() {
         return (
             <>
                 <HeroSection />
-                <SearchForm />
+                {searchFormElement}
                 <div className="flex flex-col items-center justify-center py-16">
                     <Loader2 className="h-12 w-12 animate-spin text-blue-600 mb-4" />
                     <p className="text-slate-500">{isThai ? 'กำลังค้นหา...' : 'Searching...'}</p>
@@ -808,7 +802,7 @@ export default function SearchResults() {
         return (
             <>
                 <HeroSection />
-                <SearchForm />
+                {searchFormElement}
                 <NoResultsView />
             </>
         );
@@ -819,7 +813,7 @@ export default function SearchResults() {
         return (
             <>
                 <HeroSection />
-                <SearchForm />
+                {searchFormElement}
                 <div className="text-center py-12">
                     <div className="w-20 h-20 bg-slate-100 rounded-full flex items-center justify-center mx-auto mb-4">
                         <Search className="w-10 h-10 text-slate-400" />
@@ -841,28 +835,26 @@ export default function SearchResults() {
     return (
         <div className="space-y-6">
             <HeroSection />
-            <SearchForm />
+            {searchFormElement}
 
             {/* Results Header */}
             <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 bg-white rounded-xl p-4 shadow-sm border">
                 <div className="flex items-center gap-3">
-                    <div className={`w-10 h-10 rounded-lg flex items-center justify-center ${
-                        searchType === 'blacklist' ? 'bg-red-100' : 'bg-blue-100'
-                    }`}>
-                        <TrendingUp className={`w-5 h-5 ${
-                            searchType === 'blacklist' ? 'text-red-600' : 'text-blue-600'
-                        }`} />
+                    <div className={`w-10 h-10 rounded-lg flex items-center justify-center ${searchType === 'blacklist' ? 'bg-red-100' : 'bg-blue-100'
+                        }`}>
+                        <TrendingUp className={`w-5 h-5 ${searchType === 'blacklist' ? 'text-red-600' : 'text-blue-600'
+                            }`} />
                     </div>
                     <div>
                         <h2 className="text-lg font-bold text-slate-800">
                             {t('resultsCount', { count: sortedResults.length })}
                         </h2>
                         {(filterTaxInvoice || filterWithholdingTax || filterPayOnPickup || filterCreditCard) &&
-                         sortedResults.length !== results.length && (
-                            <p className="text-sm text-slate-500">
-                                {isThai ? `กรองจาก ${results.length} รายการ` : `filtered from ${results.length} items`}
-                            </p>
-                        )}
+                            sortedResults.length !== results.length && (
+                                <p className="text-sm text-slate-500">
+                                    {isThai ? `กรองจาก ${results.length} รายการ` : `filtered from ${results.length} items`}
+                                </p>
+                            )}
                     </div>
                 </div>
 
