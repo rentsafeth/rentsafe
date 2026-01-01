@@ -622,8 +622,8 @@ export default function CreditsPage() {
                                 </div>
 
                                 {/* Transfer DateTime */}
-                                <div className="space-y-2">
-                                    <Label htmlFor="transfer-datetime" className="flex items-center gap-2">
+                                <div className="space-y-2 text-center">
+                                    <Label htmlFor="transfer-datetime" className="flex items-center justify-center gap-2">
                                         <Calendar className="w-4 h-4" />
                                         วันเวลาที่โอนเงิน *
                                     </Label>
@@ -633,7 +633,7 @@ export default function CreditsPage() {
                                         value={transferDateTime}
                                         onChange={(e) => setTransferDateTime(e.target.value)}
                                         max={new Date().toISOString().slice(0, 16)}
-                                        className="max-w-xs"
+                                        className="max-w-xs mx-auto"
                                     />
                                 </div>
 
