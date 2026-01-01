@@ -5,7 +5,7 @@ import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
 import { createClient } from '@/lib/supabase/client';
-import { useRouter, useSearchParams } from 'next/navigation';
+import { useRouter, useSearchParams, useParams } from 'next/navigation';
 import { useTranslations } from 'next-intl';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -14,13 +14,16 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { Form, FormControl, FormDescription, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { Loader2, Upload, AlertTriangle, ShieldAlert, Info } from 'lucide-react';
+import { Loader2, Upload, AlertTriangle, ShieldAlert, Info, Gift, Sparkles } from 'lucide-react';
 import { toast } from 'sonner';
 
 export default function ReportForm({ userId }: { userId: string }) {
     const router = useRouter();
     const searchParams = useSearchParams();
     const t = useTranslations('ReportPage');
+    const params = useParams();
+    const locale = params.locale as string;
+    const isThai = locale === 'th';
     const prefilledShopId = searchParams.get('shop_id');
     const prefilledBlacklistId = searchParams.get('blacklist_id');
     const prefilledBank = searchParams.get('bank');
@@ -199,6 +202,61 @@ export default function ReportForm({ userId }: { userId: string }) {
     return (
         <Form {...form}>
             <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-8">
+                {/* Motivation Section */}
+                <div className="space-y-4 mb-8">
+                    <Card className="bg-gradient-to-br from-red-50 to-orange-50 border-red-200 shadow-lg">
+                        <CardContent className="p-6">
+                            <div className="flex items-start gap-4">
+                                <div className="w-12 h-12 bg-red-100 rounded-xl flex items-center justify-center flex-shrink-0">
+                                    <AlertTriangle className="w-6 h-6 text-red-600" />
+                                </div>
+                                <div className="text-left flex-1">
+                                    <h4 className="font-bold text-slate-800 mb-2 text-lg">
+                                        {isThai ? 'เคยโดนโกงจากร้านนี้?' : 'Were you scammed by this shop?'}
+                                    </h4>
+                                    <p className="text-sm text-slate-600 mb-4">
+                                        {isThai
+                                            ? 'รายงานมิจฉาชีพเพื่อช่วยเหลือคนอื่น และรับเครดิตปลอบใจเมื่อรายงานได้รับการยืนยัน!'
+                                            : 'Report the scammer to help others and earn karma credits when your report is verified!'}
+                                    </p>
+                                    <div className="flex items-center gap-3 mb-4 p-3 bg-white/60 rounded-lg">
+                                        <Gift className="w-5 h-5 text-amber-500" />
+                                        <div className="text-sm">
+                                            <span className="font-semibold text-amber-600">
+                                                {isThai ? '+10 เครดิตปลอบใจ' : '+10 Karma Credits'}
+                                            </span>
+                                            <span className="text-slate-500">
+                                                {isThai ? ' เมื่อรายงานได้รับการยืนยัน' : ' when report is verified'}
+                                            </span>
+                                        </div>
+                                    </div>
+                                    <Button
+                                        type="button"
+                                        onClick={() => document.getElementById('report-form-start')?.scrollIntoView({ behavior: 'smooth' })}
+                                        className="w-full bg-gradient-to-r from-red-600 to-red-500 hover:from-red-700 hover:to-red-600 shadow-lg shadow-red-500/30 font-bold"
+                                    >
+                                        <AlertTriangle className="w-4 h-4 mr-2" />
+                                        {isThai ? 'รายงานมิจฉาชีพ' : 'Report Scammer'}
+                                    </Button>
+                                </div>
+                            </div>
+                        </CardContent>
+                    </Card>
+
+                    <div className="p-4 bg-gradient-to-r from-purple-50 to-pink-50 rounded-xl border border-purple-200">
+                        <div className="flex items-center gap-3">
+                            <Sparkles className="w-6 h-6 text-purple-500" />
+                            <div className="text-left">
+                                <p className="text-sm font-bold text-purple-800">
+                                    {isThai ? 'ระบบเครดิตปลอบใจ' : 'Karma Credit System'}
+                                </p>
+                                <p className="text-xs text-purple-600">
+                                    {isThai ? 'สะสมเครดิตปลอบใจ เพื่อรับสิทธิพิเศษเร็วๆ นี้!' : 'Collect karma credits for special privileges coming soon!'}
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
                 {/* Show existing blacklist info if adding to existing entry */}
                 {blacklistInfo && (
                     <Card className="border-orange-200 bg-orange-50">
@@ -227,7 +285,7 @@ export default function ReportForm({ userId }: { userId: string }) {
                     </Card>
                 )}
 
-                <Card className="border-red-100 shadow-md">
+                <Card id="report-form-start" className="border-red-100 shadow-md">
                     <CardHeader className="bg-red-50">
                         <CardTitle className="flex items-center text-red-700">
                             <AlertTriangle className="mr-2 h-5 w-5" />
