@@ -1,37 +1,6 @@
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
-
-// ---------- Type Definitions ----------
-interface Shop {
-    id: string;
-    credit_balance: number;
-    [key: string]: any;
-}
-
-interface SystemSettings {
-    daily_boost_price?: string;
-    min_ppc_bid?: string;
-    max_ppc_bid?: string;
-    min_featured_bid?: string;
-    [key: string]: any;
-}
-
-interface Schedule {
-    id: string;
-    shop_id: string;
-    type: 'boost' | 'ppc';
-    start_date: string;
-    end_date: string;
-    total_days: number;
-    total_credits: number;
-    status: 'pending' | 'active' | 'completed' | 'cancelled';
-    ppc_bid?: number;
-    ppc_daily_budget?: number;
-    created_at: string;
-    [key: string]: any;
-}
-
+import { useState, useEffect } from 'react';
 import { createClient } from '@/lib/supabase/client';
 import { useRouter } from 'next/navigation';
 import { useLocale } from 'next-intl';
@@ -93,7 +62,19 @@ interface DailyStat {
     credits_spent: number;
 }
 
-
+interface Schedule {
+    id: string;
+    shop_id: string;
+    type: 'boost' | 'ppc';
+    start_date: string;
+    end_date: string;
+    total_days: number;
+    total_credits: number;
+    ppc_bid?: number;
+    ppc_daily_budget?: number;
+    status: 'pending' | 'active' | 'completed' | 'cancelled';
+    created_at: string;
+}
 
 export default function AdsPage() {
     const router = useRouter();
@@ -103,7 +84,7 @@ export default function AdsPage() {
     const [loading, setLoading] = useState(true);
     const [saving, setSaving] = useState(false);
     const [activeTab, setActiveTab] = useState('boost');
-    const [shop, setShop] = useState<Shop | null>(null);
+    const [shop, setShop] = useState<any>(null);
     const [adSettings, setAdSettings] = useState<AdSettings>({
         ppc_enabled: false,
         ppc_bid: 5,
@@ -115,7 +96,7 @@ export default function AdsPage() {
         featured_active: false,
         featured_expires_at: null,
     });
-    const [systemSettings, setSystemSettings] = useState<SystemSettings>({} as SystemSettings);
+    const [systemSettings, setSystemSettings] = useState<Record<string, any>>({});
     const [todayStats, setTodayStats] = useState<AdStats>({
         impressions: 0,
         clicks: 0,
@@ -158,42 +139,53 @@ export default function AdsPage() {
         setToastModal({ open: true, type, title, message });
     };
 
-    const loadData = useCallback(async () => {
+    useEffect(() => {
+        loadData();
+    }, []);
+
+    const loadData = async () => {
         try {
             const { data: { user } } = await supabase.auth.getUser();
             if (!user) {
                 router.push('/login');
                 return;
             }
+
             const { data: shopData } = await supabase
                 .from('shops')
                 .select('*')
                 .eq('owner_id', user.id)
                 .single();
+
             if (!shopData) {
                 router.push('/dashboard');
                 return;
             }
+
             setShop(shopData);
+
             const { data: settings } = await supabase
                 .from('shop_ad_settings')
                 .select('*')
                 .eq('shop_id', shopData.id)
                 .single();
+
             if (settings) {
                 setAdSettings(settings);
             }
+
             const { data: sysSettings } = await supabase
                 .from('system_settings')
                 .select('*')
                 .in('key', ['daily_boost_price', 'min_ppc_bid', 'max_ppc_bid', 'min_featured_bid']);
+
             const settingsMap: Record<string, any> = {};
             sysSettings?.forEach(s => {
-                settingsMap[s.key] = typeof s.value === 'string'
-                    ? (s.value.startsWith('"') ? s.value.replace(/"/g, '') : s.value)
-                    : s.value;
+                settingsMap[s.key] = typeof s.value === 'string' ?
+                    (s.value.startsWith('"') ? s.value.replace(/"/g, '') : s.value) : s.value;
             });
-            setSystemSettings(settingsMap as SystemSettings);
+            setSystemSettings(settingsMap);
+
             const today = new Date().toISOString().split('T')[0];
             const { data: dailyStats } = await supabase
                 .from('ad_stats_daily')
@@ -201,6 +193,7 @@ export default function AdsPage() {
                 .eq('shop_id', shopData.id)
                 .eq('stat_date', today)
                 .single();
+
             if (dailyStats) {
                 setTodayStats({
                     impressions: dailyStats.impressions || 0,
@@ -211,6 +204,7 @@ export default function AdsPage() {
                         : 0,
                 });
             }
+
             const weekAgo = new Date();
             weekAgo.setDate(weekAgo.getDate() - 7);
             const { data: weekly } = await supabase
@@ -219,29 +213,28 @@ export default function AdsPage() {
                 .eq('shop_id', shopData.id)
                 .gte('stat_date', weekAgo.toISOString().split('T')[0])
                 .order('stat_date', { ascending: true });
+
             setWeeklyStats(weekly || []);
+
+            // Load all schedules
             const { data: schedules } = await supabase
                 .from('ad_schedules')
                 .select('*')
                 .eq('shop_id', shopData.id)
                 .neq('status', 'cancelled')
                 .order('start_date', { ascending: true });
+
             if (schedules) {
                 setBoostSchedules(schedules.filter(s => s.type === 'boost'));
                 setPpcSchedules(schedules.filter(s => s.type === 'ppc'));
             }
+
         } catch (error) {
             console.error('Error loading data:', error);
         } finally {
             setLoading(false);
         }
-    }, [supabase, router]);
-
-    useEffect(() => {
-        loadData();
-    }, [loadData]);
-
-
+    };
 
     const savePPCSettings = async () => {
         if (!shop) return;
@@ -285,8 +278,8 @@ export default function AdsPage() {
                     boost_active: true,
                     boost_expires_at: data.expires_at,
                 }));
-                setShop((prev) => ({
-                    ...prev as Shop,
+                setShop((prev: any) => ({
+                    ...prev,
                     credit_balance: data.new_balance,
                 }));
                 setBoostDialog(false);
@@ -391,7 +384,7 @@ export default function AdsPage() {
         setSavingSchedule(true);
 
         try {
-            const scheduleData: Partial<Schedule> = {
+            const scheduleData: any = {
                 shop_id: shop.id,
                 type,
                 start_date: scheduleForm.startDate,
@@ -513,9 +506,9 @@ export default function AdsPage() {
         }
     };
 
-    const boostPrice = parseInt(systemSettings?.daily_boost_price || '50');
-    const minPPC = parseInt(systemSettings?.min_ppc_bid || '1');
-    const maxPPC = parseInt(systemSettings?.max_ppc_bid || '100');
+    const boostPrice = parseInt(systemSettings.daily_boost_price) || 50;
+    const minPPC = parseInt(systemSettings.min_ppc_bid) || 1;
+    const maxPPC = parseInt(systemSettings.max_ppc_bid) || 100;
 
     const isBoostActive = adSettings.boost_active &&
         adSettings.boost_expires_at &&
@@ -914,7 +907,7 @@ export default function AdsPage() {
                                         <Button
                                             className="w-full h-12 text-lg bg-gradient-to-r from-yellow-500 to-orange-500 hover:from-yellow-600 hover:to-orange-600"
                                             onClick={() => setBoostDialog(true)}
-                                            disabled={(shop?.credit_balance || 0) < boostPrice}
+                                            disabled={shop?.credit_balance < boostPrice}
                                         >
                                             <Zap className="w-5 h-5 mr-2" />
                                             ซื้อ Daily Boost ทันที
@@ -922,7 +915,7 @@ export default function AdsPage() {
                                     )}
                                 </div>
 
-                                {(shop?.credit_balance || 0) < boostPrice && !isBoostActive && (
+                                {shop?.credit_balance < boostPrice && !isBoostActive && (
                                     <div className="flex items-center gap-2 text-orange-600 bg-orange-50 p-4 rounded-lg mt-4">
                                         <AlertCircle className="w-5 h-5" />
                                         <span>เครดิตไม่เพียงพอ กรุณาเติมเครดิตก่อน</span>
@@ -1305,7 +1298,7 @@ export default function AdsPage() {
                                             </div>
                                             <div className="flex justify-between text-sm">
                                                 <span>หลังจอง</span>
-                                                <span className={calculateScheduleCost('boost') > (shop?.credit_balance || 0) ? 'text-red-600' : ''}>
+                                                <span className={calculateScheduleCost('boost') > shop?.credit_balance ? 'text-red-600' : ''}>
                                                     {((shop?.credit_balance || 0) - calculateScheduleCost('boost')).toLocaleString()} เครดิต
                                                 </span>
                                             </div>
