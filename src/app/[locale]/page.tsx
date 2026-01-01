@@ -4,6 +4,7 @@ import { createClient } from '@/lib/supabase/server'
 import HeroSection from '@/components/features/home/HeroSection'
 import { Shield, Search, AlertTriangle, CheckCircle, Star, Building2, Users, BarChart3 } from 'lucide-react'
 import Link from 'next/link'
+import VisitorTracker from '@/components/features/home/VisitorTracker'
 import Image from 'next/image'
 
 export async function generateMetadata({ params }: { params: Promise<{ locale: string }> }): Promise<Metadata> {
@@ -38,11 +39,6 @@ export default async function HomePage({ params }: { params: Promise<{ locale: s
     const { locale } = await params
     const t = await getTranslations({ locale, namespace: 'HomePage' })
     const supabase = await createClient()
-
-    // Increment visitor count (fire and forget)
-    supabase.rpc('increment_site_visitor').then(({ error }) => {
-        if (error) console.error('Error incrementing visitor:', error)
-    })
 
     // Fetch real stats from database
     const [shopsResult, usersResult, reportsResult, todayStats, totalStats] = await Promise.all([
@@ -85,6 +81,7 @@ export default async function HomePage({ params }: { params: Promise<{ locale: s
         <div className="flex flex-col min-h-screen">
             {/* Hero Section */}
             <HeroSection stats={stats} />
+            <VisitorTracker />
 
             {/* Features & Stats Section - Combined */}
             <section className="py-16 md:py-24 bg-white">
