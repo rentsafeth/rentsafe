@@ -7,7 +7,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import {
     CheckCircle, MapPin, Phone, MessageCircle, AlertTriangle,
     Calendar, Star, Building2, CreditCard, Globe, ShieldCheck,
-    Clock, Users, ExternalLink, Crown
+    Clock, Users, ExternalLink, Crown, Shield, Check, Sparkles
 } from 'lucide-react';
 import Link from 'next/link';
 import Image from 'next/image';
@@ -199,7 +199,7 @@ export default async function ShopProfilePage({ params }: { params: Promise<{ id
                         {/* Shop Info */}
                         <div className="px-6 pb-6 -mt-16 relative">
                             {/* Shop Logo / Avatar */}
-                            <div className="w-28 h-28 md:w-32 md:h-32 bg-white rounded-2xl shadow-lg border-4 border-white overflow-hidden mb-4 relative">
+                            <div className={`w-28 h-28 md:w-32 md:h-32 bg-white rounded-2xl shadow-lg border-4 ${isVerifiedPro ? 'border-yellow-400 ring-4 ring-yellow-400/30' : 'border-white'} overflow-hidden mb-4 relative z-10`}>
                                 {shop.logo_url ? (
                                     <Image
                                         src={shop.logo_url}
@@ -208,8 +208,8 @@ export default async function ShopProfilePage({ params }: { params: Promise<{ id
                                         className="object-cover"
                                     />
                                 ) : (
-                                    <div className="w-full h-full flex items-center justify-center">
-                                        <Building2 className="w-12 h-12 text-blue-600" />
+                                    <div className="w-full h-full flex items-center justify-center bg-slate-50">
+                                        <Building2 className={`w-12 h-12 ${isVerifiedPro ? 'text-yellow-500' : 'text-blue-600'}`} />
                                     </div>
                                 )}
                             </div>
@@ -217,10 +217,18 @@ export default async function ShopProfilePage({ params }: { params: Promise<{ id
                             <div className="flex flex-col lg:flex-row lg:items-start lg:justify-between gap-4">
                                 <div className="flex-1">
                                     <div className="flex items-center gap-3 mb-2 flex-wrap">
-                                        <h1 className="text-2xl md:text-3xl font-bold text-slate-900">{shop.name}</h1>
+                                        <div className="flex items-center gap-2">
+                                            <h1 className="text-2xl md:text-3xl font-bold text-slate-900">{shop.name}</h1>
+                                            {isVerifiedPro && (
+                                                <div className="bg-blue-500 text-white rounded-full p-0.5" title="Verified Partner">
+                                                    <Check className="w-4 h-4" />
+                                                </div>
+                                            )}
+                                        </div>
+
                                         {isVerifiedPro ? (
-                                            <Badge className="bg-gradient-to-r from-yellow-400 to-orange-400 text-white hover:from-yellow-500 hover:to-orange-500 px-3 py-1">
-                                                <Crown className="w-4 h-4 mr-1" />
+                                            <Badge className="bg-gradient-to-r from-yellow-400 to-orange-400 text-white hover:from-yellow-500 hover:to-orange-500 px-3 py-1 border-0 shadow-sm">
+                                                <Crown className="w-4 h-4 mr-1 fill-white" />
                                                 ร้านรับรอง
                                             </Badge>
                                         ) : shop.verification_status === 'verified' ? (
@@ -326,21 +334,38 @@ export default async function ShopProfilePage({ params }: { params: Promise<{ id
                             </CardContent>
                         </Card>
 
-                        <Card className="bg-gradient-to-br from-green-50 to-white border-green-100">
-                            <CardContent className="pt-6">
-                                <div className="flex items-center gap-3">
-                                    <div className="p-2.5 bg-green-100 rounded-xl">
-                                        <ShieldCheck className="w-5 h-5 text-green-600" />
+                        {isVerifiedPro ? (
+                            <Card className="bg-gradient-to-br from-emerald-50 to-white border-emerald-200 shadow-sm relative overflow-hidden">
+                                <div className="absolute top-0 right-0 w-16 h-16 bg-emerald-100 rounded-bl-full -mr-8 -mt-8 opacity-50"></div>
+                                <CardContent className="pt-6 relative z-10">
+                                    <div className="flex items-center gap-3">
+                                        <div className="p-2.5 bg-gradient-to-br from-emerald-400 to-green-500 rounded-xl shadow-sm">
+                                            <Shield className="w-5 h-5 text-white" />
+                                        </div>
+                                        <div>
+                                            <p className="text-lg font-bold text-emerald-700 leading-tight">คุ้มครองเงินมัดจำ</p>
+                                            <p className="text-xs text-emerald-600 font-medium">โดย RentSafe Guarantee</p>
+                                        </div>
                                     </div>
-                                    <div>
-                                        <p className="text-2xl font-bold text-green-600">
-                                            {shop.verification_status === 'verified' ? 'ยืนยันแล้ว' : 'รอตรวจสอบ'}
-                                        </p>
-                                        <p className="text-xs text-slate-500">สถานะร้านค้า</p>
+                                </CardContent>
+                            </Card>
+                        ) : (
+                            <Card className="bg-gradient-to-br from-green-50 to-white border-green-100">
+                                <CardContent className="pt-6">
+                                    <div className="flex items-center gap-3">
+                                        <div className="p-2.5 bg-green-100 rounded-xl">
+                                            <ShieldCheck className="w-5 h-5 text-green-600" />
+                                        </div>
+                                        <div>
+                                            <p className="text-2xl font-bold text-green-600">
+                                                {shop.verification_status === 'verified' ? 'ยืนยันแล้ว' : 'รอตรวจสอบ'}
+                                            </p>
+                                            <p className="text-xs text-slate-500">สถานะร้านค้า</p>
+                                        </div>
                                     </div>
-                                </div>
-                            </CardContent>
-                        </Card>
+                                </CardContent>
+                            </Card>
+                        )}
 
                         <Card className="bg-gradient-to-br from-red-50 to-white border-red-100">
                             <CardContent className="pt-6">
@@ -370,7 +395,11 @@ export default async function ShopProfilePage({ params }: { params: Promise<{ id
                                 </CardHeader>
                                 <CardContent className="space-y-4">
                                     {shop.phone_number && (
-                                        <a href={`tel:${shop.phone_number}`} className="flex items-center gap-3 p-3 bg-slate-50 rounded-lg hover:bg-slate-100 transition-colors">
+                                        <a href={`tel:${shop.phone_number}`}
+                                            className={`flex items-center gap-3 p-3 rounded-lg transition-all ${isVerifiedPro
+                                                    ? 'bg-gradient-to-r from-blue-50 to-indigo-50 hover:from-blue-100 hover:to-indigo-100 border border-blue-100'
+                                                    : 'bg-slate-50 hover:bg-slate-100'
+                                                }`}>
                                             <div className="p-2 bg-blue-100 rounded-lg">
                                                 <Phone className="w-4 h-4 text-blue-600" />
                                             </div>
@@ -382,7 +411,10 @@ export default async function ShopProfilePage({ params }: { params: Promise<{ id
                                     )}
 
                                     {shop.line_id && (
-                                        <div className="flex items-center gap-3 p-3 bg-slate-50 rounded-lg">
+                                        <div className={`flex items-center gap-3 p-3 rounded-lg ${isVerifiedPro
+                                                ? 'bg-gradient-to-r from-green-50 to-emerald-50 border border-green-100'
+                                                : 'bg-slate-50'
+                                            }`}>
                                             <div className="p-2 bg-green-100 rounded-lg">
                                                 <MessageCircle className="w-4 h-4 text-green-600" />
                                             </div>
@@ -485,12 +517,24 @@ export default async function ShopProfilePage({ params }: { params: Promise<{ id
                                             <p className="text-sm text-red-600 mt-1">กรุณาตรวจสอบข้อมูลให้ดีก่อนทำธุรกรรม</p>
                                         </div>
                                     ) : (
-                                        <div className="text-center py-12 bg-gradient-to-b from-green-50 to-white rounded-xl border border-green-100">
-                                            <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4">
-                                                <CheckCircle className="w-8 h-8 text-green-600" />
+                                        <div className={`text-center py-12 rounded-xl border ${isVerifiedPro
+                                                ? 'bg-gradient-to-b from-emerald-50 to-white border-emerald-100'
+                                                : 'bg-gradient-to-b from-green-50 to-white border-green-100'
+                                            }`}>
+                                            <div className={`w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4 ${isVerifiedPro ? 'bg-emerald-100' : 'bg-green-100'
+                                                }`}>
+                                                {isVerifiedPro ? (
+                                                    <Sparkles className="w-8 h-8 text-emerald-600" />
+                                                ) : (
+                                                    <CheckCircle className="w-8 h-8 text-green-600" />
+                                                )}
                                             </div>
-                                            <p className="text-green-700 font-medium text-lg">ไม่พบรายงานความผิดปกติ</p>
-                                            <p className="text-sm text-slate-500 mt-2">ร้านนี้มีประวัติขาวสะอาด</p>
+                                            <p className={`font-medium text-lg ${isVerifiedPro ? 'text-emerald-700' : 'text-green-700'}`}>
+                                                {isVerifiedPro ? 'ประวัติขาวสะอาด 100%' : 'ไม่พบรายงานความผิดปกติ'}
+                                            </p>
+                                            <p className="text-sm text-slate-500 mt-2">
+                                                {isVerifiedPro ? 'ร้านนี้ไม่เคยมีประวัติการถูกร้องเรียน' : 'ร้านนี้มีประวัติขาวสะอาด'}
+                                            </p>
                                         </div>
                                     )}
                                 </CardContent>
