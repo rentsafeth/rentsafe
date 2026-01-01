@@ -2,7 +2,7 @@
 
 import { createClient } from '@/lib/supabase/client'
 import { useTranslations } from 'next-intl'
-import { useState, useRef } from 'react'
+import { useState, useRef, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { Store, ArrowLeft, Upload, X, Check, ChevronDown, FileText, CreditCard, Building2, User, AlertTriangle, Banknote, Wallet } from 'lucide-react'
 import Link from 'next/link'
@@ -51,6 +51,8 @@ export default function RegisterShopPage() {
     const router = useRouter()
     const [step, setStep] = useState(1)
     const [loading, setLoading] = useState(false)
+    const [checkingAuth, setCheckingAuth] = useState(true)
+    const [currentUser, setCurrentUser] = useState<{ id: string; email: string } | null>(null)
     const [error, setError] = useState<string | null>(null)
     const [acceptPDPA, setAcceptPDPA] = useState(false)
     const [acceptTerms, setAcceptTerms] = useState(false)
@@ -86,6 +88,38 @@ export default function RegisterShopPage() {
     const [idCardPreview, setIdCardPreview] = useState<string | null>(null)
     const [businessLicenseFile, setBusinessLicenseFile] = useState<File | null>(null)
     const [businessLicensePreview, setBusinessLicensePreview] = useState<string | null>(null)
+
+    // Check if user is already logged in
+    useEffect(() => {
+        async function checkAuth() {
+            try {
+                const supabase = createClient()
+                const { data: { user } } = await supabase.auth.getUser()
+
+                if (user) {
+                    // Check if user already has a shop
+                    const { data: existingShop } = await supabase
+                        .from('shops')
+                        .select('id')
+                        .eq('owner_id', user.id)
+                        .single()
+
+                    if (existingShop) {
+                        // User already has a shop, redirect to dashboard
+                        router.push('/dashboard')
+                        return
+                    }
+
+                    setCurrentUser({ id: user.id, email: user.email || '' })
+                }
+            } catch (err) {
+                console.error('Auth check error:', err)
+            } finally {
+                setCheckingAuth(false)
+            }
+        }
+        checkAuth()
+    }, [router])
 
     const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
         const { name, value } = e.target
@@ -150,7 +184,7 @@ export default function RegisterShopPage() {
         }
     }
 
-    async function signInWithGoogle() {
+    async function handleSubmit() {
         if (!acceptPDPA || !acceptTerms) {
             setError('กรุณายอมรับเงื่อนไขการใช้งานและนโยบายความเป็นส่วนตัว')
             return
@@ -163,16 +197,16 @@ export default function RegisterShopPage() {
             const supabase = createClient()
 
             // Generate a unique temp ID for file uploads
-            const tempId = `temp_${Date.now()}_${Math.random().toString(36).substring(7)}`
+            const tempId = currentUser ? currentUser.id : `temp_${Date.now()}_${Math.random().toString(36).substring(7)}`
 
-            // Upload files to Supabase Storage first (public bucket for temp files)
+            // Upload files to Supabase Storage first
             let idCardUrl: string | null = null
             let businessLicenseUrl: string | null = null
 
             if (idCardFile) {
                 const fileExt = idCardFile.name.split('.').pop()
                 const filePath = `pending/${tempId}/id_card.${fileExt}`
-                const { data: uploadData, error: uploadError } = await supabase.storage
+                const { error: uploadError } = await supabase.storage
                     .from('verification-docs')
                     .upload(filePath, idCardFile, {
                         cacheControl: '3600',
@@ -193,7 +227,7 @@ export default function RegisterShopPage() {
             if (businessLicenseFile) {
                 const fileExt = businessLicenseFile.name.split('.').pop()
                 const filePath = `pending/${tempId}/business_license.${fileExt}`
-                const { data: uploadData, error: uploadError } = await supabase.storage
+                const { error: uploadError } = await supabase.storage
                     .from('verification-docs')
                     .upload(filePath, businessLicenseFile, {
                         cacheControl: '3600',
@@ -211,7 +245,48 @@ export default function RegisterShopPage() {
                 businessLicenseUrl = urlData.publicUrl
             }
 
-            // Store form data in localStorage temporarily (including file URLs)
+            // If user is already logged in, create shop directly
+            if (currentUser) {
+                const { data: newShop, error: insertError } = await supabase
+                    .from('shops')
+                    .insert({
+                        owner_id: currentUser.id,
+                        name: formData.name,
+                        description: formData.description || null,
+                        phone_number: formData.phone_number,
+                        line_id: formData.line_id || null,
+                        facebook_url: formData.facebook_url || null,
+                        website: formData.website || null,
+                        service_provinces: formData.service_provinces,
+                        business_type: formData.business_type || 'individual',
+                        bank_name: formData.bank_name,
+                        bank_account_no: formData.bank_account_no,
+                        bank_account_name: formData.bank_account_name,
+                        can_issue_tax_invoice: formData.can_issue_tax_invoice,
+                        can_issue_withholding_tax: formData.can_issue_withholding_tax,
+                        pay_on_pickup: formData.pay_on_pickup,
+                        accept_credit_card: formData.accept_credit_card,
+                        id_card_url: idCardUrl,
+                        business_license_url: businessLicenseUrl,
+                        verification_status: 'pending',
+                        pdpa_accepted_at: new Date().toISOString(),
+                    })
+                    .select('id')
+                    .single()
+
+                if (insertError) {
+                    console.error('Insert error:', insertError)
+                    setError('ไม่สามารถสร้างข้อมูลร้านค้าได้: ' + insertError.message)
+                    setLoading(false)
+                    return
+                }
+
+                // Redirect to pending page
+                router.push('/register/shop/pending')
+                return
+            }
+
+            // User not logged in - store data and redirect to Google login
             const dataToStore = {
                 ...formData,
                 id_card_url: idCardUrl,
@@ -311,6 +386,21 @@ export default function RegisterShopPage() {
     const prevStep = () => {
         setError(null)
         setStep(step - 1)
+    }
+
+    // Show loading while checking auth
+    if (checkingAuth) {
+        return (
+            <div className="min-h-screen bg-gradient-to-br from-green-50 via-white to-blue-50 flex items-center justify-center">
+                <div className="text-center">
+                    <svg className="animate-spin h-10 w-10 text-green-600 mx-auto mb-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                    </svg>
+                    <p className="text-gray-600">กำลังตรวจสอบ...</p>
+                </div>
+            </div>
+        )
     }
 
     return (
@@ -993,7 +1083,7 @@ export default function RegisterShopPage() {
                                 </button>
                                 <button
                                     type="button"
-                                    onClick={signInWithGoogle}
+                                    onClick={handleSubmit}
                                     disabled={loading || !acceptPDPA || !acceptTerms}
                                     className="flex-1 flex items-center justify-center gap-3 py-3 bg-green-600 hover:bg-green-700 text-white font-medium rounded-xl transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                                 >
@@ -1002,6 +1092,8 @@ export default function RegisterShopPage() {
                                             <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
                                             <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
                                         </svg>
+                                    ) : currentUser ? (
+                                        <Store className="w-5 h-5" />
                                     ) : (
                                         <svg className="w-5 h-5" viewBox="0 0 24 24">
                                             <path fill="#fff" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" />
@@ -1010,19 +1102,26 @@ export default function RegisterShopPage() {
                                             <path fill="#fff" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" />
                                         </svg>
                                     )}
-                                    <span>{loading ? 'กำลังดำเนินการ...' : 'สมัครด้วย Google'}</span>
+                                    <span>{loading ? 'กำลังดำเนินการ...' : currentUser ? 'ลงทะเบียนร้านค้า' : 'สมัครด้วย Google'}</span>
                                 </button>
                             </div>
                         </div>
                     )}
 
-                    {/* Login Link */}
-                    <p className="text-center text-gray-500 text-sm mt-6">
-                        มีบัญชีอยู่แล้ว?{' '}
-                        <Link href="/login" className="text-green-600 font-medium hover:underline">
-                            เข้าสู่ระบบ
-                        </Link>
-                    </p>
+                    {/* Login Link - only show if not logged in */}
+                    {!currentUser && (
+                        <p className="text-center text-gray-500 text-sm mt-6">
+                            มีบัญชีอยู่แล้ว?{' '}
+                            <Link href="/login" className="text-green-600 font-medium hover:underline">
+                                เข้าสู่ระบบ
+                            </Link>
+                        </p>
+                    )}
+                    {currentUser && (
+                        <p className="text-center text-gray-500 text-sm mt-6">
+                            เข้าสู่ระบบในชื่อ <span className="font-medium text-green-600">{currentUser.email}</span>
+                        </p>
+                    )}
                 </div>
             </div>
 
