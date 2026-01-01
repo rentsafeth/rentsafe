@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import { Bookmark } from 'lucide-react'
 import { Button } from '@/components/ui/button'
@@ -18,11 +18,7 @@ export default function SaveShopButton({ shopId, className, variant = 'default' 
     const [loading, setLoading] = useState(true)
     const [userId, setUserId] = useState<string | null>(null)
 
-    useEffect(() => {
-        checkSaveStatus()
-    }, [shopId])
-
-    async function checkSaveStatus() {
+    const checkSaveStatus = useCallback(async () => {
         try {
             const supabase = createClient()
             const { data: { user } } = await supabase.auth.getUser()
@@ -39,7 +35,7 @@ export default function SaveShopButton({ shopId, className, variant = 'default' 
                 .select('id')
                 .eq('user_id', user.id)
                 .eq('shop_id', shopId)
-                .single()
+                .maybeSingle()
 
             setIsSaved(!!data)
         } catch (err) {
@@ -47,7 +43,11 @@ export default function SaveShopButton({ shopId, className, variant = 'default' 
         } finally {
             setLoading(false)
         }
-    }
+    }, [shopId])
+
+    useEffect(() => {
+        checkSaveStatus()
+    }, [shopId, checkSaveStatus])
 
     async function toggleSave() {
         if (!userId) {
@@ -93,11 +93,10 @@ export default function SaveShopButton({ shopId, className, variant = 'default' 
             <button
                 onClick={toggleSave}
                 disabled={loading}
-                className={`p-2 rounded-full transition-colors ${
-                    isSaved
-                        ? 'bg-blue-100 text-blue-600 hover:bg-blue-200'
-                        : 'bg-gray-100 text-gray-500 hover:bg-gray-200'
-                } disabled:opacity-50 ${className}`}
+                className={`p-2 rounded-full transition-colors ${isSaved
+                    ? 'bg-blue-100 text-blue-600 hover:bg-blue-200'
+                    : 'bg-gray-100 text-gray-500 hover:bg-gray-200'
+                    } disabled:opacity-50 ${className}`}
                 title={isSaved ? 'ยกเลิกบันทึก' : 'บันทึกร้านนี้'}
             >
                 <Bookmark className={`w-5 h-5 ${isSaved ? 'fill-current' : ''}`} />

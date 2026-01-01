@@ -1,4 +1,4 @@
-import { NextResponse, type NextRequest } from 'next/server'
+import { type NextRequest } from 'next/server'
 import createIntlMiddleware from 'next-intl/middleware'
 import { updateSession } from '@/lib/supabase/middleware'
 import { routing } from '@/i18n/routing'
@@ -21,5 +21,15 @@ export async function middleware(request: NextRequest) {
 }
 
 export const config = {
-    matcher: ['/', '/(th|en)/:path*', '/((?!api|_next|_vercel|.*\\..*).*)']
+    // Match all pathnames except for
+    // - /api (API routes)
+    // - /_next (Next.js internals)
+    // - /_vercel (Vercel internals)
+    // - /.*\\..* (files with extensions, e.g. favicon.ico)
+    // - metadata routes: apple-icon, icon, manifest, sitemap, robots
+    matcher: [
+        '/',
+        '/(th|en)/:path*',
+        '/((?!api|_next|_vercel|apple-icon|icon|manifest|sitemap|robots|.*\\..*).*)'
+    ]
 }

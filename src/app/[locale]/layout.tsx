@@ -1,5 +1,5 @@
 import { NextIntlClientProvider } from 'next-intl';
-import { getMessages, getTranslations } from 'next-intl/server';
+import { getMessages } from 'next-intl/server';
 import { Noto_Sans_Thai, Inter } from 'next/font/google';
 import { Metadata } from 'next';
 import Navbar from '@/components/layout/Navbar';
@@ -13,7 +13,7 @@ const BASE_URL = 'https://rentsafe.in.th';
 
 export async function generateMetadata({ params }: { params: Promise<{ locale: string }> }): Promise<Metadata> {
   const { locale } = await params;
-  const t = await getTranslations({ locale, namespace: 'Meta' });
+  // const t = await getTranslations({ locale, namespace: 'Meta' });
 
   const title = locale === 'th'
     ? 'RentSafe - ตรวจสอบร้านเช่ารถที่น่าเชื่อถือ'
@@ -49,7 +49,7 @@ export async function generateMetadata({ params }: { params: Promise<{ locale: s
       description,
       images: [
         {
-          url: '/og-image.png',
+          url: '/opengraph-image',
           width: 1200,
           height: 630,
           alt: 'RentSafe - Trusted Car Rental Verification',
@@ -60,7 +60,7 @@ export async function generateMetadata({ params }: { params: Promise<{ locale: s
       card: 'summary_large_image',
       title,
       description,
-      images: ['/og-image.png'],
+      images: ['/opengraph-image'],
     },
     robots: {
       index: true,
