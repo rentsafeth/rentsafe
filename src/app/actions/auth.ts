@@ -1,8 +1,5 @@
-'use server'
-
 import { createServerClient } from '@supabase/ssr'
 import { cookies } from 'next/headers'
-import { redirect } from 'next/navigation'
 
 export async function signOutAction() {
     const cookieStore = await cookies()
@@ -34,5 +31,6 @@ export async function signOutAction() {
         }
     })
 
-    redirect('/')
+    // Return success - let client handle redirect
+    return { success: true }
 }

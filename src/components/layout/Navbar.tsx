@@ -15,25 +15,31 @@ export default function Navbar() {
     const locale = useLocale()
     const pathname = usePathname()
     const [isMenuOpen, setIsMenuOpen] = useState(false)
-    const [user, setUser] = useState<any>(null)
+    const [user, setUser] = useState<{ id: string; email?: string } | null>(null)
     const [isLoading, setIsLoading] = useState(true)
     const [showLangMenu, setShowLangMenu] = useState(false)
     const [role, setRole] = useState<string | null>(null)
-    const [timedOut, setTimedOut] = useState(false)
 
     useEffect(() => {
         const supabase = createClient()
         let isMounted = true
 
-        // Fail-safe: Force stop loading after 10 seconds
+        // Try to get cached role immediately
+        const cachedRole = localStorage.getItem('user_role')
+        if (cachedRole) {
+            setRole(cachedRole)
+            console.log('Role from cache:', cachedRole)
+        }
+
+        // Fail-safe: Force stop loading after 5 seconds
         const timeoutId = setTimeout(() => {
-            if (isMounted && isLoading) {
+            if (isMounted) {
                 console.log('Navbar: Force stopping loading due to timeout')
                 setIsLoading(false)
-                setTimedOut(true)
             }
-        }, 10000)
+        }, 5000)
 
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
         const getRoleFromUser = (user: any): string | null => {
             // Try to get role from app_metadata first (set by admin)
             if (user?.app_metadata?.role) {
@@ -87,10 +93,15 @@ export default function Navbar() {
                         console.log('Role from profiles table:', userRole)
                     }
 
-                    if (isMounted) {
+                    if (isMounted && userRole) {
                         setRole(userRole)
+                        // Cache role in localStorage for faster subsequent loads
+                        localStorage.setItem('user_role', userRole)
                         console.log('Final role set to:', userRole)
                     }
+                } else {
+                    // User is not logged in, clear cached role
+                    localStorage.removeItem('user_role')
                 }
             } catch (error) {
                 console.error('Auth error:', error)
@@ -115,11 +126,13 @@ export default function Navbar() {
                 if (!userRole) {
                     userRole = await fetchProfileRole(currentUser.id)
                 }
-                if (isMounted) {
+                if (isMounted && userRole) {
                     setRole(userRole)
+                    localStorage.setItem('user_role', userRole)
                 }
             } else {
                 setRole(null)
+                localStorage.removeItem('user_role')
             }
             setIsLoading(false)
         })
@@ -140,14 +153,15 @@ export default function Navbar() {
         console.log('Logout clicked - using server action')
         try {
             // Use server action for proper cookie clearing
-            await signOutAction()
+            const result = await signOutAction()
+            console.log('Server action result:', result)
         } catch (error) {
             console.error('Server logout error:', error)
-            // Fallback: clear client storage and redirect
-            localStorage.clear()
-            sessionStorage.clear()
-            window.location.href = '/'
         }
+        // Always clear client storage and redirect
+        localStorage.clear()
+        sessionStorage.clear()
+        window.location.href = '/'
     }
 
     const navLinks = [
@@ -238,15 +252,6 @@ export default function Navbar() {
                             </div>
                         ) : (
                             <div className="flex items-center gap-2">
-                                {timedOut && (
-                                    <button
-                                        onClick={handleLogout}
-                                        className="text-xs text-gray-400 hover:text-red-500 underline"
-                                        title="ล้างข้อมูล Session ที่ค้างอยู่"
-                                    >
-                                        ล้าง
-                                    </button>
-                                )}
                                 <Link
                                     href="/login"
                                     className="flex items-center gap-2 px-4 py-2.5 text-gray-700 hover:text-blue-600 hover:bg-blue-50 font-medium rounded-xl transition-colors"
