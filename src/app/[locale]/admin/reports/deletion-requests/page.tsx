@@ -39,8 +39,6 @@ interface DeletionRequest {
     };
     user: {
         email: string;
-        first_name: string;
-        last_name: string;
     };
 }
 
@@ -189,7 +187,7 @@ export default function DeletionRequestsPage() {
                                                 </div>
                                                 <div>
                                                     <h3 className="font-bold text-gray-900">
-                                                        คำขอจาก: {request.user.first_name} {request.user.last_name}
+                                                        คำขอจาก: {request.user.email}
                                                     </h3>
                                                     <div className="flex items-center gap-2 text-sm text-gray-500">
                                                         <User className="w-3 h-3" />

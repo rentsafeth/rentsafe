@@ -426,8 +426,9 @@ export default async function ShopProfilePage({ params }: { params: Promise<{ id
                                         </a>
                                     )}
 
-                                    {shop.line_id && (
-                                        <div className={`flex items-center gap-3 p-3 rounded-lg ${isVerifiedPro
+                                    {/* Line IDs */}
+                                    {(shop.line_ids?.length > 0 ? shop.line_ids : (shop.line_id ? [shop.line_id] : [])).map((lineId: string, index: number) => (
+                                        <div key={`line-${index}`} className={`flex items-center gap-3 p-3 rounded-lg ${isVerifiedPro
                                             ? 'bg-gradient-to-r from-green-50 to-emerald-50 border border-green-100'
                                             : 'bg-slate-50'
                                             }`}>
@@ -435,25 +436,26 @@ export default async function ShopProfilePage({ params }: { params: Promise<{ id
                                                 <MessageCircle className="w-4 h-4 text-green-600" />
                                             </div>
                                             <div>
-                                                <p className="text-sm text-slate-500">Line ID</p>
-                                                <p className="font-medium text-slate-900">{shop.line_id}</p>
+                                                <p className="text-sm text-slate-500">Line ID {index > 0 ? index + 1 : ''}</p>
+                                                <p className="font-medium text-slate-900">{lineId}</p>
                                             </div>
                                         </div>
-                                    )}
+                                    ))}
 
-                                    {shop.facebook_url && (
-                                        <a href={shop.facebook_url} target="_blank" rel="noopener noreferrer"
-                                            className="flex items-center gap-3 p-3 bg-slate-50 rounded-lg hover:bg-slate-100 transition-colors">
-                                            <div className="p-2 bg-blue-100 rounded-lg">
+                                    {/* Facebook URLs */}
+                                    {(shop.facebook_urls?.length > 0 ? shop.facebook_urls : (shop.facebook_url ? [shop.facebook_url] : [])).map((fbUrl: string, index: number) => (
+                                        <a key={`fb-${index}`} href={fbUrl} target="_blank" rel="noopener noreferrer"
+                                            className="flex items-center gap-3 p-3 bg-slate-50 rounded-lg hover:bg-slate-100 transition-colors group">
+                                            <div className="p-2 bg-blue-100 rounded-lg group-hover:bg-blue-200 transition-colors">
                                                 <Globe className="w-4 h-4 text-blue-600" />
                                             </div>
                                             <div className="flex-1 min-w-0">
-                                                <p className="text-sm text-slate-500">Facebook</p>
-                                                <p className="font-medium text-blue-600 truncate">{shop.facebook_url}</p>
+                                                <p className="text-sm text-slate-500">Facebook {index > 0 ? index + 1 : ''}</p>
+                                                <p className="font-medium text-blue-600 truncate">{fbUrl}</p>
                                             </div>
-                                            <ExternalLink className="w-4 h-4 text-slate-400" />
+                                            <ExternalLink className="w-4 h-4 text-slate-400 group-hover:text-blue-500" />
                                         </a>
-                                    )}
+                                    ))}
 
                                     {shop.website && (
                                         <a href={shop.website} target="_blank" rel="noopener noreferrer"

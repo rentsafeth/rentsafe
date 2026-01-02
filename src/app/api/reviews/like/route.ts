@@ -1,4 +1,4 @@
-import { createClient } from '@/lib/supabase/server';
+import { createClient, createAdminClient } from '@/lib/supabase/server';
 import { NextResponse } from 'next/server';
 import { headers } from 'next/headers';
 
@@ -6,8 +6,29 @@ export async function POST(request: Request) {
     try {
         const { reviewId } = await request.json();
 
-        const supabase = await createClient();
-        const { data: { user } } = await supabase.auth.getUser();
+        // 1. Auth Check
+        const userClient = await createClient();
+        const { data: { user } } = await userClient.auth.getUser();
+
+        if (!user) {
+            return NextResponse.json({ error: 'กรุณาเข้าสู่ระบบเพื่อกดถูกใจ' }, { status: 401 });
+        }
+
+        // 2. DB Operations with Admin Client (Bypass RLS)
+        const supabase = createAdminClient();
+
+        // Check if user is liking their own review
+        if (user) {
+            const { data: targetReview } = await supabase
+                .from('reviews')
+                .select('user_id')
+                .eq('id', reviewId)
+                .single();
+
+            if (targetReview && targetReview.user_id === user.id) {
+                return NextResponse.json({ error: 'ไม่สามารถกดถูกใจรีวิวของตัวเองได้' }, { status: 400 });
+            }
+        }
 
         // Get IP
         const headersList = await headers();

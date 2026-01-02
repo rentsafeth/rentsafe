@@ -18,7 +18,9 @@ interface Shop {
     description: string | null;
     phone_number: string;
     line_id: string | null;
+    line_ids: string[] | null;
     facebook_url: string | null;
+    facebook_urls: string[] | null;
     website: string | null;
     logo_url: string | null;
     cover_url: string | null;
@@ -59,8 +61,8 @@ export default function EditShopPage() {
         name: '',
         description: '',
         phone_number: '',
-        line_id: '',
-        facebook_url: '',
+        line_ids: [''],
+        facebook_urls: [''],
         website: '',
         can_issue_tax_invoice: false,
         can_issue_withholding_tax: false,
@@ -95,8 +97,8 @@ export default function EditShopPage() {
             name: shopData.name || '',
             description: shopData.description || '',
             phone_number: shopData.phone_number || '',
-            line_id: shopData.line_id || '',
-            facebook_url: shopData.facebook_url || '',
+            line_ids: shopData.line_ids && shopData.line_ids.length > 0 ? shopData.line_ids : (shopData.line_id ? [shopData.line_id] : ['']),
+            facebook_urls: shopData.facebook_urls && shopData.facebook_urls.length > 0 ? shopData.facebook_urls : (shopData.facebook_url ? [shopData.facebook_url] : ['']),
             website: shopData.website || '',
             can_issue_tax_invoice: shopData.can_issue_tax_invoice || false,
             can_issue_withholding_tax: shopData.can_issue_withholding_tax || false,
@@ -184,8 +186,10 @@ export default function EditShopPage() {
                     name: formData.name,
                     description: formData.description || null,
                     phone_number: formData.phone_number,
-                    line_id: formData.line_id || null,
-                    facebook_url: formData.facebook_url || null,
+                    line_ids: formData.line_ids.filter(id => id.trim() !== ''),
+                    facebook_urls: formData.facebook_urls.filter(url => url.trim() !== ''),
+                    line_id: formData.line_ids[0] || null,
+                    facebook_url: formData.facebook_urls[0] || null,
                     website: formData.website || null,
                     can_issue_tax_invoice: formData.can_issue_tax_invoice,
                     can_issue_withholding_tax: formData.can_issue_withholding_tax,
@@ -385,25 +389,89 @@ export default function EditShopPage() {
                             />
                         </div>
 
-                        <div className="grid gap-4 md:grid-cols-2">
-                            <div className="space-y-2">
-                                <Label htmlFor="line">Line ID</Label>
-                                <Input
-                                    id="line"
-                                    value={formData.line_id}
-                                    onChange={(e) => setFormData(prev => ({ ...prev, line_id: e.target.value }))}
-                                    placeholder="@yourline"
-                                />
+                        <div className="grid gap-6 md:grid-cols-2">
+                            {/* Line IDs */}
+                            <div className="space-y-3">
+                                <Label>Line ID (สูงสุด 3 รายการ)</Label>
+                                {formData.line_ids.map((lineId, index) => (
+                                    <div key={`line-${index}`} className="flex gap-2">
+                                        <Input
+                                            value={lineId}
+                                            onChange={(e) => {
+                                                const newIds = [...formData.line_ids];
+                                                newIds[index] = e.target.value;
+                                                setFormData(prev => ({ ...prev, line_ids: newIds }));
+                                            }}
+                                            placeholder="@yourline"
+                                        />
+                                        {formData.line_ids.length > 1 && (
+                                            <Button
+                                                variant="outline"
+                                                size="icon"
+                                                className="shrink-0 text-red-500 hover:text-red-600 hover:bg-red-50"
+                                                onClick={() => {
+                                                    const newIds = formData.line_ids.filter((_, i) => i !== index);
+                                                    setFormData(prev => ({ ...prev, line_ids: newIds }));
+                                                }}
+                                            >
+                                                <X className="w-4 h-4" />
+                                            </Button>
+                                        )}
+                                    </div>
+                                ))}
+                                {formData.line_ids.length < 3 && (
+                                    <Button
+                                        type="button"
+                                        variant="ghost"
+                                        size="sm"
+                                        className="text-green-600 hover:text-green-700 hover:bg-green-50"
+                                        onClick={() => setFormData(prev => ({ ...prev, line_ids: [...prev.line_ids, ''] }))}
+                                    >
+                                        + เพิ่ม LINE ID
+                                    </Button>
+                                )}
                             </div>
 
-                            <div className="space-y-2">
-                                <Label htmlFor="facebook">Facebook URL</Label>
-                                <Input
-                                    id="facebook"
-                                    value={formData.facebook_url}
-                                    onChange={(e) => setFormData(prev => ({ ...prev, facebook_url: e.target.value }))}
-                                    placeholder="https://facebook.com/yourpage"
-                                />
+                            {/* Facebook URLs */}
+                            <div className="space-y-3">
+                                <Label>Facebook URL (สูงสุด 3 รายการ)</Label>
+                                {formData.facebook_urls.map((url, index) => (
+                                    <div key={`fb-${index}`} className="flex gap-2">
+                                        <Input
+                                            value={url}
+                                            onChange={(e) => {
+                                                const newUrls = [...formData.facebook_urls];
+                                                newUrls[index] = e.target.value;
+                                                setFormData(prev => ({ ...prev, facebook_urls: newUrls }));
+                                            }}
+                                            placeholder="https://facebook.com/yourpage"
+                                        />
+                                        {formData.facebook_urls.length > 1 && (
+                                            <Button
+                                                variant="outline"
+                                                size="icon"
+                                                className="shrink-0 text-red-500 hover:text-red-600 hover:bg-red-50"
+                                                onClick={() => {
+                                                    const newUrls = formData.facebook_urls.filter((_, i) => i !== index);
+                                                    setFormData(prev => ({ ...prev, facebook_urls: newUrls }));
+                                                }}
+                                            >
+                                                <X className="w-4 h-4" />
+                                            </Button>
+                                        )}
+                                    </div>
+                                ))}
+                                {formData.facebook_urls.length < 3 && (
+                                    <Button
+                                        type="button"
+                                        variant="ghost"
+                                        size="sm"
+                                        className="text-blue-600 hover:text-blue-700 hover:bg-blue-50"
+                                        onClick={() => setFormData(prev => ({ ...prev, facebook_urls: [...prev.facebook_urls, ''] }))}
+                                    >
+                                        + เพิ่ม Facebook
+                                    </Button>
+                                )}
                             </div>
                         </div>
 

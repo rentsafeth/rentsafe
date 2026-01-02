@@ -39,9 +39,7 @@ export async function GET(request: NextRequest) {
                     )
                 ),
                 user:profiles!user_id (
-                    email,
-                    first_name,
-                    last_name
+                    email
                 )
             `)
             .eq('status', 'pending')

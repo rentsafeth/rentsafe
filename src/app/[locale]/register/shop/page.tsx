@@ -69,8 +69,8 @@ export default function RegisterShopPage() {
         name: '',
         description: '',
         phone_number: '',
-        line_id: '',
-        facebook_url: '',
+        line_ids: [''],
+        facebook_urls: [''],
         website: '',
         service_provinces: [] as string[],
         business_type: 'individual' as 'individual' | 'company',
@@ -247,8 +247,11 @@ export default function RegisterShopPage() {
                         name: formData.name,
                         description: formData.description || null,
                         phone_number: formData.phone_number,
-                        line_id: formData.line_id || null,
-                        facebook_url: formData.facebook_url || null,
+                        line_ids: formData.line_ids.filter(id => id.trim() !== ''),
+                        facebook_urls: formData.facebook_urls.filter(url => url.trim() !== ''),
+                        // Backward compatibility
+                        line_id: formData.line_ids[0] || null,
+                        facebook_url: formData.facebook_urls[0] || null,
                         website: formData.website || null,
                         service_provinces: formData.service_provinces,
                         business_type: formData.business_type || 'individual',
@@ -419,8 +422,8 @@ export default function RegisterShopPage() {
                     {[1, 2, 3, 4].map((s) => (
                         <div key={s} className="flex items-center">
                             <div className={`w-10 h-10 rounded-full flex items-center justify-center font-semibold ${step >= s
-                                    ? 'bg-green-600 text-white'
-                                    : 'bg-gray-200 text-gray-500'
+                                ? 'bg-green-600 text-white'
+                                : 'bg-gray-200 text-gray-500'
                                 }`}>
                                 {step > s ? <Check className="w-5 h-5" /> : s}
                             </div>
@@ -462,8 +465,8 @@ export default function RegisterShopPage() {
                                         type="button"
                                         onClick={() => setFormData(prev => ({ ...prev, business_type: 'individual' }))}
                                         className={`p-4 border-2 rounded-xl flex flex-col items-center gap-2 transition-all ${formData.business_type === 'individual'
-                                                ? 'border-green-500 bg-green-50'
-                                                : 'border-gray-200 hover:border-gray-300'
+                                            ? 'border-green-500 bg-green-50'
+                                            : 'border-gray-200 hover:border-gray-300'
                                             }`}
                                     >
                                         <User className={`w-8 h-8 ${formData.business_type === 'individual' ? 'text-green-600' : 'text-gray-400'}`} />
@@ -475,8 +478,8 @@ export default function RegisterShopPage() {
                                         type="button"
                                         onClick={() => setFormData(prev => ({ ...prev, business_type: 'company' }))}
                                         className={`p-4 border-2 rounded-xl flex flex-col items-center gap-2 transition-all ${formData.business_type === 'company'
-                                                ? 'border-green-500 bg-green-50'
-                                                : 'border-gray-200 hover:border-gray-300'
+                                            ? 'border-green-500 bg-green-50'
+                                            : 'border-gray-200 hover:border-gray-300'
                                             }`}
                                     >
                                         <Building2 className={`w-8 h-8 ${formData.business_type === 'company' ? 'text-green-600' : 'text-gray-400'}`} />
@@ -658,8 +661,8 @@ export default function RegisterShopPage() {
                                                     type="button"
                                                     onClick={() => toggleProvince(province)}
                                                     className={`w-full px-4 py-2 text-left hover:bg-gray-50 flex items-center justify-between ${formData.service_provinces.includes(province)
-                                                            ? 'bg-green-50 text-green-700'
-                                                            : ''
+                                                        ? 'bg-green-50 text-green-700'
+                                                        : ''
                                                         }`}
                                                 >
                                                     {province}
@@ -688,32 +691,91 @@ export default function RegisterShopPage() {
                             </div>
 
                             {/* Additional contact */}
-                            <div className="grid grid-cols-2 gap-4">
-                                <div>
-                                    <label className="block text-sm font-medium text-gray-700 mb-1">
-                                        LINE ID
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                {/* Line IDs */}
+                                <div className="space-y-3">
+                                    <label className="block text-sm font-medium text-gray-700">
+                                        LINE ID (สูงสุด 3 รายการ)
                                     </label>
-                                    <input
-                                        type="text"
-                                        name="line_id"
-                                        value={formData.line_id}
-                                        onChange={handleInputChange}
-                                        placeholder="@yourshop"
-                                        className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-green-500 focus:border-transparent"
-                                    />
+                                    {formData.line_ids.map((lineId, index) => (
+                                        <div key={`line-${index}`} className="flex gap-2">
+                                            <input
+                                                type="text"
+                                                value={lineId}
+                                                onChange={(e) => {
+                                                    const newIds = [...formData.line_ids];
+                                                    newIds[index] = e.target.value;
+                                                    setFormData(prev => ({ ...prev, line_ids: newIds }));
+                                                }}
+                                                placeholder="@yourshop"
+                                                className="flex-1 px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-green-500 focus:border-transparent"
+                                            />
+                                            {formData.line_ids.length > 1 && (
+                                                <button
+                                                    type="button"
+                                                    onClick={() => {
+                                                        const newIds = formData.line_ids.filter((_, i) => i !== index);
+                                                        setFormData(prev => ({ ...prev, line_ids: newIds }));
+                                                    }}
+                                                    className="p-3 text-red-500 hover:bg-red-50 rounded-xl transition-colors"
+                                                >
+                                                    <X className="w-5 h-5" />
+                                                </button>
+                                            )}
+                                        </div>
+                                    ))}
+                                    {formData.line_ids.length < 3 && (
+                                        <button
+                                            type="button"
+                                            onClick={() => setFormData(prev => ({ ...prev, line_ids: [...prev.line_ids, ''] }))}
+                                            className="text-sm text-green-600 hover:text-green-700 font-medium flex items-center gap-1"
+                                        >
+                                            + เพิ่ม LINE ID
+                                        </button>
+                                    )}
                                 </div>
-                                <div>
-                                    <label className="block text-sm font-medium text-gray-700 mb-1">
-                                        Facebook
+
+                                {/* Facebook URLs */}
+                                <div className="space-y-3">
+                                    <label className="block text-sm font-medium text-gray-700">
+                                        Facebook URL (สูงสุด 3 รายการ)
                                     </label>
-                                    <input
-                                        type="text"
-                                        name="facebook_url"
-                                        value={formData.facebook_url}
-                                        onChange={handleInputChange}
-                                        placeholder="facebook.com/..."
-                                        className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-green-500 focus:border-transparent"
-                                    />
+                                    {formData.facebook_urls.map((url, index) => (
+                                        <div key={`fb-${index}`} className="flex gap-2">
+                                            <input
+                                                type="text"
+                                                value={url}
+                                                onChange={(e) => {
+                                                    const newUrls = [...formData.facebook_urls];
+                                                    newUrls[index] = e.target.value;
+                                                    setFormData(prev => ({ ...prev, facebook_urls: newUrls }));
+                                                }}
+                                                placeholder="https://facebook.com/..."
+                                                className="flex-1 px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-green-500 focus:border-transparent"
+                                            />
+                                            {formData.facebook_urls.length > 1 && (
+                                                <button
+                                                    type="button"
+                                                    onClick={() => {
+                                                        const newUrls = formData.facebook_urls.filter((_, i) => i !== index);
+                                                        setFormData(prev => ({ ...prev, facebook_urls: newUrls }));
+                                                    }}
+                                                    className="p-3 text-red-500 hover:bg-red-50 rounded-xl transition-colors"
+                                                >
+                                                    <X className="w-5 h-5" />
+                                                </button>
+                                            )}
+                                        </div>
+                                    ))}
+                                    {formData.facebook_urls.length < 3 && (
+                                        <button
+                                            type="button"
+                                            onClick={() => setFormData(prev => ({ ...prev, facebook_urls: [...prev.facebook_urls, ''] }))}
+                                            className="text-sm text-blue-600 hover:text-blue-700 font-medium flex items-center gap-1"
+                                        >
+                                            + เพิ่ม Facebook
+                                        </button>
+                                    )}
                                 </div>
                             </div>
 
