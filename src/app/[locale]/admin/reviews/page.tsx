@@ -27,22 +27,66 @@ export default function AdminReviewsPage() {
             // Fetch Pending Reviews
             const { data: reviewsData, error: reviewsError } = await supabase
                 .from('reviews')
-                .select('*, shops(name)')
+                .select('*')
                 .eq('status', 'pending')
                 .order('created_at', { ascending: false });
 
             if (reviewsError) throw reviewsError;
-            setReviews(reviewsData || []);
+
+            let enrichedReviews = reviewsData || [];
+
+            // Manually fetch shop names if we have reviews
+            if (enrichedReviews.length > 0) {
+                const shopIds = [...new Set(enrichedReviews.map((r: any) => r.shop_id))];
+                const { data: shopsData } = await supabase
+                    .from('shops')
+                    .select('id, name')
+                    .in('id', shopIds);
+
+                const shopMap = (shopsData || []).reduce((acc: any, shop: any) => {
+                    acc[shop.id] = shop.name;
+                    return acc;
+                }, {});
+
+                enrichedReviews = enrichedReviews.map((r: any) => ({
+                    ...r,
+                    shops: { name: shopMap[r.shop_id] || 'Unknown Shop' }
+                }));
+            }
+
+            setReviews(enrichedReviews);
 
             // Fetch Pending Disputes
             const { data: disputesData, error: disputesError } = await supabase
                 .from('review_disputes')
-                .select('*, reviews(*), shops(name)')
+                .select('*, reviews(*)') // Removed shops(name) join for safety
                 .eq('status', 'pending')
                 .order('created_at', { ascending: false });
 
             if (disputesError) throw disputesError;
-            setDisputes(disputesData || []);
+
+            let enrichedDisputes = disputesData || [];
+
+            // Manually fetch shop names for disputes
+            if (enrichedDisputes.length > 0) {
+                const shopIds = [...new Set(enrichedDisputes.map((d: any) => d.shop_id))];
+                const { data: shopsData } = await supabase
+                    .from('shops')
+                    .select('id, name')
+                    .in('id', shopIds);
+
+                const shopMap = (shopsData || []).reduce((acc: any, shop: any) => {
+                    acc[shop.id] = shop.name;
+                    return acc;
+                }, {});
+
+                enrichedDisputes = enrichedDisputes.map((d: any) => ({
+                    ...d,
+                    shops: { name: shopMap[d.shop_id] || 'Unknown Shop' }
+                }));
+            }
+
+            setDisputes(enrichedDisputes);
 
         } catch (error) {
             console.error('Error fetching data:', error);
