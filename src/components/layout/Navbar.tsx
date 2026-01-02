@@ -138,6 +138,13 @@ export default function Navbar() {
 
     const handleLogout = async () => {
         console.log('Logout clicked')
+
+        // Set a timeout to force redirect after 2 seconds
+        const forceRedirectTimeout = setTimeout(() => {
+            console.log('Force redirect due to timeout')
+            window.location.href = '/'
+        }, 2000)
+
         const supabase = createClient()
 
         try {
@@ -147,6 +154,9 @@ export default function Navbar() {
         } catch (error) {
             console.error('Logout error:', error)
         }
+
+        // Clear timeout since we're proceeding
+        clearTimeout(forceRedirectTimeout)
 
         // Clear all storage
         try {
