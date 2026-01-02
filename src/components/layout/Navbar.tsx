@@ -25,14 +25,14 @@ export default function Navbar() {
         const supabase = createClient()
         let isMounted = true
 
-        // Fail-safe: Force stop loading after 3 seconds
+        // Fail-safe: Force stop loading after 10 seconds
         const timeoutId = setTimeout(() => {
             if (isMounted && isLoading) {
                 console.log('Navbar: Force stopping loading due to timeout')
                 setIsLoading(false)
                 setTimedOut(true)
             }
-        }, 3000)
+        }, 10000)
 
         const getRoleFromUser = (user: any): string | null => {
             // Try to get role from app_metadata first (set by admin)
