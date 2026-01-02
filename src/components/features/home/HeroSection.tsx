@@ -178,6 +178,29 @@ export default function HeroSection({ stats }: HeroSectionProps) {
                                     </option>
                                 ))}
                             </select>
+
+                            {/* Quick Search Buttons */}
+                            <div className="flex flex-wrap gap-2">
+                                {[
+                                    { name: 'กรุงเทพฯ', value: 'กรุงเทพมหานคร' },
+                                    { name: 'เชียงใหม่', value: 'เชียงใหม่' },
+                                    { name: 'เชียงราย', value: 'เชียงราย' },
+                                    { name: 'ภูเก็ต', value: 'ภูเก็ต' },
+                                ].map((province) => (
+                                    <button
+                                        key={province.value}
+                                        onClick={() => {
+                                            const params = new URLSearchParams();
+                                            params.set('type', 'rental');
+                                            params.set('province', province.value);
+                                            router.push(`/search?${params.toString()}`);
+                                        }}
+                                        className="px-3 py-1.5 text-sm bg-blue-50 text-blue-600 rounded-lg hover:bg-blue-100 transition-colors border border-blue-100"
+                                    >
+                                        {province.name}
+                                    </button>
+                                ))}
+                            </div>
                             <button
                                 onClick={handleSearch}
                                 className="w-full py-4 bg-gradient-to-r from-blue-500 to-indigo-500 hover:from-blue-600 hover:to-indigo-600 text-white font-bold rounded-xl transition-all duration-300 shadow-lg shadow-blue-500/30 text-base md:text-lg"

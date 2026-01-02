@@ -1,23 +1,14 @@
--- =====================================================
--- Script ตรวจสอบคำขอลบรายงาน (Debug Deletion Requests)
--- =====================================================
-
--- 1. ดูจำนวนคำขอลบทั้งหมด
-SELECT count(*) as total_requests FROM report_deletion_requests;
-
--- 2. ดูรายละเอียดคำขอลบ 10 รายการล่าสุด
+-- Check pending requests and their related data
 SELECT 
-    rdr.id,
+    rdr.id as request_id,
     rdr.status,
-    rdr.reason,
-    rdr.created_at,
+    rdr.user_id,
     p.email as user_email,
-    r.description as report_desc
+    rdr.report_id,
+    r.description as report_desc,
+    be.shop_names
 FROM report_deletion_requests rdr
 LEFT JOIN profiles p ON rdr.user_id = p.id
 LEFT JOIN reports r ON rdr.report_id = r.id
-ORDER BY rdr.created_at DESC
-LIMIT 10;
-
--- 3. เช็คว่ามี Policy อะไรบ้างบนตารางนี้
-SELECT * FROM pg_policies WHERE tablename = 'report_deletion_requests';
+LEFT JOIN blacklist_entries be ON r.blacklist_entry_id = be.id
+WHERE rdr.status = 'pending';

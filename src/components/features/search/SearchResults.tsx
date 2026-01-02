@@ -480,6 +480,35 @@ export default function SearchResults() {
                         </select>
                     )}
 
+                    {/* Quick Search Buttons - Only for rental */}
+                    {searchType === 'rental' && (
+                        <div className="flex flex-wrap gap-2">
+                            {[
+                                { name: isThai ? 'กรุงเทพฯ' : 'Bangkok', value: 'กรุงเทพมหานคร' },
+                                { name: isThai ? 'เชียงใหม่' : 'Chiang Mai', value: 'เชียงใหม่' },
+                                { name: isThai ? 'เชียงราย' : 'Chiang Rai', value: 'เชียงราย' },
+                                { name: isThai ? 'ภูเก็ต' : 'Phuket', value: 'ภูเก็ต' },
+                            ].map((prov) => (
+                                <button
+                                    key={prov.value}
+                                    type="button"
+                                    onClick={() => {
+                                        setSelectedProvince(prov.value);
+                                        const params = new URLSearchParams();
+                                        params.set('type', 'rental');
+                                        if (searchQuery) params.set('q', searchQuery);
+                                        params.set('province', prov.value);
+                                        window.history.replaceState({}, '', `/search?${params.toString()}`);
+                                        fetchResults('rental', searchQuery, prov.value);
+                                    }}
+                                    className="px-3 py-1.5 text-sm bg-blue-50 text-blue-600 rounded-lg hover:bg-blue-100 transition-colors border border-blue-100"
+                                >
+                                    {prov.name}
+                                </button>
+                            ))}
+                        </div>
+                    )}
+
                     <Button
                         type="button"
                         onClick={handleSearch}

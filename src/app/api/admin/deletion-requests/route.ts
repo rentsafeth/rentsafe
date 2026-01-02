@@ -34,11 +34,11 @@ export async function GET(request: NextRequest) {
                     description,
                     heart_count,
                     created_at,
-                    blacklist_entry:blacklist_entry_id (
+                    blacklist_entry:blacklist_entries (
                         shop_names
                     )
                 ),
-                user:profiles!user_id (
+                user:profiles (
                     email
                 )
             `)
