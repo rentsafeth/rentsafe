@@ -31,6 +31,7 @@ export default function ReportForm({ userId }: { userId: string }) {
     const [uploading, setUploading] = useState(false);
     const [blacklistInfo, setBlacklistInfo] = useState<any>(null);
     const [shopInfo, setShopInfo] = useState<any>(null);
+    const [selectedFiles, setSelectedFiles] = useState<File[]>([]);
     const supabase = createClient();
 
     const formSchema = z.object({
@@ -461,17 +462,49 @@ export default function ReportForm({ userId }: { userId: string }) {
 
                             <FormItem>
                                 <FormLabel>หลักฐาน (รูปภาพ/สลิป/แชท) <span className="text-red-500">*</span></FormLabel>
-                                <div className="border-2 border-dashed rounded-md p-6 text-center hover:bg-slate-50 transition cursor-pointer relative">
+                                <div className={`border-2 border-dashed rounded-md p-6 text-center hover:bg-slate-50 transition cursor-pointer relative ${selectedFiles.length > 0 ? 'border-green-400 bg-green-50' : ''}`}>
                                     <Input
                                         id="evidence-upload"
                                         type="file"
                                         multiple
                                         accept="image/*"
                                         className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
+                                        onChange={(e) => {
+                                            const files = e.target.files;
+                                            if (files) {
+                                                const fileArray = Array.from(files).slice(0, 5); // Max 5 files
+                                                setSelectedFiles(fileArray);
+                                            }
+                                        }}
                                     />
-                                    <Upload className="mx-auto h-8 w-8 text-slate-400 mb-2" />
-                                    <p className="text-sm text-slate-600">คลิกเพื่ออัปโหลดรูปภาพหลักฐาน</p>
-                                    <p className="text-xs text-slate-400 mt-1">รองรับไฟล์ JPG, PNG (สูงสุด 5 รูป, ไม่เกิน 5MB/รูป)</p>
+                                    {selectedFiles.length === 0 ? (
+                                        <>
+                                            <Upload className="mx-auto h-8 w-8 text-slate-400 mb-2" />
+                                            <p className="text-sm text-slate-600">คลิกเพื่ออัปโหลดรูปภาพหลักฐาน</p>
+                                            <p className="text-xs text-slate-400 mt-1">รองรับไฟล์ JPG, PNG (สูงสุด 5 รูป, ไม่เกิน 5MB/รูป)</p>
+                                        </>
+                                    ) : (
+                                        <>
+                                            <div className="flex items-center justify-center gap-2 mb-3">
+                                                <div className="w-8 h-8 bg-green-500 rounded-full flex items-center justify-center">
+                                                    <span className="text-white text-sm font-bold">✓</span>
+                                                </div>
+                                                <span className="text-green-700 font-semibold">เลือกแล้ว {selectedFiles.length} ไฟล์</span>
+                                            </div>
+                                            <div className="flex flex-wrap gap-2 justify-center mb-2">
+                                                {selectedFiles.map((file, index) => (
+                                                    <div key={index} className="relative">
+                                                        <img
+                                                            src={URL.createObjectURL(file)}
+                                                            alt={file.name}
+                                                            className="w-16 h-16 object-cover rounded-md border-2 border-green-300"
+                                                        />
+                                                    </div>
+                                                ))}
+                                            </div>
+                                            <p className="text-xs text-green-600">คลิกเพื่อเปลี่ยนรูป</p>
+                                        </>
+                                    )}
                                 </div>
                             </FormItem>
                         </div>
@@ -504,9 +537,13 @@ export default function ReportForm({ userId }: { userId: string }) {
                             />
                         </div>
 
-                        <Button type="submit" className="w-full bg-red-600 hover:bg-red-700 text-lg h-12" disabled={loading}>
+                        <Button
+                            type="submit"
+                            className={`w-full text-lg h-12 ${!form.watch('liability_accepted') ? 'bg-slate-400 cursor-not-allowed' : 'bg-red-600 hover:bg-red-700'}`}
+                            disabled={loading || !form.watch('liability_accepted')}
+                        >
                             {loading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
-                            {uploading ? 'กำลังอัปโหลดหลักฐาน...' : 'ยืนยันการส่งรายงาน'}
+                            {uploading ? 'กำลังอัปโหลดหลักฐาน...' : !form.watch('liability_accepted') ? 'กรุณาติ๊กยอมรับข้อตกลง' : 'ยืนยันการส่งรายงาน'}
                         </Button>
 
                     </CardContent>
