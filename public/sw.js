@@ -1,23 +1,26 @@
-const CACHE_NAME = 'rentsafe-v1';
+const CACHE_NAME = 'rentsafe-v2';
 const OFFLINE_URL = '/offline';
 
-// Assets to cache on install
+// Assets to cache on install - only essential ones
 const STATIC_ASSETS = [
     '/',
-    '/th',
-    '/en',
     '/offline',
-    '/icon',
-    '/icon-192',
-    '/icon-512',
-    '/apple-icon',
 ];
 
-// Install event - cache static assets
+// Install event - cache static assets with error handling
 self.addEventListener('install', (event) => {
     event.waitUntil(
-        caches.open(CACHE_NAME).then((cache) => {
-            return cache.addAll(STATIC_ASSETS);
+        caches.open(CACHE_NAME).then(async (cache) => {
+            // Cache each asset individually to prevent one failure from breaking everything
+            for (const asset of STATIC_ASSETS) {
+                try {
+                    await cache.add(asset);
+                } catch (error) {
+                    console.warn('Failed to cache:', asset, error);
+                }
+            }
+        }).catch((error) => {
+            console.error('Cache open failed:', error);
         })
     );
     self.skipWaiting();
