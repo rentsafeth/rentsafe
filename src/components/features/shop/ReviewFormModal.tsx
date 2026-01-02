@@ -35,7 +35,7 @@ const ACCEPTED_IMAGE_TYPES = ["image/jpeg", "image/jpg", "image/png", "image/web
 const reviewSchema = z.object({
     rating: z.number().min(1, 'กรุณาให้คะแนนอย่างน้อย 1 ดาว').max(5),
     comment: z.string().min(10, 'กรุณาเขียนรีวิวอย่างน้อย 10 ตัวอักษร').max(1000, 'รีวิวต้องไม่เกิน 1000 ตัวอักษร'),
-    isAnonymous: z.boolean().default(true),
+    isAnonymous: z.boolean(),
     acceptTerms: z.boolean().refine((val) => val === true, {
         message: 'กรุณายอมรับเงื่อนไขการรีวิว',
     }),
