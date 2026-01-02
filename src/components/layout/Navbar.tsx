@@ -8,7 +8,6 @@ import { createClient } from '@/lib/supabase/client'
 import { usePathname } from 'next/navigation'
 import NotificationBell from '@/components/features/notifications/NotificationBell'
 import InstallPWAButton from '@/components/common/InstallPWAButton'
-import { signOutAction } from '@/app/actions/auth'
 
 export default function Navbar() {
     const t = useTranslations('Common')
@@ -150,13 +149,14 @@ export default function Navbar() {
     }
 
     const handleLogout = async () => {
-        console.log('Logout clicked - using server action')
+        console.log('Logout clicked - using API route')
         try {
-            // Use server action for proper cookie clearing
-            const result = await signOutAction()
-            console.log('Server action result:', result)
+            // Use API route for proper server-side cookie clearing
+            const response = await fetch('/api/auth/logout', { method: 'POST' })
+            const result = await response.json()
+            console.log('Logout API result:', result)
         } catch (error) {
-            console.error('Server logout error:', error)
+            console.error('Logout error:', error)
         }
         // Always clear client storage and redirect
         localStorage.clear()
