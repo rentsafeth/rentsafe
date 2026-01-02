@@ -1,24 +1,31 @@
-import { createClient } from '@/lib/supabase/server';
+import { createClient, createAdminClient } from '@/lib/supabase/server';
 import { NextRequest, NextResponse } from 'next/server';
 
 // GET - List pending requests
 export async function GET(request: NextRequest) {
     try {
-        const supabase = await createClient();
-        const { data: { user } } = await supabase.auth.getUser();
+        // 1. Verify User Authentication
+        const userClient = await createClient();
+        const { data: { user } } = await userClient.auth.getUser();
 
-        // Check admin role
-        const { data: profile } = await supabase
+        if (!user) {
+            return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+        }
+
+        // 2. Verify Admin Role (using Admin Client to bypass RLS on profiles if needed)
+        const adminClient = createAdminClient();
+        const { data: profile } = await adminClient
             .from('profiles')
             .select('role')
-            .eq('id', user?.id)
+            .eq('id', user.id)
             .single();
 
         if (profile?.role !== 'admin') {
-            return NextResponse.json({ error: 'Unauthorized' }, { status: 403 });
+            return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
         }
 
-        const { data: requests, error } = await supabase
+        // 3. Fetch Requests using Admin Client (Bypass RLS)
+        const { data: requests, error } = await adminClient
             .from('report_deletion_requests')
             .select(`
                 *,
@@ -53,34 +60,41 @@ export async function GET(request: NextRequest) {
 // POST - Approve/Reject request
 export async function POST(request: NextRequest) {
     try {
-        const supabase = await createClient();
-        const { data: { user } } = await supabase.auth.getUser();
+        // 1. Verify User Authentication
+        const userClient = await createClient();
+        const { data: { user } } = await userClient.auth.getUser();
 
-        // Check admin role
-        const { data: profile } = await supabase
+        if (!user) {
+            return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+        }
+
+        // 2. Verify Admin Role
+        const adminClient = createAdminClient();
+        const { data: profile } = await adminClient
             .from('profiles')
             .select('role')
-            .eq('id', user?.id)
+            .eq('id', user.id)
             .single();
 
         if (profile?.role !== 'admin') {
-            return NextResponse.json({ error: 'Unauthorized' }, { status: 403 });
+            return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
         }
 
         const body = await request.json();
         const { request_id, action, admin_notes } = body; // action: 'approve' | 'reject'
 
         if (action === 'approve') {
-            const { data, error } = await supabase.rpc('approve_report_deletion', {
+            // Use Admin Client for RPC to ensure permissions
+            const { data, error } = await adminClient.rpc('approve_report_deletion', {
                 p_request_id: request_id,
-                p_admin_id: user?.id
+                p_admin_id: user.id
             });
 
             if (error) throw error;
             return NextResponse.json(data);
 
         } else if (action === 'reject') {
-            const { error } = await supabase
+            const { error } = await adminClient
                 .from('report_deletion_requests')
                 .update({
                     status: 'rejected',

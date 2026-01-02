@@ -1,10 +1,10 @@
-import { createClient } from '@/lib/supabase/server';
+import { createAdminClient } from '@/lib/supabase/server';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Store, ShieldAlert, Users, CheckCircle, MessageSquare, Flag } from 'lucide-react';
+import { Store, ShieldAlert, Users, CheckCircle, MessageSquare, Flag, Trash2 } from 'lucide-react';
 import Link from 'next/link';
 
 export default async function AdminDashboardPage() {
-    const supabase = await createClient();
+    const supabase = createAdminClient();
 
     // Fetch stats
     const { count: pendingShops } = await supabase
@@ -24,6 +24,11 @@ export default async function AdminDashboardPage() {
 
     const { count: pendingDisputes } = await supabase
         .from('review_disputes')
+        .select('*', { count: 'exact', head: true })
+        .eq('status', 'pending');
+
+    const { count: pendingDeletions } = await supabase
+        .from('report_deletion_requests')
         .select('*', { count: 'exact', head: true })
         .eq('status', 'pending');
 
@@ -101,6 +106,19 @@ export default async function AdminDashboardPage() {
                         <CardContent>
                             <div className="text-2xl font-bold">{totalShops || 0}</div>
                             <p className="text-xs text-muted-foreground">ร้านเช่ารถที่ลงทะเบียน</p>
+                        </CardContent>
+                    </Card>
+                </Link>
+
+                <Link href="/admin/reports/deletion-requests">
+                    <Card className="hover:shadow-lg transition-shadow cursor-pointer h-full">
+                        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                            <CardTitle className="text-sm font-medium">คำขอลบรายงาน</CardTitle>
+                            <Trash2 className="h-4 w-4 text-red-500" />
+                        </CardHeader>
+                        <CardContent>
+                            <div className="text-2xl font-bold">{pendingDeletions || 0}</div>
+                            <p className="text-xs text-muted-foreground">คำร้องขอลบที่รอตรวจสอบ</p>
                         </CardContent>
                     </Card>
                 </Link>

@@ -78,7 +78,8 @@ export async function GET(request: NextRequest) {
                     shop_names,
                     total_reports,
                     severity
-                )
+                ),
+                deletion_requests:report_deletion_requests(status)
             `)
             .eq('reporter_id', user.id)
             .order('created_at', { ascending: false });

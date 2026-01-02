@@ -32,6 +32,7 @@ interface Report {
         total_reports: number;
         severity: string;
     } | null;
+    deletion_requests?: { status: string }[];
 }
 
 export default function MyReportsPage() {
@@ -303,15 +304,30 @@ export default function MyReportsPage() {
                                                     </Button>
                                                 </Link>
                                             )}
-                                            <Button
-                                                variant="ghost"
-                                                size="sm"
-                                                className="text-gray-400 hover:text-red-600 hover:bg-red-50"
-                                                onClick={() => openDeleteModal(report)}
-                                            >
-                                                <Trash2 className="w-4 h-4 mr-1" />
-                                                ขอลบ
-                                            </Button>
+                                            {(() => {
+                                                const hasPendingDelete = report.deletion_requests?.some(req => req.status === 'pending');
+                                                return (
+                                                    <Button
+                                                        variant="ghost"
+                                                        size="sm"
+                                                        className={hasPendingDelete ? "text-yellow-600 bg-yellow-50 cursor-not-allowed" : "text-gray-400 hover:text-red-600 hover:bg-red-50"}
+                                                        onClick={() => !hasPendingDelete && openDeleteModal(report)}
+                                                        disabled={hasPendingDelete}
+                                                    >
+                                                        {hasPendingDelete ? (
+                                                            <>
+                                                                <Clock className="w-4 h-4 mr-1" />
+                                                                รอตรวจสอบ
+                                                            </>
+                                                        ) : (
+                                                            <>
+                                                                <Trash2 className="w-4 h-4 mr-1" />
+                                                                ขอลบ
+                                                            </>
+                                                        )}
+                                                    </Button>
+                                                );
+                                            })()}
                                         </div>
                                     )}
                                 </CardContent>

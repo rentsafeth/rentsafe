@@ -5,8 +5,7 @@ import { Badge } from '@/components/ui/badge';
 import { Heart, ArrowLeft, History, TrendingUp, TrendingDown } from 'lucide-react';
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
-import { format } from 'date-fns';
-import { th } from 'date-fns/locale';
+
 
 export default async function KarmaHistoryPage() {
     const supabase = await createClient();
@@ -78,8 +77,8 @@ export default async function KarmaHistoryPage() {
                                 <div key={tx.id} className="flex items-center justify-between p-4 border rounded-lg hover:bg-gray-50 transition-colors">
                                     <div className="flex items-start gap-4">
                                         <div className={`p-2 rounded-full ${tx.transaction_type === 'credit'
-                                                ? 'bg-green-100 text-green-600'
-                                                : 'bg-red-100 text-red-600'
+                                            ? 'bg-green-100 text-green-600'
+                                            : 'bg-red-100 text-red-600'
                                             }`}>
                                             {tx.transaction_type === 'credit' ? <TrendingUp className="w-5 h-5" /> : <TrendingDown className="w-5 h-5" />}
                                         </div>
@@ -88,7 +87,14 @@ export default async function KarmaHistoryPage() {
                                                 {tx.description || (tx.transaction_type === 'credit' ? 'ได้รับเครดิต' : 'หักเครดิต')}
                                             </p>
                                             <p className="text-sm text-gray-500">
-                                                {format(new Date(tx.created_at), 'd MMM yyyy HH:mm', { locale: th })}
+                                                {new Date(tx.created_at).toLocaleString('th-TH', {
+                                                    timeZone: 'Asia/Bangkok',
+                                                    year: 'numeric',
+                                                    month: 'short',
+                                                    day: 'numeric',
+                                                    hour: '2-digit',
+                                                    minute: '2-digit'
+                                                })}
                                             </p>
                                         </div>
                                     </div>

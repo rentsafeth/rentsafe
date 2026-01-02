@@ -1,5 +1,7 @@
 'use client';
 
+
+import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { LayoutDashboard, ShieldAlert, LogOut, Settings, CheckCircle, MessageSquare, GitMerge, Trash2 } from 'lucide-react';
@@ -24,6 +26,29 @@ export default function AdminSidebar() {
     const router = useRouter();
     const supabase = createClient();
     const { showConfirm } = useAlert();
+    const [stats, setStats] = useState({
+        pendingShops: 0,
+        pendingReports: 0,
+        pendingDeletions: 0,
+        pendingReviews: 0
+    });
+
+    useEffect(() => {
+        const fetchStats = async () => {
+            try {
+                const res = await fetch('/api/admin/stats');
+                const data = await res.json();
+                if (!data.error) {
+                    setStats(data);
+                }
+            } catch (error) {
+                console.error('Failed to fetch stats');
+            }
+        };
+        fetchStats();
+        const interval = setInterval(fetchStats, 30000);
+        return () => clearInterval(interval);
+    }, []);
 
     const handleLogout = async () => {
         showConfirm(
@@ -55,14 +80,29 @@ export default function AdminSidebar() {
                             key={item.href}
                             href={item.href}
                             className={cn(
-                                "flex items-center gap-3 px-4 py-3 rounded-lg transition-colors",
+                                "flex items-center justify-between px-4 py-3 rounded-lg transition-colors",
                                 isActive
                                     ? "bg-blue-600 text-white"
                                     : "text-slate-300 hover:bg-slate-800 hover:text-white"
                             )}
                         >
-                            <Icon className="w-5 h-5" />
-                            {item.label}
+                            <div className="flex items-center gap-3">
+                                <Icon className="w-5 h-5" />
+                                {item.label}
+                            </div>
+                            {(() => {
+                                let count = 0;
+                                if (item.href === '/admin/shops') count = stats.pendingShops;
+                                else if (item.href === '/admin/reports') count = stats.pendingReports;
+                                else if (item.href === '/admin/reports/deletion-requests') count = stats.pendingDeletions;
+                                else if (item.href === '/admin/reviews') count = stats.pendingReviews;
+
+                                return count > 0 ? (
+                                    <span className="bg-red-500 text-white text-xs font-bold px-2 py-0.5 rounded-full min-w-[20px] text-center">
+                                        {count}
+                                    </span>
+                                ) : null;
+                            })()}
                         </Link>
                     );
                 })}
