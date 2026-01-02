@@ -1,7 +1,7 @@
 'use client';
 
 import { createClient } from '@/lib/supabase/client';
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
@@ -32,24 +32,14 @@ import Image from 'next/image';
 const MAX_FILE_SIZE = 5 * 1024 * 1024; // 5MB
 const ACCEPTED_IMAGE_TYPES = ["image/jpeg", "image/jpg", "image/png", "image/webp"];
 
-const reviewSchema = z.object({
-    rating: z.number().min(1, 'กรุณาให้คะแนนอย่างน้อย 1 ดาว').max(5),
-    comment: z.string().min(10, 'กรุณาเขียนรีวิวอย่างน้อย 10 ตัวอักษร').max(1000, 'รีวิวต้องไม่เกิน 1000 ตัวอักษร'),
-    isAnonymous: z.boolean(),
-    acceptTerms: z.boolean().refine((val) => val === true, {
-        message: 'กรุณายอมรับเงื่อนไขการรีวิว',
-    }),
-});
-
-type ReviewFormValues = z.infer<typeof reviewSchema>;
-
 interface ReviewFormModalProps {
     shopId: string;
     userId: string;
     onSuccess?: () => void;
+    isThai?: boolean;
 }
 
-export default function ReviewFormModal({ shopId, userId, onSuccess }: ReviewFormModalProps) {
+export default function ReviewFormModal({ shopId, userId, onSuccess, isThai = true }: ReviewFormModalProps) {
     const [isOpen, setIsOpen] = useState(false);
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [selectedFiles, setSelectedFiles] = useState<File[]>([]);
@@ -57,6 +47,20 @@ export default function ReviewFormModal({ shopId, userId, onSuccess }: ReviewFor
     const [uploadProgress, setUploadProgress] = useState(0);
 
     const supabase = createClient();
+
+    // Create schema with dynamic messages based on locale
+    const reviewSchema = useMemo(() => z.object({
+        rating: z.number().min(1, isThai ? 'กรุณาให้คะแนนอย่างน้อย 1 ดาว' : 'Please rate at least 1 star').max(5),
+        comment: z.string()
+            .min(10, isThai ? 'กรุณาเขียนรีวิวอย่างน้อย 10 ตัวอักษร' : 'Please write at least 10 characters')
+            .max(1000, isThai ? 'รีวิวต้องไม่เกิน 1000 ตัวอักษร' : 'Review must not exceed 1000 characters'),
+        isAnonymous: z.boolean(),
+        acceptTerms: z.boolean().refine((val) => val === true, {
+            message: isThai ? 'กรุณายอมรับเงื่อนไขการรีวิว' : 'Please accept the review terms',
+        }),
+    }), [isThai]);
+
+    type ReviewFormValues = z.infer<typeof reviewSchema>;
 
     const form = useForm<ReviewFormValues>({
         resolver: zodResolver(reviewSchema),
@@ -68,20 +72,22 @@ export default function ReviewFormModal({ shopId, userId, onSuccess }: ReviewFor
         },
     });
 
+    const acceptTerms = form.watch('acceptTerms');
+
     const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
         const files = Array.from(e.target.files || []);
         if (files.length + selectedFiles.length > 5) {
-            toast.error('อัปโหลดรูปภาพได้สูงสุด 5 รูป');
+            toast.error(isThai ? 'อัปโหลดรูปภาพได้สูงสุด 5 รูป' : 'Maximum 5 images allowed');
             return;
         }
 
         const validFiles = files.filter(file => {
             if (file.size > MAX_FILE_SIZE) {
-                toast.error(`ไฟล์ ${file.name} มีขนาดใหญ่เกิน 5MB`);
+                toast.error(isThai ? `ไฟล์ ${file.name} มีขนาดใหญ่เกิน 5MB` : `File ${file.name} exceeds 5MB`);
                 return false;
             }
             if (!ACCEPTED_IMAGE_TYPES.includes(file.type)) {
-                toast.error(`ไฟล์ ${file.name} ไม่ใช่รูปภาพที่รองรับ`);
+                toast.error(isThai ? `ไฟล์ ${file.name} ไม่ใช่รูปภาพที่รองรับ` : `File ${file.name} is not a supported image type`);
                 return false;
             }
             return true;
@@ -114,7 +120,7 @@ export default function ReviewFormModal({ shopId, userId, onSuccess }: ReviewFor
                     const fileExt = file.name.split('.').pop();
                     const fileName = `${userId}/${Date.now()}-${i}.${fileExt}`;
 
-                    const { error: uploadError, data } = await supabase.storage
+                    const { error: uploadError } = await supabase.storage
                         .from('review-evidence')
                         .upload(fileName, file);
 
@@ -129,43 +135,14 @@ export default function ReviewFormModal({ shopId, userId, onSuccess }: ReviewFor
                 }
             }
 
-            // 2. Get User Info for masking (if not anonymous, actually we store masked name anyway)
-            // For now, we'll just use a placeholder or fetch profile if needed.
-            // Let's assume we want to store a masked name regardless.
+            // 2. Get User Info for masking
             const { data: { user } } = await supabase.auth.getUser();
             const emailName = user?.email?.split('@')[0] || 'User';
             const maskedName = values.isAnonymous
                 ? `${emailName.substring(0, 3)}***`
-                : emailName; // Or fetch real name if available
+                : emailName;
 
-            // 3. Submit Review
-            const { error: insertError } = await supabase
-                .from('reviews')
-                .insert({
-                    shop_id: shopId,
-                    user_id: userId,
-                    rating: values.rating,
-                    comment: values.comment,
-                    status: 'pending', // Always pending first
-                    evidence_urls: evidenceUrls,
-                    is_anonymous: values.isAnonymous,
-                    reviewer_name: maskedName,
-                    // ip_address will be handled by API or RLS if possible, 
-                    // but since we are client-side, we might need a server action or API route to get real IP.
-                    // For now, let's submit to an API route instead of direct DB insert to handle IP securely.
-                });
-
-            if (insertError) {
-                // Fallback: If direct insert fails (maybe RLS issue), try API
-                // But we configured RLS to allow insert. 
-                // IP Address: We can't reliably get IP client-side. 
-                // Best practice: Submit to API Route.
-                throw new Error('Direct DB insert failed, please implement API route for secure IP logging');
-            }
-
-            // Wait, to capture IP securely, we MUST use an API Route.
-            // Let's change this to call an API route.
-
+            // 3. Submit Review via API
             const response = await fetch('/api/reviews', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
@@ -179,10 +156,10 @@ export default function ReviewFormModal({ shopId, userId, onSuccess }: ReviewFor
 
             if (!response.ok) {
                 const errorData = await response.json();
-                throw new Error(errorData.error || 'Failed to submit review');
+                throw new Error(errorData.error || (isThai ? 'เกิดข้อผิดพลาดในการส่งรีวิว' : 'Failed to submit review'));
             }
 
-            toast.success('ส่งรีวิวเรียบร้อยแล้ว! กรุณารอการตรวจสอบจากทีมงาน');
+            toast.success(isThai ? 'ส่งรีวิวเรียบร้อยแล้ว! กรุณารอการตรวจสอบจากทีมงาน' : 'Review submitted! Please wait for moderation.');
             setIsOpen(false);
             form.reset();
             setSelectedFiles([]);
@@ -191,7 +168,7 @@ export default function ReviewFormModal({ shopId, userId, onSuccess }: ReviewFor
 
         } catch (error: any) {
             console.error('Error submitting review:', error);
-            toast.error(error.message || 'เกิดข้อผิดพลาดในการส่งรีวิว');
+            toast.error(error.message || (isThai ? 'เกิดข้อผิดพลาดในการส่งรีวิว' : 'An error occurred while submitting the review'));
         } finally {
             setIsSubmitting(false);
         }
@@ -202,14 +179,14 @@ export default function ReviewFormModal({ shopId, userId, onSuccess }: ReviewFor
             <DialogTrigger asChild>
                 <Button className="bg-blue-600 hover:bg-blue-700 text-white">
                     <Star className="w-4 h-4 mr-2" />
-                    เขียนรีวิว
+                    {isThai ? 'เขียนรีวิว' : 'Write a Review'}
                 </Button>
             </DialogTrigger>
             <DialogContent className="sm:max-w-[600px] max-h-[90vh] overflow-y-auto">
                 <DialogHeader>
-                    <DialogTitle>เขียนรีวิวร้านค้า</DialogTitle>
+                    <DialogTitle>{isThai ? 'เขียนรีวิวร้านค้า' : 'Write a Shop Review'}</DialogTitle>
                     <DialogDescription>
-                        แบ่งปันประสบการณ์การเช่ารถของคุณเพื่อเป็นข้อมูลให้กับผู้อื่น
+                        {isThai ? 'แบ่งปันประสบการณ์การเช่ารถของคุณเพื่อเป็นข้อมูลให้กับผู้อื่น' : 'Share your rental experience to help others.'}
                     </DialogDescription>
                 </DialogHeader>
 
@@ -221,7 +198,7 @@ export default function ReviewFormModal({ shopId, userId, onSuccess }: ReviewFor
                             name="rating"
                             render={({ field }) => (
                                 <FormItem>
-                                    <FormLabel>คะแนนความพึงพอใจ</FormLabel>
+                                    <FormLabel>{isThai ? 'คะแนนความพึงพอใจ' : 'Satisfaction Rating'}</FormLabel>
                                     <FormControl>
                                         <div className="flex gap-2">
                                             {[1, 2, 3, 4, 5].map((star) => (
@@ -248,10 +225,10 @@ export default function ReviewFormModal({ shopId, userId, onSuccess }: ReviewFor
                             name="comment"
                             render={({ field }) => (
                                 <FormItem>
-                                    <FormLabel>ความคิดเห็น</FormLabel>
+                                    <FormLabel>{isThai ? 'ความคิดเห็น' : 'Comment'}</FormLabel>
                                     <FormControl>
                                         <Textarea
-                                            placeholder="เล่าประสบการณ์การเช่ารถ สภาพรถ การบริการ..."
+                                            placeholder={isThai ? 'เล่าประสบการณ์การเช่ารถ สภาพรถ การบริการ...' : 'Describe your rental experience, car condition, service...'}
                                             className="min-h-[120px]"
                                             {...field}
                                         />
@@ -263,7 +240,7 @@ export default function ReviewFormModal({ shopId, userId, onSuccess }: ReviewFor
 
                         {/* Image Upload */}
                         <div className="space-y-3">
-                            <FormLabel>รูปภาพหลักฐาน (สูงสุด 5 รูป)</FormLabel>
+                            <FormLabel>{isThai ? 'รูปภาพหลักฐาน (สูงสุด 5 รูป)' : 'Evidence Images (Max 5)'}</FormLabel>
                             <div className="grid grid-cols-3 sm:grid-cols-5 gap-4">
                                 {previews.map((url, index) => (
                                     <div key={index} className="relative aspect-square rounded-lg overflow-hidden border border-gray-200 group">
@@ -285,7 +262,7 @@ export default function ReviewFormModal({ shopId, userId, onSuccess }: ReviewFor
                                 {previews.length < 5 && (
                                     <label className="flex flex-col items-center justify-center aspect-square rounded-lg border-2 border-dashed border-gray-300 hover:border-blue-500 hover:bg-blue-50 cursor-pointer transition-colors">
                                         <Upload className="w-6 h-6 text-gray-400" />
-                                        <span className="text-xs text-gray-500 mt-1">เพิ่มรูป</span>
+                                        <span className="text-xs text-gray-500 mt-1">{isThai ? 'เพิ่มรูป' : 'Add Image'}</span>
                                         <input
                                             type="file"
                                             accept="image/*"
@@ -297,7 +274,7 @@ export default function ReviewFormModal({ shopId, userId, onSuccess }: ReviewFor
                                 )}
                             </div>
                             <p className="text-xs text-gray-500">
-                                รองรับไฟล์ JPG, PNG ขนาดไม่เกิน 5MB
+                                {isThai ? 'รองรับไฟล์ JPG, PNG ขนาดไม่เกิน 5MB' : 'Supports JPG, PNG up to 5MB'}
                             </p>
                         </div>
 
@@ -315,10 +292,10 @@ export default function ReviewFormModal({ shopId, userId, onSuccess }: ReviewFor
                                     </FormControl>
                                     <div className="space-y-1 leading-none">
                                         <FormLabel>
-                                            แสดงชื่อแบบไม่ระบุตัวตน
+                                            {isThai ? 'แสดงชื่อแบบไม่ระบุตัวตน' : 'Post Anonymously'}
                                         </FormLabel>
                                         <FormDescription>
-                                            ชื่อของคุณจะถูกแสดงเป็นบางส่วน (เช่น Som***) เพื่อความเป็นส่วนตัว
+                                            {isThai ? 'ชื่อของคุณจะถูกแสดงเป็นบางส่วน (เช่น Som***) เพื่อความเป็นส่วนตัว' : 'Your name will be partially masked (e.g. Som***) for privacy.'}
                                         </FormDescription>
                                     </div>
                                 </FormItem>
@@ -340,8 +317,9 @@ export default function ReviewFormModal({ shopId, userId, onSuccess }: ReviewFor
                                         </FormControl>
                                         <div className="space-y-1 leading-none">
                                             <FormLabel className="font-normal">
-                                                ข้าพเจ้ายอมรับเงื่อนไขการรีวิว และรับรองว่าข้อมูลทั้งหมดเป็นความจริง
-                                                หากมีการฟ้องร้อง ข้าพเจ้ายินดีรับผิดชอบทางกฎหมายทุกกรณี
+                                                {isThai
+                                                    ? 'ข้าพเจ้ายอมรับเงื่อนไขการรีวิว และรับรองว่าข้อมูลทั้งหมดเป็นความจริง หากมีการฟ้องร้อง ข้าพเจ้ายินดีรับผิดชอบทางกฎหมายทุกกรณี'
+                                                    : 'I accept the review terms and certify that all information is true. I accept full legal responsibility in case of any litigation.'}
                                             </FormLabel>
                                         </div>
                                     </div>
@@ -357,20 +335,20 @@ export default function ReviewFormModal({ shopId, userId, onSuccess }: ReviewFor
                                 onClick={() => setIsOpen(false)}
                                 disabled={isSubmitting}
                             >
-                                ยกเลิก
+                                {isThai ? 'ยกเลิก' : 'Cancel'}
                             </Button>
                             <Button
                                 type="submit"
-                                disabled={isSubmitting}
+                                disabled={isSubmitting || !acceptTerms}
                                 className="bg-blue-600 hover:bg-blue-700"
                             >
                                 {isSubmitting ? (
                                     <>
                                         <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                                        กำลังส่ง...
+                                        {isThai ? 'กำลังส่ง...' : 'Submitting...'}
                                     </>
                                 ) : (
-                                    'ส่งรีวิว'
+                                    isThai ? 'ส่งรีวิว' : 'Submit Review'
                                 )}
                             </Button>
                         </div>

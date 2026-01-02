@@ -576,6 +576,7 @@ export default async function ShopProfilePage({ params }: { params: Promise<{ id
                                             <ReviewFormModal
                                                 shopId={shop.id}
                                                 userId={user.id}
+                                                isThai={isThai}
                                             />
                                         </div>
                                     )}
@@ -619,6 +620,7 @@ export default async function ShopProfilePage({ params }: { params: Promise<{ id
                                                 <ReviewFormModal
                                                     shopId={shop.id}
                                                     userId={user.id}
+                                                    isThai={isThai}
                                                 />
                                             ) : (
                                                 <Link href={`/${locale}/login?next=/shop/${id}`}>
