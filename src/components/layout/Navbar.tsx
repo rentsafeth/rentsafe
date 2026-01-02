@@ -19,6 +19,7 @@ export default function Navbar() {
     const [isLoading, setIsLoading] = useState(true)
     const [showLangMenu, setShowLangMenu] = useState(false)
     const [role, setRole] = useState<string | null>(null)
+    const [timedOut, setTimedOut] = useState(false)
 
     useEffect(() => {
         const supabase = createClient()
@@ -29,6 +30,7 @@ export default function Navbar() {
             if (isMounted && isLoading) {
                 console.log('Navbar: Force stopping loading due to timeout')
                 setIsLoading(false)
+                setTimedOut(true)
             }
         }, 3000)
 
@@ -135,13 +137,35 @@ export default function Navbar() {
     }
 
     const handleLogout = async () => {
+        console.log('Logout clicked')
         const supabase = createClient()
+
         try {
-            await supabase.auth.signOut()
+            // Clear all Supabase auth
+            await supabase.auth.signOut({ scope: 'global' })
+            console.log('SignOut successful')
         } catch (error) {
             console.error('Logout error:', error)
         }
-        // Always do hard redirect after logout
+
+        // Clear all storage
+        try {
+            localStorage.clear()
+            sessionStorage.clear()
+
+            // Clear all cookies
+            document.cookie.split(";").forEach((c) => {
+                document.cookie = c
+                    .replace(/^ +/, "")
+                    .replace(/=.*/, "=;expires=" + new Date().toUTCString() + ";path=/")
+            })
+            console.log('Storage cleared')
+        } catch (e) {
+            console.error('Error clearing storage:', e)
+        }
+
+        // Force hard redirect
+        console.log('Redirecting to home')
         window.location.href = '/'
     }
 
@@ -231,6 +255,15 @@ export default function Navbar() {
                                     {t('logout')}
                                 </button>
                             </div>
+                        ) : timedOut ? (
+                            /* Show reset button when auth check timed out */
+                            <button
+                                onClick={handleLogout}
+                                className="flex items-center gap-2 px-4 py-2 text-orange-600 hover:text-red-600 hover:bg-red-50 rounded-lg font-medium transition-colors"
+                            >
+                                <LogOut className="w-4 h-4" />
+                                ล้างเซสชัน
+                            </button>
                         ) : (
                             <div className="flex items-center gap-2">
                                 <Link
