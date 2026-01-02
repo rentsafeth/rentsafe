@@ -571,7 +571,7 @@ export default async function ShopProfilePage({ params }: { params: Promise<{ id
                                         {isThai ? 'รีวิวจากผู้ใช้งาน' : 'User Reviews'}
                                     </CardTitle>
                                     {/* Review Button */}
-                                    {user && (
+                                    {user && user.id !== shop.owner_id && (
                                         <div className="ml-auto">
                                             <ReviewFormModal
                                                 shopId={shop.id}
@@ -608,6 +608,7 @@ export default async function ShopProfilePage({ params }: { params: Promise<{ id
                                                 currentUserId={user?.id}
                                                 isShopOwner={user?.id === shop.owner_id}
                                                 shopId={shop.id}
+                                                isThai={isThai}
                                             />
                                         </div>
                                     ) : (
@@ -617,11 +618,13 @@ export default async function ShopProfilePage({ params }: { params: Promise<{ id
                                             <p className="text-sm text-slate-400 mt-1 mb-4">{isThai ? 'เป็นคนแรกที่รีวิวร้านนี้' : 'Be the first to review this shop'}</p>
 
                                             {user ? (
-                                                <ReviewFormModal
-                                                    shopId={shop.id}
-                                                    userId={user.id}
-                                                    isThai={isThai}
-                                                />
+                                                user.id !== shop.owner_id && (
+                                                    <ReviewFormModal
+                                                        shopId={shop.id}
+                                                        userId={user.id}
+                                                        isThai={isThai}
+                                                    />
+                                                )
                                             ) : (
                                                 <Link href={`/${locale}/login?next=/shop/${id}`}>
                                                     <Button variant="outline">

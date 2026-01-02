@@ -15,7 +15,18 @@ export async function POST(request: Request) {
             return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
         }
 
-        // 2. Get IP Address
+        // 2. Check if User is Shop Owner
+        const { data: shop } = await supabase
+            .from('shops')
+            .select('owner_id')
+            .eq('id', shopId)
+            .single();
+
+        if (shop && shop.owner_id === user.id) {
+            return NextResponse.json({ error: 'You cannot review your own shop' }, { status: 403 });
+        }
+
+        // 3. Get IP Address
         const headersList = await headers();
         const ip = headersList.get('x-forwarded-for') || 'unknown';
 

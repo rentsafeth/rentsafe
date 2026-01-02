@@ -17,7 +17,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { toast } from 'sonner';
 import Image from 'next/image';
 import { formatDistanceToNow } from 'date-fns';
-import { th } from 'date-fns/locale';
+import { th, enUS } from 'date-fns/locale';
 
 interface Review {
     id: string;
@@ -36,9 +36,10 @@ interface ReviewListProps {
     currentUserId?: string;
     isShopOwner?: boolean;
     shopId: string;
+    isThai?: boolean;
 }
 
-export default function ReviewList({ reviews, currentUserId, isShopOwner, shopId }: ReviewListProps) {
+export default function ReviewList({ reviews, currentUserId, isShopOwner, shopId, isThai = true }: ReviewListProps) {
     const [localReviews, setLocalReviews] = useState(reviews);
     const [selectedImage, setSelectedImage] = useState<string | null>(null);
     const [disputeReason, setDisputeReason] = useState('');
@@ -49,7 +50,7 @@ export default function ReviewList({ reviews, currentUserId, isShopOwner, shopId
 
     const handleLike = async (reviewId: string) => {
         if (!currentUserId) {
-            toast.error('กรุณาเข้าสู่ระบบเพื่อกดถูกใจ');
+            toast.error(isThai ? 'กรุณาเข้าสู่ระบบเพื่อกดถูกใจ' : 'Please login to like');
             return;
         }
 
@@ -71,9 +72,9 @@ export default function ReviewList({ reviews, currentUserId, isShopOwner, shopId
                 r.id === reviewId ? { ...r, like_count: newCount } : r
             ));
 
-            toast.success('กดถูกใจแล้ว');
+            toast.success(isThai ? 'กดถูกใจแล้ว' : 'Liked');
         } catch (error: any) {
-            toast.error(error.message || 'ไม่สามารถกดถูกใจได้');
+            toast.error(error.message || (isThai ? 'ไม่สามารถกดถูกใจได้' : 'Failed to like'));
         }
     };
 
@@ -94,11 +95,11 @@ export default function ReviewList({ reviews, currentUserId, isShopOwner, shopId
 
             if (!response.ok) throw new Error('Failed to submit dispute');
 
-            toast.success('ส่งคำร้องโต้แย้งเรียบร้อยแล้ว รอแอดมินตรวจสอบ');
+            toast.success(isThai ? 'ส่งคำร้องโต้แย้งเรียบร้อยแล้ว รอแอดมินตรวจสอบ' : 'Dispute submitted. Waiting for admin review.');
             setDisputeReviewId(null);
             setDisputeReason('');
         } catch (error) {
-            toast.error('เกิดข้อผิดพลาดในการส่งคำร้อง');
+            toast.error(isThai ? 'เกิดข้อผิดพลาดในการส่งคำร้อง' : 'Failed to submit dispute');
         } finally {
             setIsSubmittingDispute(false);
         }
@@ -108,8 +109,8 @@ export default function ReviewList({ reviews, currentUserId, isShopOwner, shopId
         return (
             <div className="text-center py-12 bg-slate-50 rounded-xl border border-dashed border-slate-200">
                 <MessageSquare className="w-12 h-12 text-slate-300 mx-auto mb-3" />
-                <p className="text-slate-500">ยังไม่มีรีวิวสำหรับร้านนี้</p>
-                <p className="text-sm text-slate-400 mt-1">เป็นคนแรกที่รีวิวร้านนี้</p>
+                <p className="text-slate-500">{isThai ? 'ยังไม่มีรีวิวสำหรับร้านนี้' : 'No reviews yet'}</p>
+                <p className="text-sm text-slate-400 mt-1">{isThai ? 'เป็นคนแรกที่รีวิวร้านนี้' : 'Be the first to review this shop'}</p>
             </div>
         );
     }
@@ -128,7 +129,7 @@ export default function ReviewList({ reviews, currentUserId, isShopOwner, shopId
                             <div>
                                 <div className="flex items-center gap-2">
                                     <p className="font-semibold text-slate-900">
-                                        {review.reviewer_name || 'ผู้ใช้งาน'}
+                                        {review.reviewer_name || (isThai ? 'ผู้ใช้งาน' : 'User')}
                                     </p>
                                     {/* Verified Badge Logic would go here if we had booking data */}
                                     {/* <Badge variant="secondary" className="text-[10px] px-1.5 h-5 bg-green-50 text-green-700 border-green-200">
@@ -145,7 +146,7 @@ export default function ReviewList({ reviews, currentUserId, isShopOwner, shopId
                                         ))}
                                     </div>
                                     <span>•</span>
-                                    <span>{formatDistanceToNow(new Date(review.created_at), { addSuffix: true, locale: th })}</span>
+                                    <span>{formatDistanceToNow(new Date(review.created_at), { addSuffix: true, locale: isThai ? th : enUS })}</span>
                                 </div>
                             </div>
                         </div>
@@ -160,22 +161,23 @@ export default function ReviewList({ reviews, currentUserId, isShopOwner, shopId
                                         onClick={() => setDisputeReviewId(review.id)}
                                     >
                                         <Flag className="w-4 h-4 mr-1" />
-                                        แจ้งลบ
+                                        {isThai ? 'แจ้งลบ' : 'Report'}
                                     </Button>
                                 </DialogTrigger>
                                 <DialogContent>
                                     <DialogHeader>
-                                        <DialogTitle>แจ้งลบ/โต้แย้งรีวิว</DialogTitle>
+                                        <DialogTitle>{isThai ? 'แจ้งลบ/โต้แย้งรีวิว' : 'Report/Dispute Review'}</DialogTitle>
                                     </DialogHeader>
                                     <div className="space-y-4 py-4">
                                         <p className="text-sm text-slate-600">
-                                            กรุณาระบุเหตุผลที่ต้องการให้ลบรีวิวนี้ (เช่น เป็นรีวิวเท็จ, ใช้คำหยาบคาย)
-                                            ทีมงานจะตรวจสอบและดำเนินการภายใน 24 ชม.
+                                            {isThai
+                                                ? 'กรุณาระบุเหตุผลที่ต้องการให้ลบรีวิวนี้ (เช่น เป็นรีวิวเท็จ, ใช้คำหยาบคาย) ทีมงานจะตรวจสอบและดำเนินการภายใน 24 ชม.'
+                                                : 'Please specify the reason for reporting this review (e.g. fake review, abusive language). We will review within 24 hours.'}
                                         </p>
                                         <Textarea
                                             value={disputeReason}
                                             onChange={(e) => setDisputeReason(e.target.value)}
-                                            placeholder="ระบุเหตุผล..."
+                                            placeholder={isThai ? 'ระบุเหตุผล...' : 'Reason...'}
                                             className="min-h-[100px]"
                                         />
                                         <Button
@@ -183,7 +185,7 @@ export default function ReviewList({ reviews, currentUserId, isShopOwner, shopId
                                             disabled={isSubmittingDispute || !disputeReason.trim()}
                                             className="w-full bg-red-600 hover:bg-red-700"
                                         >
-                                            ส่งคำร้อง
+                                            {isThai ? 'ส่งคำร้อง' : 'Submit Report'}
                                         </Button>
                                     </div>
                                 </DialogContent>
@@ -223,7 +225,7 @@ export default function ReviewList({ reviews, currentUserId, isShopOwner, shopId
                             onClick={() => handleLike(review.id)}
                         >
                             <ThumbsUp className="w-4 h-4" />
-                            <span>ถูกใจ ({review.like_count})</span>
+                            <span>{isThai ? 'ถูกใจ' : 'Like'} ({review.like_count})</span>
                         </Button>
                     </div>
                 </div>
