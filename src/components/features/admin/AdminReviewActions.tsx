@@ -2,7 +2,6 @@
 
 import { Button } from '@/components/ui/button';
 import { Check, X } from 'lucide-react';
-import { toast } from 'sonner';
 import { useAlert } from '@/components/ui/alert-modal';
 import { updateReviewStatus, handleDisputeAction } from '@/app/[locale]/admin/reviews/actions';
 

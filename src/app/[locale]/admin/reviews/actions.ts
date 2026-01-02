@@ -15,7 +15,10 @@ export async function updateReviewStatus(reviewId: string, status: 'approved' | 
         throw error;
     }
 
-    revalidatePath('/[locale]/admin/reviews', 'page');
+    // Revalidate for all possible locales
+    revalidatePath('/th/admin/reviews');
+    revalidatePath('/en/admin/reviews');
+    revalidatePath('/admin/reviews');
 }
 
 export async function handleDisputeAction(disputeId: string, action: 'keep_review' | 'delete_review', relatedReviewId?: string) {
@@ -44,5 +47,7 @@ export async function handleDisputeAction(disputeId: string, action: 'keep_revie
         if (disputeError) throw disputeError;
     }
 
-    revalidatePath('/[locale]/admin/reviews', 'page');
+    revalidatePath('/th/admin/reviews');
+    revalidatePath('/en/admin/reviews');
+    revalidatePath('/admin/reviews');
 }
