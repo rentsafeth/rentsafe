@@ -40,6 +40,7 @@ export default function Navbar() {
                     .maybeSingle()
 
                 if (isMounted) {
+                    console.log('Fetched role:', profile?.role)
                     setRole(profile?.role ?? null)
                 }
             } catch (err) {
@@ -98,10 +99,16 @@ export default function Navbar() {
     }
 
     const handleLogout = async () => {
-        const supabase = createClient()
-        await supabase.auth.signOut()
-        router.push('/')
-        router.refresh()
+        try {
+            const supabase = createClient()
+            await supabase.auth.signOut()
+            // Hard redirect to ensure all state is cleared
+            window.location.href = '/'
+        } catch (error) {
+            console.error('Logout error:', error)
+            // Force redirect anyway
+            window.location.href = '/'
+        }
     }
 
     const navLinks = [
