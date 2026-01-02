@@ -1,3 +1,5 @@
+'use client';
+
 import { createClient } from '@/lib/supabase/client';
 import { useState } from 'react';
 import { useForm } from 'react-hook-form';
@@ -105,13 +107,13 @@ export default function ReviewFormModal({ shopId, userId, onSuccess }: ReviewFor
         try {
             // 1. Upload images
             const evidenceUrls: string[] = [];
-            
+
             if (selectedFiles.length > 0) {
                 for (let i = 0; i < selectedFiles.length; i++) {
                     const file = selectedFiles[i];
                     const fileExt = file.name.split('.').pop();
                     const fileName = `${userId}/${Date.now()}-${i}.${fileExt}`;
-                    
+
                     const { error: uploadError, data } = await supabase.storage
                         .from('review-evidence')
                         .upload(fileName, file);
@@ -132,8 +134,8 @@ export default function ReviewFormModal({ shopId, userId, onSuccess }: ReviewFor
             // Let's assume we want to store a masked name regardless.
             const { data: { user } } = await supabase.auth.getUser();
             const emailName = user?.email?.split('@')[0] || 'User';
-            const maskedName = values.isAnonymous 
-                ? `${emailName.substring(0, 3)}***` 
+            const maskedName = values.isAnonymous
+                ? `${emailName.substring(0, 3)}***`
                 : emailName; // Or fetch real name if available
 
             // 3. Submit Review
@@ -160,10 +162,10 @@ export default function ReviewFormModal({ shopId, userId, onSuccess }: ReviewFor
                 // Best practice: Submit to API Route.
                 throw new Error('Direct DB insert failed, please implement API route for secure IP logging');
             }
-            
+
             // Wait, to capture IP securely, we MUST use an API Route.
             // Let's change this to call an API route.
-            
+
             const response = await fetch('/api/reviews', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
@@ -226,9 +228,8 @@ export default function ReviewFormModal({ shopId, userId, onSuccess }: ReviewFor
                                                 <button
                                                     key={star}
                                                     type="button"
-                                                    className={`p-1 transition-transform hover:scale-110 focus:outline-none ${
-                                                        field.value >= star ? 'text-yellow-500' : 'text-gray-300'
-                                                    }`}
+                                                    className={`p-1 transition-transform hover:scale-110 focus:outline-none ${field.value >= star ? 'text-yellow-500' : 'text-gray-300'
+                                                        }`}
                                                     onClick={() => field.onChange(star)}
                                                 >
                                                     <Star className="w-8 h-8 fill-current" />
@@ -358,8 +359,8 @@ export default function ReviewFormModal({ shopId, userId, onSuccess }: ReviewFor
                             >
                                 ยกเลิก
                             </Button>
-                            <Button 
-                                type="submit" 
+                            <Button
+                                type="submit"
                                 disabled={isSubmitting}
                                 className="bg-blue-600 hover:bg-blue-700"
                             >
