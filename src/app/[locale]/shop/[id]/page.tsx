@@ -15,6 +15,8 @@ import { PROVINCES } from '@/lib/constants/provinces';
 import SaveShopButton from '@/components/features/shop/SaveShopButton';
 import ShopServiceBadges from '@/components/features/shop/ShopServiceBadges';
 import ShareShopButton from '@/components/features/shop/ShareShopButton';
+import ReviewFormModal from '@/components/features/shop/ReviewFormModal';
+import ReviewList from '@/components/features/shop/ReviewList';
 
 const BASE_URL = 'https://rentsafe.in.th';
 export const dynamic = 'force-dynamic';
@@ -91,11 +93,16 @@ export default async function ShopProfilePage({ params }: { params: Promise<{ id
         .eq('shop_id', id)
         .eq('status', 'approved');
 
+    // Get current user
+    const { data: { user } } = await supabase.auth.getUser();
+
     // Get reviews count and average
     const { data: reviewsData } = await supabase
         .from('reviews')
-        .select('rating')
-        .eq('shop_id', id);
+        .select('*')
+        .eq('shop_id', id)
+        .eq('status', 'approved')
+        .order('created_at', { ascending: false });
 
     const reviewsCount = reviewsData?.length || 0;
     const avgRating = reviewsCount > 0
@@ -558,15 +565,25 @@ export default async function ShopProfilePage({ params }: { params: Promise<{ id
 
                             {/* Reviews Section */}
                             <Card>
-                                <CardHeader>
+                                <CardHeader className="flex flex-row items-center justify-between">
                                     <CardTitle className="flex items-center gap-2">
                                         <Star className="w-5 h-5 text-yellow-500" />
                                         {isThai ? 'รีวิวจากผู้ใช้งาน' : 'User Reviews'}
                                     </CardTitle>
+                                    {/* Review Button */}
+                                    {user && (
+                                        <div className="ml-auto">
+                                            <ReviewFormModal
+                                                shopId={shop.id}
+                                                userId={user.id}
+                                            />
+                                        </div>
+                                    )}
                                 </CardHeader>
                                 <CardContent>
                                     {reviewsCount > 0 ? (
-                                        <div className="space-y-4">
+                                        <div className="space-y-8">
+                                            {/* Summary Stats */}
                                             <div className="flex items-center gap-4 p-4 bg-yellow-50 rounded-xl border border-yellow-100">
                                                 <div className="text-center">
                                                     <p className="text-4xl font-bold text-yellow-600">{avgRating.toFixed(1)}</p>
@@ -583,12 +600,33 @@ export default async function ShopProfilePage({ params }: { params: Promise<{ id
                                                     <p className="text-slate-600">{isThai ? `จาก ${reviewsCount} รีวิว` : `From ${reviewsCount} reviews`}</p>
                                                 </div>
                                             </div>
+
+                                            {/* Review List */}
+                                            <ReviewList
+                                                reviews={reviewsData || []}
+                                                currentUserId={user?.id}
+                                                isShopOwner={user?.id === shop.owner_id}
+                                                shopId={shop.id}
+                                            />
                                         </div>
                                     ) : (
                                         <div className="text-center py-12 bg-slate-50 rounded-xl border border-dashed border-slate-200">
                                             <Users className="w-12 h-12 text-slate-300 mx-auto mb-3" />
                                             <p className="text-slate-500">{isThai ? 'ยังไม่มีรีวิวสำหรับร้านนี้' : 'No reviews yet'}</p>
-                                            <p className="text-sm text-slate-400 mt-1">{isThai ? 'เป็นคนแรกที่รีวิวร้านนี้' : 'Be the first to review this shop'}</p>
+                                            <p className="text-sm text-slate-400 mt-1 mb-4">{isThai ? 'เป็นคนแรกที่รีวิวร้านนี้' : 'Be the first to review this shop'}</p>
+
+                                            {user ? (
+                                                <ReviewFormModal
+                                                    shopId={shop.id}
+                                                    userId={user.id}
+                                                />
+                                            ) : (
+                                                <Link href={`/${locale}/login?next=/shop/${id}`}>
+                                                    <Button variant="outline">
+                                                        {isThai ? 'เข้าสู่ระบบเพื่อรีวิว' : 'Login to Review'}
+                                                    </Button>
+                                                </Link>
+                                            )}
                                         </div>
                                     )}
                                 </CardContent>
