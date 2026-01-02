@@ -73,7 +73,7 @@ export async function GET(request: NextRequest) {
             .from('reports')
             .select(`
                 *,
-                blacklist_entry:blacklist_id (
+                blacklist_entry:blacklist_entry_id (
                     id,
                     shop_names,
                     total_reports,

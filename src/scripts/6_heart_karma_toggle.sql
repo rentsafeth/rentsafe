@@ -154,11 +154,17 @@ CREATE INDEX IF NOT EXISTS idx_karma_transactions_user_id ON karma_transactions(
 -- RLS for report_hearts
 ALTER TABLE report_hearts ENABLE ROW LEVEL SECURITY;
 
-CREATE POLICY IF NOT EXISTS "Users can view all hearts" 
+-- Drop existing policies first to avoid errors
+DROP POLICY IF EXISTS "Users can view all hearts" ON report_hearts;
+DROP POLICY IF EXISTS "Users can insert own hearts" ON report_hearts;
+DROP POLICY IF EXISTS "Users can delete own hearts" ON report_hearts;
+
+-- Create policies
+CREATE POLICY "Users can view all hearts" 
 ON report_hearts FOR SELECT USING (true);
 
-CREATE POLICY IF NOT EXISTS "Users can insert own hearts" 
+CREATE POLICY "Users can insert own hearts" 
 ON report_hearts FOR INSERT WITH CHECK (auth.uid() = user_id);
 
-CREATE POLICY IF NOT EXISTS "Users can delete own hearts" 
+CREATE POLICY "Users can delete own hearts" 
 ON report_hearts FOR DELETE USING (auth.uid() = user_id);
