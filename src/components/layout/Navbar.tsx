@@ -18,19 +18,41 @@ export default function Navbar() {
     const [user, setUser] = useState<any>(null)
     const [isLoading, setIsLoading] = useState(true)
     const [showLangMenu, setShowLangMenu] = useState(false)
+    const [role, setRole] = useState<string | null>(null)
 
     useEffect(() => {
         const supabase = createClient()
 
-        // Get initial session
-        supabase.auth.getSession().then(({ data: { session } }) => {
+        const getUser = async () => {
+            const { data: { session } } = await supabase.auth.getSession()
             setUser(session?.user ?? null)
+
+            if (session?.user) {
+                const { data: profile } = await supabase
+                    .from('profiles')
+                    .select('role')
+                    .eq('id', session.user.id)
+                    .single()
+                setRole(profile?.role ?? null)
+            }
             setIsLoading(false)
-        })
+        }
+
+        getUser()
 
         // Listen for auth changes
-        const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+        const { data: { subscription } } = supabase.auth.onAuthStateChange(async (_event, session) => {
             setUser(session?.user ?? null)
+            if (session?.user) {
+                const { data: profile } = await supabase
+                    .from('profiles')
+                    .select('role')
+                    .eq('id', session.user.id)
+                    .single()
+                setRole(profile?.role ?? null)
+            } else {
+                setRole(null)
+            }
         })
 
         return () => subscription.unsubscribe()
@@ -122,11 +144,11 @@ export default function Navbar() {
                             <div className="flex items-center gap-2">
                                 <NotificationBell />
                                 <Link
-                                    href="/dashboard"
+                                    href={role === 'admin' ? '/admin' : '/dashboard'}
                                     className="flex items-center gap-2 px-4 py-2 text-gray-600 hover:text-blue-600 hover:bg-blue-50 rounded-lg font-medium transition-colors"
                                 >
                                     <User className="w-4 h-4" />
-                                    Dashboard
+                                    {role === 'admin' ? 'Admin Panel' : 'Dashboard'}
                                 </Link>
                                 <button
                                     onClick={handleLogout}
@@ -206,12 +228,12 @@ export default function Navbar() {
                             {user ? (
                                 <>
                                     <Link
-                                        href="/dashboard"
+                                        href={role === 'admin' ? '/admin' : '/dashboard'}
                                         onClick={() => setIsMenuOpen(false)}
                                         className="flex items-center gap-3 px-4 py-3 text-gray-600 hover:text-blue-600 hover:bg-blue-50 rounded-lg font-medium transition-colors"
                                     >
                                         <User className="w-5 h-5" />
-                                        Dashboard
+                                        {role === 'admin' ? 'Admin Panel' : 'Dashboard'}
                                     </Link>
                                     <button
                                         onClick={() => {

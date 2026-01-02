@@ -1,6 +1,6 @@
 import { createClient } from '@/lib/supabase/server';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Store, ShieldAlert, Users, CheckCircle } from 'lucide-react';
+import { Store, ShieldAlert, Users, CheckCircle, MessageSquare, Flag } from 'lucide-react';
 import Link from 'next/link';
 
 export default async function AdminDashboardPage() {
@@ -14,6 +14,16 @@ export default async function AdminDashboardPage() {
 
     const { count: pendingReports } = await supabase
         .from('reports')
+        .select('*', { count: 'exact', head: true })
+        .eq('status', 'pending');
+
+    const { count: pendingReviews } = await supabase
+        .from('reviews')
+        .select('*', { count: 'exact', head: true })
+        .eq('status', 'pending');
+
+    const { count: pendingDisputes } = await supabase
+        .from('review_disputes')
         .select('*', { count: 'exact', head: true })
         .eq('status', 'pending');
 
@@ -52,6 +62,32 @@ export default async function AdminDashboardPage() {
                         <CardContent>
                             <div className="text-2xl font-bold">{pendingReports || 0}</div>
                             <p className="text-xs text-muted-foreground">รายงานที่รอการตรวจสอบ</p>
+                        </CardContent>
+                    </Card>
+                </Link>
+
+                <Link href="/admin/reviews">
+                    <Card className="hover:shadow-lg transition-shadow cursor-pointer h-full">
+                        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                            <CardTitle className="text-sm font-medium">รออนุมัติรีวิว</CardTitle>
+                            <MessageSquare className="h-4 w-4 text-blue-500" />
+                        </CardHeader>
+                        <CardContent>
+                            <div className="text-2xl font-bold">{pendingReviews || 0}</div>
+                            <p className="text-xs text-muted-foreground">รีวิวใหม่ที่รอตรวจสอบ</p>
+                        </CardContent>
+                    </Card>
+                </Link>
+
+                <Link href="/admin/reviews?tab=disputes">
+                    <Card className="hover:shadow-lg transition-shadow cursor-pointer h-full">
+                        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                            <CardTitle className="text-sm font-medium">ข้อพิพาทรีวิว</CardTitle>
+                            <Flag className="h-4 w-4 text-orange-500" />
+                        </CardHeader>
+                        <CardContent>
+                            <div className="text-2xl font-bold">{pendingDisputes || 0}</div>
+                            <p className="text-xs text-muted-foreground">คำร้องแจ้งลบรีวิว</p>
                         </CardContent>
                     </Card>
                 </Link>

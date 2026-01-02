@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { LayoutDashboard, Store, ShieldAlert, LogOut, Settings, CheckCircle } from 'lucide-react';
+import { LayoutDashboard, Store, ShieldAlert, LogOut, Settings, CheckCircle, MessageSquare } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { createClient } from '@/lib/supabase/client';
 import { useRouter } from 'next/navigation';
@@ -12,6 +12,7 @@ const menuItems = [
     { href: '/admin/shops', label: 'อนุมัติร้านค้า', icon: CheckCircle },
     { href: '/admin/shops/manage', label: 'จัดการร้านค้า', icon: Settings },
     { href: '/admin/reports', label: 'ตรวจสอบรายงาน', icon: ShieldAlert },
+    { href: '/admin/reviews', label: 'จัดการรีวิว', icon: MessageSquare },
 ];
 
 export default function AdminSidebar() {
