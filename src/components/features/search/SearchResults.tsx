@@ -77,6 +77,8 @@ export default function SearchResults() {
     const [searchType, setSearchType] = useState<'blacklist' | 'rental'>(type as 'blacklist' | 'rental');
 
     // Filter state
+    // Filter state
+    const [filterVerifiedPro, setFilterVerifiedPro] = useState(false);
     const [filterTaxInvoice, setFilterTaxInvoice] = useState(false);
     const [filterWithholdingTax, setFilterWithholdingTax] = useState(false);
     const [filterPayOnPickup, setFilterPayOnPickup] = useState(false);
@@ -91,8 +93,14 @@ export default function SearchResults() {
     const supabase = createClient();
 
     // Handle search form submission
+    // Handle search form submission
     const handleSearch = () => {
         if (searchType === 'blacklist' && !searchQuery.trim()) {
+            return;
+        }
+
+        // Rental search validation: must have query OR province
+        if (searchType === 'rental' && !searchQuery.trim() && !selectedProvince) {
             return;
         }
 
@@ -103,6 +111,17 @@ export default function SearchResults() {
 
         window.history.replaceState({}, '', `/search?${params.toString()}`);
         fetchResults();
+    };
+
+    // Clear results when switching tabs
+    const handleTabChange = (type: 'blacklist' | 'rental') => {
+        if (type !== searchType) {
+            setSearchType(type);
+            setResults([]); // Clear results immediately
+            setHasSearched(false); // Reset search state
+            setSearchQuery(''); // Optional: clear query too if desired, but maybe keep it
+            // If we want to keep query, we can, but results must be cleared.
+        }
     };
 
     // Sort results
@@ -329,12 +348,19 @@ export default function SearchResults() {
     };
 
     // Filter results
+    // Filter results
     const filteredResults = results.filter(r => {
         if (searchType !== 'rental' || r.type !== 'shop') return true;
+
+        // Verified Pro Filter
+        if (filterVerifiedPro && !r.isVerifiedPro) return false;
+
+        // Service Filters
         if (filterTaxInvoice && !r.data.can_issue_tax_invoice) return false;
         if (filterWithholdingTax && !r.data.can_issue_withholding_tax) return false;
         if (filterPayOnPickup && !r.data.pay_on_pickup) return false;
         if (filterCreditCard && !r.data.accept_credit_card) return false;
+
         return true;
     });
 
@@ -388,10 +414,11 @@ export default function SearchResults() {
         <Card className="mb-8 shadow-lg border-0 bg-white/80 backdrop-blur-sm">
             <CardContent className="p-6">
                 {/* Search Type Tabs - Modern Design */}
+                {/* Search Type Tabs - Modern Design */}
                 <div className="flex gap-2 sm:gap-3 mb-6">
                     <button
                         type="button"
-                        onClick={() => setSearchType('blacklist')}
+                        onClick={() => handleTabChange('blacklist')}
                         className={`flex-1 py-3 sm:py-4 px-2 sm:px-4 rounded-xl font-semibold transition-all duration-300 flex items-center justify-center gap-2 ${searchType === 'blacklist'
                             ? 'bg-gradient-to-r from-red-600 to-red-500 text-white shadow-lg shadow-red-500/30 scale-[1.02]'
                             : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
@@ -403,7 +430,7 @@ export default function SearchResults() {
                     </button>
                     <button
                         type="button"
-                        onClick={() => setSearchType('rental')}
+                        onClick={() => handleTabChange('rental')}
                         className={`flex-1 py-3 sm:py-4 px-2 sm:px-4 rounded-xl font-semibold transition-all duration-300 flex items-center justify-center gap-2 ${searchType === 'rental'
                             ? 'bg-gradient-to-r from-blue-500 to-indigo-500 text-white shadow-lg shadow-blue-500/30 scale-[1.02]'
                             : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
@@ -452,10 +479,11 @@ export default function SearchResults() {
                     <Button
                         type="button"
                         onClick={handleSearch}
+                        disabled={searchType === 'rental' && !searchQuery.trim() && !selectedProvince}
                         className={`w-full py-6 text-lg font-bold rounded-xl transition-all duration-300 ${searchType === 'blacklist'
                             ? 'bg-gradient-to-r from-red-600 to-red-500 hover:from-red-700 hover:to-red-600 shadow-lg shadow-red-500/30'
                             : 'bg-gradient-to-r from-blue-500 to-indigo-500 hover:from-blue-600 hover:to-indigo-600 shadow-lg shadow-blue-500/30'
-                            }`}
+                            } disabled:opacity-50 disabled:cursor-not-allowed`}
                     >
                         <Search className="w-5 h-5 mr-2" />
                         {isThai ? 'ค้นหา' : 'Search'}
@@ -762,8 +790,8 @@ export default function SearchResults() {
     // Shop List Item (Compact View)
     const ShopListItem = ({ result }: { result: SearchResult }) => (
         <div className={`group flex items-center gap-3 p-3 sm:p-4 rounded-xl border transition-all duration-200 hover:shadow-md ${result.isVerifiedPro
-                ? 'bg-gradient-to-r from-yellow-50/50 to-white border-yellow-200 hover:border-yellow-300'
-                : 'bg-white border-slate-200 hover:border-slate-300'
+            ? 'bg-gradient-to-r from-yellow-50/50 to-white border-yellow-200 hover:border-yellow-300'
+            : 'bg-white border-slate-200 hover:border-slate-300'
             }`}>
             {/* Badges (compact) */}
             <div className="flex flex-col gap-1 min-w-0 flex-1">
@@ -844,31 +872,61 @@ export default function SearchResults() {
 
     // Filters Component
     const FiltersSection = () => (
-        <div className="flex flex-wrap gap-3 mb-6">
-            {[
-                { key: 'payOnPickup', state: filterPayOnPickup, setter: setFilterPayOnPickup, icon: Banknote, label: isThai ? 'ชำระตอนรับรถ' : 'Pay on Pickup', color: 'emerald' },
-                { key: 'creditCard', state: filterCreditCard, setter: setFilterCreditCard, icon: CreditCard, label: isThai ? 'รับบัตรเครดิต' : 'Credit Card', color: 'violet' },
-                { key: 'taxInvoice', state: filterTaxInvoice, setter: setFilterTaxInvoice, icon: Receipt, label: isThai ? 'ออกใบกำกับภาษี' : 'Tax Invoice', color: 'blue' },
-                { key: 'withholdingTax', state: filterWithholdingTax, setter: setFilterWithholdingTax, icon: FileText, label: isThai ? 'หัก ณ ที่จ่าย' : 'Withholding Tax', color: 'purple' },
-            ].map(({ key, state, setter, icon: Icon, label, color }) => (
-                <label
-                    key={key}
-                    className={`flex items-center gap-2 px-4 py-2.5 rounded-xl border-2 cursor-pointer transition-all duration-200 ${state
-                        ? `bg-${color}-50 border-${color}-300 text-${color}-700 shadow-sm`
-                        : 'bg-white border-slate-200 hover:border-slate-300 text-slate-600'
-                        }`}
-                >
+        <div className="space-y-4 mb-6">
+            {/* Verified Pro Filter - Highlighted */}
+            <div className="flex">
+                <label className={`flex items-center gap-3 px-4 py-3 rounded-xl border-2 cursor-pointer transition-all duration-200 w-full sm:w-auto ${filterVerifiedPro
+                        ? 'bg-gradient-to-r from-yellow-50 to-orange-50 border-yellow-400 shadow-md'
+                        : 'bg-white border-slate-200 hover:border-yellow-200'
+                    }`}>
+                    <div className={`w-5 h-5 rounded border flex items-center justify-center transition-colors ${filterVerifiedPro ? 'bg-yellow-500 border-yellow-500' : 'border-slate-300 bg-white'
+                        }`}>
+                        {filterVerifiedPro && <Check className="w-3.5 h-3.5 text-white" />}
+                    </div>
                     <input
                         type="checkbox"
-                        checked={state}
-                        onChange={(e) => setter(e.target.checked)}
+                        checked={filterVerifiedPro}
+                        onChange={(e) => setFilterVerifiedPro(e.target.checked)}
                         className="sr-only"
                     />
-                    <Icon className="w-4 h-4" />
-                    <span className="text-sm font-medium">{label}</span>
-                    {state && <CheckCircle className="w-4 h-4" />}
+                    <div className="flex items-center gap-2">
+                        <div className="bg-gradient-to-r from-yellow-400 to-orange-400 text-white p-1 rounded-full">
+                            <Crown className="w-3 h-3" />
+                        </div>
+                        <span className={`font-bold ${filterVerifiedPro ? 'text-yellow-700' : 'text-slate-700'}`}>
+                            {isThai ? 'แสดงเฉพาะร้านรับรอง' : 'Verified Shops Only'}
+                        </span>
+                    </div>
                 </label>
-            ))}
+            </div>
+
+            {/* Other Service Filters */}
+            <div className="flex flex-wrap gap-2">
+                {[
+                    { key: 'payOnPickup', state: filterPayOnPickup, setter: setFilterPayOnPickup, icon: Banknote, label: isThai ? 'ชำระตอนรับรถ' : 'Pay on Pickup', color: 'emerald' },
+                    { key: 'creditCard', state: filterCreditCard, setter: setFilterCreditCard, icon: CreditCard, label: isThai ? 'รับบัตรเครดิต' : 'Credit Card', color: 'violet' },
+                    { key: 'taxInvoice', state: filterTaxInvoice, setter: setFilterTaxInvoice, icon: Receipt, label: isThai ? 'ออกใบกำกับภาษี' : 'Tax Invoice', color: 'blue' },
+                    { key: 'withholdingTax', state: filterWithholdingTax, setter: setFilterWithholdingTax, icon: FileText, label: isThai ? 'หัก ณ ที่จ่าย' : 'Withholding Tax', color: 'purple' },
+                ].map(({ key, state, setter, icon: Icon, label, color }) => (
+                    <label
+                        key={key}
+                        className={`flex items-center gap-2 px-3 py-2 rounded-lg border cursor-pointer transition-all duration-200 text-sm ${state
+                            ? `bg-${color}-50 border-${color}-200 text-${color}-700 shadow-sm`
+                            : 'bg-white border-slate-200 hover:border-slate-300 text-slate-600'
+                            }`}
+                    >
+                        <input
+                            type="checkbox"
+                            checked={state}
+                            onChange={(e) => setter(e.target.checked)}
+                            className="sr-only"
+                        />
+                        <Icon className="w-3.5 h-3.5" />
+                        <span className="font-medium">{label}</span>
+                        {state && <CheckCircle className="w-3.5 h-3.5" />}
+                    </label>
+                ))}
+            </div>
         </div>
     );
 
