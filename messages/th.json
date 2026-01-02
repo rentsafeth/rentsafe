@@ -147,7 +147,7 @@
     },
     "LoginPage": {
         "title": "RentSafe",
-        "subtitle": "ระบบตรวจสอบร้านค้าที่น่าเชื่อถือ",
+        "subtitle": "ระบบตรวจสอบร้านรถเช่า",
         "heading": "เข้าสู่ระบบ",
         "description": "เข้าสู่ระบบเพื่อใช้งาน RentSafe",
         "loginWithGoogle": "เข้าสู่ระบบด้วย Google",
