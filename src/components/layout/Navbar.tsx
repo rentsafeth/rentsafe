@@ -24,26 +24,26 @@ export default function Navbar() {
         const supabase = createClient()
         let isMounted = true
 
-        const getUser = async () => {
+        // Fail-safe: Force stop loading after 5 seconds if auth check hangs
+        const timeoutId = setTimeout(() => {
+            if (isMounted) {
+                setIsLoading(false)
+            }
+        }, 5000)
+
+        const fetchProfile = async (userId: string) => {
             try {
-                const { data: { session } } = await supabase.auth.getSession()
-                if (!isMounted) return
+                const { data: profile } = await supabase
+                    .from('profiles')
+                    .select('role')
+                    .eq('id', userId)
+                    .maybeSingle()
 
-                setUser(session?.user ?? null)
-
-                if (session?.user) {
-                    const { data: profile } = await supabase
-                        .from('profiles')
-                        .select('role')
-                        .eq('id', session.user.id)
-                        .maybeSingle()
-
-                    if (isMounted) {
-                        setRole(profile?.role ?? null)
-                    }
+                if (isMounted) {
+                    setRole(profile?.role ?? null)
                 }
-            } catch (error) {
-                console.error('Auth error:', error)
+            } catch (err) {
+                console.error('Error fetching profile:', err)
             } finally {
                 if (isMounted) {
                     setIsLoading(false)
@@ -51,7 +51,24 @@ export default function Navbar() {
             }
         }
 
-        getUser()
+        const checkUser = async () => {
+            try {
+                const { data: { session } } = await supabase.auth.getSession()
+                if (!isMounted) return
+
+                setUser(session?.user ?? null)
+                if (session?.user) {
+                    await fetchProfile(session.user.id)
+                } else {
+                    setIsLoading(false)
+                }
+            } catch (error) {
+                console.error('Auth error:', error)
+                if (isMounted) setIsLoading(false)
+            }
+        }
+
+        checkUser()
 
         // Listen for auth changes
         const { data: { subscription } } = supabase.auth.onAuthStateChange(async (_event, session) => {
@@ -59,23 +76,16 @@ export default function Navbar() {
 
             setUser(session?.user ?? null)
             if (session?.user) {
-                const { data: profile } = await supabase
-                    .from('profiles')
-                    .select('role')
-                    .eq('id', session.user.id)
-                    .maybeSingle()
-
-                if (isMounted) {
-                    setRole(profile?.role ?? null)
-                }
+                await fetchProfile(session.user.id)
             } else {
                 setRole(null)
+                setIsLoading(false)
             }
-            setIsLoading(false)
         })
 
         return () => {
             isMounted = false
+            clearTimeout(timeoutId)
             subscription.unsubscribe()
         }
     }, [])
