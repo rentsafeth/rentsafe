@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { createClient } from '@/lib/supabase/client';
 import { useRouter } from 'next/navigation';
 import { useLocale } from 'next-intl';
@@ -139,113 +139,119 @@ export default function AdsPage() {
         setToastModal({ open: true, type, title, message });
     };
 
+    const isMounted = useRef(true);
+
     useEffect(() => {
-        let isMounted = true;
-
-        const loadData = async () => {
-            try {
-                const { data: { user } } = await supabase.auth.getUser();
-                if (!user || !isMounted) {
-                    if (!user) router.push('/login');
-                    return;
-                }
-
-                const { data: shopData, error: shopError } = await supabase
-                    .from('shops')
-                    .select('*')
-                    .eq('owner_id', user.id)
-                    .maybeSingle();
-
-                if (shopError || !shopData) {
-                    if (isMounted) router.push('/dashboard');
-                    return;
-                }
-
-                if (isMounted) setShop(shopData);
-
-                // Load Ad Settings
-                const { data: settings } = await supabase
-                    .from('shop_ad_settings')
-                    .select('*')
-                    .eq('shop_id', shopData.id)
-                    .maybeSingle();
-
-                if (settings && isMounted) {
-                    setAdSettings(settings);
-                }
-
-                // Load System Settings
-                const { data: sysSettings } = await supabase
-                    .from('system_settings')
-                    .select('*')
-                    .in('key', ['daily_boost_price', 'min_ppc_bid', 'max_ppc_bid', 'min_featured_bid']);
-
-                if (isMounted) {
-                    const settingsMap: Record<string, any> = {};
-                    sysSettings?.forEach(s => {
-                        settingsMap[s.key] = typeof s.value === 'string' ?
-                            (s.value.startsWith('"') ? s.value.replace(/"/g, '') : s.value) : s.value;
-                    });
-                    setSystemSettings(settingsMap);
-                }
-
-                // Load Today's Stats
-                const today = new Date().toISOString().split('T')[0];
-                const { data: dailyStats } = await supabase
-                    .from('ad_stats_daily')
-                    .select('*')
-                    .eq('shop_id', shopData.id)
-                    .eq('stat_date', today)
-                    .maybeSingle();
-
-                if (dailyStats && isMounted) {
-                    setTodayStats({
-                        impressions: dailyStats.impressions || 0,
-                        clicks: dailyStats.clicks || 0,
-                        credits_spent: dailyStats.credits_spent || 0,
-                        ctr: dailyStats.impressions > 0
-                            ? ((dailyStats.clicks / dailyStats.impressions) * 100)
-                            : 0,
-                    });
-                }
-
-                // Load Weekly Stats
-                const weekAgo = new Date();
-                weekAgo.setDate(weekAgo.getDate() - 7);
-                const { data: weekly } = await supabase
-                    .from('ad_stats_daily')
-                    .select('*')
-                    .eq('shop_id', shopData.id)
-                    .gte('stat_date', weekAgo.toISOString().split('T')[0])
-                    .order('stat_date', { ascending: true });
-
-                if (isMounted) setWeeklyStats(weekly || []);
-
-                // Load all schedules
-                const { data: schedules } = await supabase
-                    .from('ad_schedules')
-                    .select('*')
-                    .eq('shop_id', shopData.id)
-                    .neq('status', 'cancelled')
-                    .order('start_date', { ascending: true });
-
-                if (schedules && isMounted) {
-                    setBoostSchedules(schedules.filter(s => s.type === 'boost'));
-                    setPpcSchedules(schedules.filter(s => s.type === 'ppc'));
-                }
-
-            } catch (error) {
-                console.error('Error loading data:', error);
-            } finally {
-                if (isMounted) {
-                    setLoading(false);
-                }
-            }
+        isMounted.current = true;
+        return () => {
+            isMounted.current = false;
         };
-
-        loadData();
-        return () => { isMounted = false; };
     }, []);
+
+    const loadData = useCallback(async () => {
+        try {
+            const { data: { user } } = await supabase.auth.getUser();
+            if (!user || !isMounted.current) {
+                if (!user) router.push('/login');
+                return;
+            }
+
+            const { data: shopData, error: shopError } = await supabase
+                .from('shops')
+                .select('*')
+                .eq('owner_id', user.id)
+                .maybeSingle();
+
+            if (shopError || !shopData) {
+                if (isMounted.current) router.push('/dashboard');
+                return;
+            }
+
+            if (isMounted.current) setShop(shopData);
+
+            // Load Ad Settings
+            const { data: settings } = await supabase
+                .from('shop_ad_settings')
+                .select('*')
+                .eq('shop_id', shopData.id)
+                .maybeSingle();
+
+            if (settings && isMounted.current) {
+                setAdSettings(settings);
+            }
+
+            // Load System Settings
+            const { data: sysSettings } = await supabase
+                .from('system_settings')
+                .select('*')
+                .in('key', ['daily_boost_price', 'min_ppc_bid', 'max_ppc_bid', 'min_featured_bid']);
+
+            if (isMounted.current) {
+                const settingsMap: Record<string, any> = {};
+                sysSettings?.forEach(s => {
+                    settingsMap[s.key] = typeof s.value === 'string' ?
+                        (s.value.startsWith('"') ? s.value.replace(/"/g, '') : s.value) : s.value;
+                });
+                setSystemSettings(settingsMap);
+            }
+
+            // Load Today's Stats
+            const today = new Date().toISOString().split('T')[0];
+            const { data: dailyStats } = await supabase
+                .from('ad_stats_daily')
+                .select('*')
+                .eq('shop_id', shopData.id)
+                .eq('stat_date', today)
+                .maybeSingle();
+
+            if (dailyStats && isMounted.current) {
+                setTodayStats({
+                    impressions: dailyStats.impressions || 0,
+                    clicks: dailyStats.clicks || 0,
+                    credits_spent: dailyStats.credits_spent || 0,
+                    ctr: dailyStats.impressions > 0
+                        ? ((dailyStats.clicks / dailyStats.impressions) * 100)
+                        : 0,
+                });
+            }
+
+            // Load Weekly Stats
+            const weekAgo = new Date();
+            weekAgo.setDate(weekAgo.getDate() - 7);
+            const { data: weekly } = await supabase
+                .from('ad_stats_daily')
+                .select('*')
+                .eq('shop_id', shopData.id)
+                .gte('stat_date', weekAgo.toISOString().split('T')[0])
+                .order('stat_date', { ascending: true });
+
+            if (isMounted.current) setWeeklyStats(weekly || []);
+
+            // Load all schedules
+            const { data: schedules } = await supabase
+                .from('ad_schedules')
+                .select('*')
+                .eq('shop_id', shopData.id)
+                .neq('status', 'cancelled')
+                .order('start_date', { ascending: true });
+
+            if (schedules && isMounted.current) {
+                setBoostSchedules(schedules.filter(s => s.type === 'boost'));
+                setPpcSchedules(schedules.filter(s => s.type === 'ppc'));
+            }
+
+        } catch (error) {
+            console.error('Error loading data:', error);
+        } finally {
+            if (isMounted.current) {
+                setLoading(false);
+            }
+        }
+    }, [supabase, router]);
+
+    useEffect(() => {
+        loadData();
+    }, [loadData]);
 
     const savePPCSettings = async () => {
         if (!shop) return;
