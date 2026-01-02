@@ -25,11 +25,26 @@ export default async function AdminReportsPage() {
     async function updateStatus(reportId: string, status: 'approved' | 'rejected') {
         'use server';
         const supabase = createAdminClient();
-        const { error } = await supabase.from('reports').update({ status: status }).eq('id', reportId);
 
-        if (error) {
-            console.error('Update report status error:', error);
-            throw error;
+        if (status === 'approved') {
+            // Use RPC to approve and give karma (+10)
+            const { error } = await supabase.rpc('approve_report_and_give_karma', {
+                p_report_id: reportId
+            });
+
+            if (error) {
+                console.error('Approve report error:', error);
+                // Fallback to normal update if RPC fails (e.g. function not created yet)
+                const { error: fallbackError } = await supabase.from('reports').update({ status: status }).eq('id', reportId);
+                if (fallbackError) throw fallbackError;
+            }
+        } else {
+            // Normal update for rejection
+            const { error } = await supabase.from('reports').update({ status: status }).eq('id', reportId);
+            if (error) {
+                console.error('Update report status error:', error);
+                throw error;
+            }
         }
 
         revalidatePath('/th/admin/reports');

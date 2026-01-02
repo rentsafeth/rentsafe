@@ -5,7 +5,7 @@ import Image from 'next/image';
 import {
     Building2, Edit, ExternalLink, Clock, CheckCircle, XCircle,
     Star, AlertTriangle, Eye, Calendar, Phone, MessageCircle,
-    Globe, MapPin, Coins, Megaphone, Crown, Shield
+    Globe, MapPin, Coins, Megaphone, Crown, Shield, Heart
 } from 'lucide-react';
 import ShareShopButton from '@/components/features/shop/ShareShopButton';
 import { Button } from '@/components/ui/button';
@@ -44,6 +44,13 @@ export default async function DashboardPage() {
         .from('reports')
         .select('*', { count: 'exact', head: true })
         .eq('reporter_id', user.id);
+
+    // Get user profile for karma credits
+    const { data: profile } = await supabase
+        .from('profiles')
+        .select('karma_credits')
+        .eq('id', user.id)
+        .single();
 
     // Get shop statistics if shop exists
     let reviewsCount = 0;
@@ -141,7 +148,7 @@ export default async function DashboardPage() {
                     <h1 className="text-2xl font-bold text-gray-900 mb-2">Dashboard</h1>
                     <p className="text-gray-600">ยินดีต้อนรับ, {user.email}</p>
 
-                    <div className="mt-8 grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <div className="mt-8 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
                         <Link href="/dashboard/saved-shops" className="bg-blue-50 rounded-xl p-6 hover:bg-blue-100 transition-colors cursor-pointer">
                             <h3 className="font-semibold text-blue-900">ร้านที่บันทึก</h3>
                             <p className="text-3xl font-bold text-blue-600 mt-2">{savedShopsCount || 0}</p>
@@ -153,6 +160,14 @@ export default async function DashboardPage() {
                         <Link href="/dashboard/my-reports" className="bg-red-50 rounded-xl p-6 hover:bg-red-100 transition-colors cursor-pointer">
                             <h3 className="font-semibold text-red-900">รายงานที่ส่ง</h3>
                             <p className="text-3xl font-bold text-red-600 mt-2">{userReportsCount || 0}</p>
+                        </Link>
+                        <Link href="/dashboard/karma" className="bg-purple-50 rounded-xl p-6 hover:bg-purple-100 transition-colors cursor-pointer relative overflow-hidden">
+                            <div className="relative z-10">
+                                <h3 className="font-semibold text-purple-900">เครดิตปลอบใจ</h3>
+                                <p className="text-3xl font-bold text-purple-600 mt-2">{(profile?.karma_credits || 0)}</p>
+                                <p className="text-xs text-purple-500 mt-1">ติดตามสิทธิพิเศษเร็วๆนี้!</p>
+                            </div>
+                            <Heart className="absolute -bottom-4 -right-4 w-24 h-24 text-purple-100 z-0" />
                         </Link>
                     </div>
                 </div>

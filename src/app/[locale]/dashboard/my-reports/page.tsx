@@ -6,10 +6,13 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import {
     AlertTriangle, Clock, CheckCircle, XCircle,
-    ArrowLeft, Eye, Calendar, DollarSign, Loader2
+    ArrowLeft, Eye, Calendar, DollarSign, Loader2, Trash2, Heart
 } from 'lucide-react';
 import Link from 'next/link';
 import Image from 'next/image';
+import { toast } from 'sonner';
+import { Textarea } from '@/components/ui/textarea';
+import { Label } from '@/components/ui/label';
 
 interface Report {
     id: string;
@@ -22,6 +25,7 @@ interface Report {
     amount_lost: number | null;
     status: 'pending' | 'approved' | 'rejected';
     created_at: string;
+    heart_count: number;
     blacklist_entry?: {
         id: string;
         shop_names: string[];
@@ -34,6 +38,12 @@ export default function MyReportsPage() {
     const [reports, setReports] = useState<Report[]>([]);
     const [loading, setLoading] = useState(true);
     const [filter, setFilter] = useState<string | null>(null);
+
+    // Delete Request State
+    const [deleteModalOpen, setDeleteModalOpen] = useState(false);
+    const [selectedReport, setSelectedReport] = useState<Report | null>(null);
+    const [deleteReason, setDeleteReason] = useState('');
+    const [submittingDelete, setSubmittingDelete] = useState(false);
 
     const fetchReports = useCallback(async () => {
         setLoading(true);
@@ -56,6 +66,40 @@ export default function MyReportsPage() {
     useEffect(() => {
         fetchReports();
     }, [fetchReports]);
+
+    const handleRequestDelete = async () => {
+        if (!selectedReport || !deleteReason.trim()) return;
+        setSubmittingDelete(true);
+        try {
+            const res = await fetch('/api/reports/delete-request', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    report_id: selectedReport.id,
+                    reason: deleteReason
+                })
+            });
+            const data = await res.json();
+            if (data.success) {
+                toast.success('ส่งคำขอลบเรียบร้อย รอแอดมินตรวจสอบ');
+                setDeleteModalOpen(false);
+                setDeleteReason('');
+                setSelectedReport(null);
+            } else {
+                toast.error(data.error || 'เกิดข้อผิดพลาด');
+            }
+        } catch (e) {
+            toast.error('เกิดข้อผิดพลาดในการส่งคำขอ');
+        } finally {
+            setSubmittingDelete(false);
+        }
+    };
+
+    const openDeleteModal = (report: Report) => {
+        setSelectedReport(report);
+        setDeleteReason('');
+        setDeleteModalOpen(true);
+    };
 
     const formatDate = (dateStr: string) => {
         return new Date(dateStr).toLocaleDateString('th-TH', {
@@ -248,15 +292,26 @@ export default function MyReportsPage() {
                                         </div>
                                     )}
 
-                                    {/* View Blacklist Entry Link (for approved reports) */}
-                                    {report.status === 'approved' && report.blacklist_entry && (
-                                        <div className="mt-4 pt-4 border-t border-gray-200">
-                                            <Link href={`/blacklist/${report.blacklist_entry.id}`}>
-                                                <Button variant="outline" size="sm" className="text-blue-600 border-blue-200 hover:bg-blue-50">
-                                                    <Eye className="w-4 h-4 mr-2" />
-                                                    ดูใน Blacklist ({report.blacklist_entry.total_reports} รายงาน)
-                                                </Button>
-                                            </Link>
+                                    {/* View Blacklist Entry Link & Delete Request (for approved reports) */}
+                                    {report.status === 'approved' && (
+                                        <div className="mt-4 pt-4 border-t border-gray-200 flex gap-2">
+                                            {report.blacklist_entry && (
+                                                <Link href={`/blacklist/${report.blacklist_entry.id}`} className="flex-1">
+                                                    <Button variant="outline" size="sm" className="w-full text-blue-600 border-blue-200 hover:bg-blue-50">
+                                                        <Eye className="w-4 h-4 mr-2" />
+                                                        ดูใน Blacklist
+                                                    </Button>
+                                                </Link>
+                                            )}
+                                            <Button
+                                                variant="ghost"
+                                                size="sm"
+                                                className="text-gray-400 hover:text-red-600 hover:bg-red-50"
+                                                onClick={() => openDeleteModal(report)}
+                                            >
+                                                <Trash2 className="w-4 h-4 mr-1" />
+                                                ขอลบ
+                                            </Button>
                                         </div>
                                     )}
                                 </CardContent>
@@ -265,6 +320,71 @@ export default function MyReportsPage() {
                     </div>
                 )}
             </div>
+
+            {/* Delete Request Modal */}
+            {deleteModalOpen && selectedReport && (
+                <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4 animate-in fade-in duration-200">
+                    <div className="bg-white rounded-xl shadow-xl max-w-md w-full overflow-hidden animate-in zoom-in-95 duration-200">
+                        <div className="p-6">
+                            <div className="flex items-center gap-3 mb-4 text-red-600">
+                                <div className="w-10 h-10 bg-red-100 rounded-full flex items-center justify-center">
+                                    <Trash2 className="w-5 h-5" />
+                                </div>
+                                <h3 className="text-lg font-bold">แจ้งลบรายงาน</h3>
+                            </div>
+
+                            <div className="bg-orange-50 border border-orange-200 rounded-lg p-4 mb-6">
+                                <div className="flex items-start gap-3">
+                                    <AlertTriangle className="w-5 h-5 text-orange-600 mt-0.5" />
+                                    <div>
+                                        <p className="font-semibold text-orange-800">คำเตือน: เครดิตจะถูกลบ</p>
+                                        <p className="text-sm text-orange-700 mt-1">
+                                            หากลบรายงานนี้ เครดิตปลอบใจที่คุณได้รับจากรายงานนี้จำนวน <span className="font-bold">{selectedReport.heart_count || 0} เครดิต</span> จะถูกหักออกจากบัญชีของคุณ
+                                        </p>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div className="space-y-4">
+                                <div className="space-y-2">
+                                    <Label htmlFor="reason">เหตุผลที่ต้องการลบ <span className="text-red-500">*</span></Label>
+                                    <Textarea
+                                        id="reason"
+                                        placeholder="เช่น ได้รับเงินคืนแล้ว, เข้าใจผิด, ฯลฯ"
+                                        value={deleteReason}
+                                        onChange={(e) => setDeleteReason(e.target.value)}
+                                        className="min-h-[100px]"
+                                    />
+                                </div>
+                            </div>
+
+                            <div className="flex justify-end gap-3 mt-8">
+                                <Button
+                                    variant="outline"
+                                    onClick={() => setDeleteModalOpen(false)}
+                                    disabled={submittingDelete}
+                                >
+                                    ยกเลิก
+                                </Button>
+                                <Button
+                                    className="bg-red-600 hover:bg-red-700"
+                                    onClick={handleRequestDelete}
+                                    disabled={!deleteReason.trim() || submittingDelete}
+                                >
+                                    {submittingDelete ? (
+                                        <>
+                                            <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                                            กำลังส่ง...
+                                        </>
+                                    ) : (
+                                        'ยืนยันส่งคำขอ'
+                                    )}
+                                </Button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            )}
         </div>
     );
 }
