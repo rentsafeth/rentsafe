@@ -255,17 +255,17 @@ export default function Navbar() {
                                     {t('logout')}
                                 </button>
                             </div>
-                        ) : timedOut ? (
-                            /* Show reset button when auth check timed out */
-                            <button
-                                onClick={handleLogout}
-                                className="flex items-center gap-2 px-4 py-2 text-orange-600 hover:text-red-600 hover:bg-red-50 rounded-lg font-medium transition-colors"
-                            >
-                                <LogOut className="w-4 h-4" />
-                                ล้างเซสชัน
-                            </button>
                         ) : (
                             <div className="flex items-center gap-2">
+                                {timedOut && (
+                                    <button
+                                        onClick={handleLogout}
+                                        className="text-xs text-gray-400 hover:text-red-500 underline"
+                                        title="ล้างข้อมูล Session ที่ค้างอยู่"
+                                    >
+                                        ล้าง
+                                    </button>
+                                )}
                                 <Link
                                     href="/login"
                                     className="flex items-center gap-2 px-4 py-2.5 text-gray-700 hover:text-blue-600 hover:bg-blue-50 font-medium rounded-xl transition-colors"
