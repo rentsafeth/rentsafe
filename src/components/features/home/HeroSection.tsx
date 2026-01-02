@@ -117,6 +117,8 @@ export default function HeroSection({ stats }: HeroSectionProps) {
                                 <div className="absolute inset-0 rounded-xl opacity-0 group-focus-within:opacity-100 transition-opacity duration-300 -z-10 blur-xl bg-red-500/20"></div>
                                 <Search className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-gray-400 group-focus-within:text-gray-600 transition-colors" />
                                 <input
+                                    id="blacklist-search"
+                                    name="blacklist-search"
                                     type="text"
                                     inputMode="text"
                                     autoComplete="off"
@@ -145,6 +147,8 @@ export default function HeroSection({ stats }: HeroSectionProps) {
                                 <div className="absolute inset-0 rounded-xl opacity-0 group-focus-within:opacity-100 transition-opacity duration-300 -z-10 blur-xl bg-blue-500/20"></div>
                                 <Search className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-gray-400 group-focus-within:text-gray-600 transition-colors" />
                                 <input
+                                    id="rental-search"
+                                    name="rental-search"
                                     type="text"
                                     inputMode="text"
                                     autoComplete="off"
@@ -161,6 +165,8 @@ export default function HeroSection({ stats }: HeroSectionProps) {
                             </div>
                             {/* Province dropdown */}
                             <select
+                                id="home-province-select"
+                                name="home-province-select"
                                 value={selectedProvince}
                                 onChange={(e) => setSelectedProvince(e.target.value)}
                                 className="w-full px-4 py-4 text-base md:text-lg border-2 border-slate-200 rounded-xl focus:outline-none focus:border-blue-400 transition-all appearance-none bg-white cursor-pointer"

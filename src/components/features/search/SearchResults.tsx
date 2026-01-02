@@ -449,6 +449,8 @@ export default function SearchResults() {
                             }`}></div>
                         <Search className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-slate-400 group-focus-within:text-slate-600 transition-colors" />
                         <input
+                            id="search-query"
+                            name="search-query"
                             type="text"
                             inputMode="text"
                             autoComplete="off"
@@ -465,6 +467,8 @@ export default function SearchResults() {
                     {/* Province Dropdown - Only for rental */}
                     {searchType === 'rental' && (
                         <select
+                            id="province-select"
+                            name="province-select"
                             value={selectedProvince}
                             onChange={(e) => setSelectedProvince(e.target.value)}
                             className="w-full px-4 py-4 border-2 border-slate-200 rounded-xl focus:outline-none focus:border-blue-400 transition-all appearance-none bg-white cursor-pointer text-lg"

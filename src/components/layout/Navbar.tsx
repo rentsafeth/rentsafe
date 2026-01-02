@@ -24,48 +24,78 @@ export default function Navbar() {
         const supabase = createClient()
         let isMounted = true
 
-        // Fail-safe: Force stop loading after 5 seconds if auth check hangs
+        // Fail-safe: Force stop loading after 3 seconds
         const timeoutId = setTimeout(() => {
-            if (isMounted) {
+            if (isMounted && isLoading) {
+                console.log('Navbar: Force stopping loading due to timeout')
                 setIsLoading(false)
             }
-        }, 5000)
+        }, 3000)
 
-        const fetchProfile = async (userId: string) => {
+        const getRoleFromUser = (user: any): string | null => {
+            // Try to get role from app_metadata first (set by admin)
+            if (user?.app_metadata?.role) {
+                return user.app_metadata.role
+            }
+            // Then try user_metadata
+            if (user?.user_metadata?.role) {
+                return user.user_metadata.role
+            }
+            return null
+        }
+
+        const fetchProfileRole = async (userId: string): Promise<string | null> => {
             try {
-                const { data: profile } = await supabase
+                const { data: profile, error } = await supabase
                     .from('profiles')
                     .select('role')
                     .eq('id', userId)
                     .maybeSingle()
 
-                if (isMounted) {
-                    console.log('Fetched role:', profile?.role)
-                    setRole(profile?.role ?? null)
+                if (error) {
+                    console.error('Error fetching profile role:', error)
+                    return null
                 }
+                return profile?.role ?? null
             } catch (err) {
                 console.error('Error fetching profile:', err)
-            } finally {
-                if (isMounted) {
-                    setIsLoading(false)
-                }
+                return null
             }
         }
 
         const checkUser = async () => {
             try {
-                const { data: { session } } = await supabase.auth.getSession()
+                const { data: { session }, error } = await supabase.auth.getSession()
+                if (error) {
+                    console.error('Session error:', error)
+                }
                 if (!isMounted) return
 
-                setUser(session?.user ?? null)
-                if (session?.user) {
-                    await fetchProfile(session.user.id)
-                } else {
-                    setIsLoading(false)
+                const currentUser = session?.user ?? null
+                setUser(currentUser)
+
+                if (currentUser) {
+                    // First try to get role from user metadata (faster, no RLS issues)
+                    let userRole = getRoleFromUser(currentUser)
+                    console.log('Role from metadata:', userRole)
+
+                    // If no role in metadata, try fetching from profiles table
+                    if (!userRole) {
+                        userRole = await fetchProfileRole(currentUser.id)
+                        console.log('Role from profiles table:', userRole)
+                    }
+
+                    if (isMounted) {
+                        setRole(userRole)
+                        console.log('Final role set to:', userRole)
+                    }
                 }
             } catch (error) {
                 console.error('Auth error:', error)
-                if (isMounted) setIsLoading(false)
+            } finally {
+                if (isMounted) {
+                    setIsLoading(false)
+                }
             }
         }
 
@@ -75,13 +105,21 @@ export default function Navbar() {
         const { data: { subscription } } = supabase.auth.onAuthStateChange(async (_event, session) => {
             if (!isMounted) return
 
-            setUser(session?.user ?? null)
-            if (session?.user) {
-                await fetchProfile(session.user.id)
+            const currentUser = session?.user ?? null
+            setUser(currentUser)
+
+            if (currentUser) {
+                let userRole = getRoleFromUser(currentUser)
+                if (!userRole) {
+                    userRole = await fetchProfileRole(currentUser.id)
+                }
+                if (isMounted) {
+                    setRole(userRole)
+                }
             } else {
                 setRole(null)
-                setIsLoading(false)
             }
+            setIsLoading(false)
         })
 
         return () => {
@@ -92,23 +130,19 @@ export default function Navbar() {
     }, [])
 
     const switchLocale = (newLocale: string) => {
-        // Get current path without locale prefix
         const pathWithoutLocale = pathname.replace(/^\/(th|en)/, '') || '/'
-        // Navigate to new locale path
         window.location.href = `/${newLocale}${pathWithoutLocale}`
     }
 
     const handleLogout = async () => {
+        const supabase = createClient()
         try {
-            const supabase = createClient()
             await supabase.auth.signOut()
-            // Hard redirect to ensure all state is cleared
-            window.location.href = '/'
         } catch (error) {
             console.error('Logout error:', error)
-            // Force redirect anyway
-            window.location.href = '/'
         }
+        // Always do hard redirect after logout
+        window.location.href = '/'
     }
 
     const navLinks = [
