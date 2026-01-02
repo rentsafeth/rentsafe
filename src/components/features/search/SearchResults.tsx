@@ -345,7 +345,7 @@ export default function SearchResults() {
         setSearchQuery(queryFromUrl);
         setSelectedProvince(provinceFromUrl);
 
-        if (queryFromUrl || provinceFromUrl || typeFromUrl === 'rental') {
+        if (queryFromUrl || provinceFromUrl) {
             fetchResults(typeFromUrl, queryFromUrl, provinceFromUrl);
         } else {
             setLoading(false);
