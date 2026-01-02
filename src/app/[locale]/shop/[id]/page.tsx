@@ -70,8 +70,9 @@ export async function generateMetadata({ params }: { params: Promise<{ id: strin
 }
 
 export default async function ShopProfilePage({ params }: { params: Promise<{ id: string; locale: string }> }) {
-    const { id } = await params;
+    const { id, locale } = await params;
     const supabase = await createClient();
+    const isThai = locale === 'th';
 
     const { data: shop, error } = await supabase
         .from('shops')
@@ -235,17 +236,17 @@ export default async function ShopProfilePage({ params }: { params: Promise<{ id
                                         {isVerifiedPro ? (
                                             <Badge className="bg-gradient-to-r from-yellow-400 to-orange-400 text-white hover:from-yellow-500 hover:to-orange-500 px-3 py-1 border-0 shadow-sm">
                                                 <Crown className="w-4 h-4 mr-1 fill-white" />
-                                                ร้านรับรอง
+                                                {isThai ? 'ร้านรับรอง' : 'Verified Shop'}
                                             </Badge>
                                         ) : shop.verification_status === 'verified' ? (
                                             <Badge className="bg-green-100 text-green-700 hover:bg-green-100 border-green-200 px-3 py-1">
                                                 <ShieldCheck className="w-4 h-4 mr-1" />
-                                                ร้านค้ายืนยันตัวตนแล้ว
+                                                {isThai ? 'ร้านค้ายืนยันตัวตนแล้ว' : 'Verified Identity'}
                                             </Badge>
                                         ) : shop.verification_status === 'pending' ? (
                                             <Badge variant="outline" className="text-yellow-600 border-yellow-200 bg-yellow-50">
                                                 <Clock className="w-4 h-4 mr-1" />
-                                                รอการตรวจสอบ
+                                                {isThai ? 'รอการตรวจสอบ' : 'Pending Verification'}
                                             </Badge>
                                         ) : null}
                                     </div>
@@ -269,15 +270,17 @@ export default async function ShopProfilePage({ params }: { params: Promise<{ id
                                     <div className="flex flex-wrap gap-4 text-sm">
                                         <div className="flex items-center gap-1.5 text-slate-500">
                                             <Calendar className="w-4 h-4" />
-                                            <span>ลงทะเบียนเมื่อ {registrationDate}</span>
+                                            <span>{isThai ? 'ลงทะเบียนเมื่อ' : 'Joined'} {registrationDate}</span>
                                             <Badge variant="secondary" className="ml-1 text-xs">
-                                                {daysSinceRegistration} วัน
+                                                {daysSinceRegistration} {isThai ? 'วัน' : 'days'}
                                             </Badge>
                                         </div>
                                         {shop.business_type && (
                                             <div className="flex items-center gap-1.5 text-slate-500">
                                                 <Building2 className="w-4 h-4" />
-                                                <span>{shop.business_type === 'company' ? 'นิติบุคคล' : 'บุคคลธรรมดา'}</span>
+                                                <span>{shop.business_type === 'company'
+                                                    ? (isThai ? 'นิติบุคคล' : 'Company')
+                                                    : (isThai ? 'บุคคลธรรมดา' : 'Individual')}</span>
                                             </div>
                                         )}
                                         <ShopServiceBadges
@@ -300,7 +303,7 @@ export default async function ShopProfilePage({ params }: { params: Promise<{ id
                                     <Link href={`/report?shop_id=${shop.id}`}>
                                         <Button variant="outline" className="text-red-600 border-red-200 hover:bg-red-50">
                                             <AlertTriangle className="w-4 h-4 mr-2" />
-                                            รายงาน
+                                            {isThai ? 'รายงาน' : 'Report'}
                                         </Button>
                                     </Link>
                                 </div>
@@ -318,7 +321,7 @@ export default async function ShopProfilePage({ params }: { params: Promise<{ id
                                     </div>
                                     <div>
                                         <p className="text-2xl font-bold text-blue-600">{daysSinceRegistration}</p>
-                                        <p className="text-xs text-slate-500">วันที่ลงทะเบียน</p>
+                                        <p className="text-xs text-slate-500">{isThai ? 'วันที่ลงทะเบียน' : 'Days Active'}</p>
                                     </div>
                                 </div>
                             </CardContent>
@@ -334,7 +337,7 @@ export default async function ShopProfilePage({ params }: { params: Promise<{ id
                                         <p className="text-2xl font-bold text-yellow-600">
                                             {avgRating > 0 ? avgRating.toFixed(1) : '-'}
                                         </p>
-                                        <p className="text-xs text-slate-500">คะแนนรีวิว ({reviewsCount})</p>
+                                        <p className="text-xs text-slate-500">{isThai ? 'คะแนนรีวิว' : 'Rating'} ({reviewsCount})</p>
                                     </div>
                                 </div>
                             </CardContent>
@@ -349,8 +352,8 @@ export default async function ShopProfilePage({ params }: { params: Promise<{ id
                                             <Shield className="w-5 h-5 text-white" />
                                         </div>
                                         <div>
-                                            <p className="text-lg font-bold text-emerald-700 leading-tight">คุ้มครองเงินมัดจำ</p>
-                                            <p className="text-xs text-emerald-600 font-medium">โดย RentSafe Guarantee</p>
+                                            <p className="text-lg font-bold text-emerald-700 leading-tight">{isThai ? 'คุ้มครองเงินมัดจำ' : 'Deposit Guarantee'}</p>
+                                            <p className="text-xs text-emerald-600 font-medium">{isThai ? 'โดย RentSafe Guarantee' : 'by RentSafe Guarantee'}</p>
                                         </div>
                                     </div>
                                 </CardContent>
@@ -396,7 +399,7 @@ export default async function ShopProfilePage({ params }: { params: Promise<{ id
                                 <CardHeader className="pb-3">
                                     <CardTitle className="text-lg flex items-center gap-2">
                                         <Phone className="w-5 h-5 text-blue-600" />
-                                        ข้อมูลการติดต่อ
+                                        {isThai ? 'ข้อมูลการติดต่อ' : 'Contact Information'}
                                     </CardTitle>
                                 </CardHeader>
                                 <CardContent className="space-y-4">
@@ -410,7 +413,7 @@ export default async function ShopProfilePage({ params }: { params: Promise<{ id
                                                 <Phone className="w-4 h-4 text-blue-600" />
                                             </div>
                                             <div>
-                                                <p className="text-sm text-slate-500">โทรศัพท์</p>
+                                                <p className="text-sm text-slate-500">{isThai ? 'โทรศัพท์' : 'Phone'}</p>
                                                 <p className="font-medium text-slate-900">{shop.phone_number}</p>
                                             </div>
                                         </a>
@@ -452,7 +455,7 @@ export default async function ShopProfilePage({ params }: { params: Promise<{ id
                                                 <Globe className="w-4 h-4 text-purple-600" />
                                             </div>
                                             <div className="flex-1 min-w-0">
-                                                <p className="text-sm text-slate-500">เว็บไซต์</p>
+                                                <p className="text-sm text-slate-500">{isThai ? 'เว็บไซต์' : 'Website'}</p>
                                                 <p className="font-medium text-purple-600 truncate">{shop.website}</p>
                                             </div>
                                             <ExternalLink className="w-4 h-4 text-slate-400" />
@@ -460,7 +463,7 @@ export default async function ShopProfilePage({ params }: { params: Promise<{ id
                                     )}
 
                                     {!shop.phone_number && !shop.line_id && !shop.facebook_url && !shop.website && (
-                                        <p className="text-slate-500 text-center py-4">ไม่มีข้อมูลการติดต่อ</p>
+                                        <p className="text-slate-500 text-center py-4">{isThai ? 'ไม่มีข้อมูลการติดต่อ' : 'No contact information available'}</p>
                                     )}
                                 </CardContent>
                             </Card>
@@ -471,34 +474,37 @@ export default async function ShopProfilePage({ params }: { params: Promise<{ id
                                     <CardHeader className="pb-3">
                                         <CardTitle className="text-lg flex items-center gap-2">
                                             <CreditCard className="w-5 h-5 text-green-600" />
-                                            ข้อมูลบัญชีธนาคาร
+                                            {isThai ? 'ข้อมูลบัญชีธนาคาร' : 'Bank Account Info'}
                                         </CardTitle>
+                                        <p className="text-xs text-slate-500 mt-1 ml-7">
+                                            {isThai ? 'หมายเลขบัญชีธนาคารที่ลงทะเบียนและตรวจสอบแล้ว' : 'Registered and verified bank account number'}
+                                        </p>
                                     </CardHeader>
                                     <CardContent>
                                         <div className="bg-gradient-to-r from-green-50 to-emerald-50 rounded-xl p-4 border border-green-100">
                                             <div className="space-y-3">
                                                 {shop.bank_name && (
                                                     <div>
-                                                        <p className="text-xs text-slate-500 mb-0.5">ธนาคาร</p>
+                                                        <p className="text-xs text-slate-500 mb-0.5">{isThai ? 'ธนาคาร' : 'Bank'}</p>
                                                         <p className="font-semibold text-slate-900">{getBankDisplayName(shop.bank_name)}</p>
                                                     </div>
                                                 )}
                                                 {shop.bank_account_no && (
                                                     <div>
-                                                        <p className="text-xs text-slate-500 mb-0.5">เลขบัญชี</p>
+                                                        <p className="text-xs text-slate-500 mb-0.5">{isThai ? 'เลขบัญชี' : 'Account No.'}</p>
                                                         <p className="font-mono font-semibold text-slate-900 tracking-wider">{shop.bank_account_no}</p>
                                                     </div>
                                                 )}
                                                 {shop.bank_account_name && (
                                                     <div>
-                                                        <p className="text-xs text-slate-500 mb-0.5">ชื่อบัญชี</p>
+                                                        <p className="text-xs text-slate-500 mb-0.5">{isThai ? 'ชื่อบัญชี' : 'Account Name'}</p>
                                                         <p className="font-semibold text-slate-900">{shop.bank_account_name}</p>
                                                     </div>
                                                 )}
                                             </div>
                                         </div>
                                         <p className="text-xs text-slate-400 mt-3 text-center">
-                                            * กรุณาตรวจสอบข้อมูลให้ถูกต้องก่อนโอนเงิน
+                                            {isThai ? '* กรุณาตรวจสอบข้อมูลให้ถูกต้องก่อนโอนเงิน' : '* Please verify information before transferring money'}
                                         </p>
                                     </CardContent>
                                 </Card>
@@ -512,15 +518,15 @@ export default async function ShopProfilePage({ params }: { params: Promise<{ id
                                 <CardHeader>
                                     <CardTitle className="flex items-center gap-2">
                                         <AlertTriangle className="w-5 h-5 text-red-600" />
-                                        ประวัติการรายงานความผิดปกติ
+                                        {isThai ? 'ประวัติการรายงานความผิดปกติ' : 'Report History'}
                                     </CardTitle>
                                 </CardHeader>
                                 <CardContent>
                                     {reportsCount && reportsCount > 0 ? (
                                         <div className="text-center py-8 bg-red-50 rounded-xl border border-red-100">
                                             <AlertTriangle className="w-12 h-12 text-red-500 mx-auto mb-3" />
-                                            <p className="text-red-700 font-medium">พบรายงานความผิดปกติ {reportsCount} รายการ</p>
-                                            <p className="text-sm text-red-600 mt-1">กรุณาตรวจสอบข้อมูลให้ดีก่อนทำธุรกรรม</p>
+                                            <p className="text-red-700 font-medium">{isThai ? `พบรายงานความผิดปกติ ${reportsCount} รายการ` : `Found ${reportsCount} reports`}</p>
+                                            <p className="text-sm text-red-600 mt-1">{isThai ? 'กรุณาตรวจสอบข้อมูลให้ดีก่อนทำธุรกรรม' : 'Please verify carefully before transaction'}</p>
                                         </div>
                                     ) : (
                                         <div className={`text-center py-12 rounded-xl border ${isVerifiedPro
@@ -536,10 +542,14 @@ export default async function ShopProfilePage({ params }: { params: Promise<{ id
                                                 )}
                                             </div>
                                             <p className={`font-medium text-lg ${isVerifiedPro ? 'text-emerald-700' : 'text-green-700'}`}>
-                                                {isVerifiedPro ? 'ประวัติขาวสะอาด 100%' : 'ไม่พบรายงานความผิดปกติ'}
+                                                {isVerifiedPro
+                                                    ? (isThai ? 'ประวัติขาวสะอาด 100%' : '100% Clean History')
+                                                    : (isThai ? 'ไม่พบรายงานความผิดปกติ' : 'No Reports Found')}
                                             </p>
                                             <p className="text-sm text-slate-500 mt-2">
-                                                {isVerifiedPro ? 'ร้านนี้ไม่เคยมีประวัติการถูกร้องเรียน' : 'ร้านนี้มีประวัติขาวสะอาด'}
+                                                {isVerifiedPro
+                                                    ? (isThai ? 'ร้านนี้ไม่เคยมีประวัติการถูกร้องเรียน' : 'This shop has never been reported')
+                                                    : (isThai ? 'ร้านนี้มีประวัติขาวสะอาด' : 'This shop has a clean history')}
                                             </p>
                                         </div>
                                     )}
@@ -551,7 +561,7 @@ export default async function ShopProfilePage({ params }: { params: Promise<{ id
                                 <CardHeader>
                                     <CardTitle className="flex items-center gap-2">
                                         <Star className="w-5 h-5 text-yellow-500" />
-                                        รีวิวจากผู้ใช้งาน
+                                        {isThai ? 'รีวิวจากผู้ใช้งาน' : 'User Reviews'}
                                     </CardTitle>
                                 </CardHeader>
                                 <CardContent>
@@ -570,15 +580,15 @@ export default async function ShopProfilePage({ params }: { params: Promise<{ id
                                                     </div>
                                                 </div>
                                                 <div className="flex-1">
-                                                    <p className="text-slate-600">จาก {reviewsCount} รีวิว</p>
+                                                    <p className="text-slate-600">{isThai ? `จาก ${reviewsCount} รีวิว` : `From ${reviewsCount} reviews`}</p>
                                                 </div>
                                             </div>
                                         </div>
                                     ) : (
                                         <div className="text-center py-12 bg-slate-50 rounded-xl border border-dashed border-slate-200">
                                             <Users className="w-12 h-12 text-slate-300 mx-auto mb-3" />
-                                            <p className="text-slate-500">ยังไม่มีรีวิวสำหรับร้านนี้</p>
-                                            <p className="text-sm text-slate-400 mt-1">เป็นคนแรกที่รีวิวร้านนี้</p>
+                                            <p className="text-slate-500">{isThai ? 'ยังไม่มีรีวิวสำหรับร้านนี้' : 'No reviews yet'}</p>
+                                            <p className="text-sm text-slate-400 mt-1">{isThai ? 'เป็นคนแรกที่รีวิวร้านนี้' : 'Be the first to review this shop'}</p>
                                         </div>
                                     )}
                                 </CardContent>

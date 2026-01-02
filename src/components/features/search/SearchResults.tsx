@@ -875,29 +875,38 @@ export default function SearchResults() {
         <div className="space-y-4 mb-6">
             {/* Verified Pro Filter - Highlighted */}
             <div className="flex">
-                <label className={`flex items-center gap-3 px-4 py-3 rounded-xl border-2 cursor-pointer transition-all duration-200 w-full sm:w-auto ${filterVerifiedPro
-                    ? 'bg-gradient-to-r from-yellow-50 to-orange-50 border-yellow-400 shadow-md'
-                    : 'bg-white border-slate-200 hover:border-yellow-200'
-                    }`}>
-                    <div className={`w-5 h-5 rounded border flex items-center justify-center transition-colors ${filterVerifiedPro ? 'bg-yellow-500 border-yellow-500' : 'border-slate-300 bg-white'
-                        }`}>
-                        {filterVerifiedPro && <Check className="w-3.5 h-3.5 text-white" />}
-                    </div>
-                    <input
-                        type="checkbox"
-                        checked={filterVerifiedPro}
-                        onChange={(e) => setFilterVerifiedPro(e.target.checked)}
-                        className="sr-only"
-                    />
-                    <div className="flex items-center gap-2">
-                        <div className="bg-gradient-to-r from-yellow-400 to-orange-400 text-white p-1 rounded-full">
-                            <Crown className="w-3 h-3" />
-                        </div>
-                        <span className={`font-bold ${filterVerifiedPro ? 'text-yellow-700' : 'text-slate-700'}`}>
-                            {isThai ? 'แสดงเฉพาะร้านรับรอง' : 'Verified Shops Only'}
-                        </span>
-                    </div>
-                </label>
+                <TooltipProvider>
+                    <Tooltip>
+                        <TooltipTrigger asChild>
+                            <label className={`flex items-center gap-3 px-4 py-3 rounded-xl border-2 cursor-pointer transition-all duration-200 w-full sm:w-auto ${filterVerifiedPro
+                                ? 'bg-gradient-to-r from-yellow-50 to-orange-50 border-yellow-400 shadow-md'
+                                : 'bg-white border-slate-200 hover:border-yellow-200'
+                                }`}>
+                                <div className={`w-5 h-5 rounded border flex items-center justify-center transition-colors ${filterVerifiedPro ? 'bg-yellow-500 border-yellow-500' : 'border-slate-300 bg-white'
+                                    }`}>
+                                    {filterVerifiedPro && <Check className="w-3.5 h-3.5 text-white" />}
+                                </div>
+                                <input
+                                    type="checkbox"
+                                    checked={filterVerifiedPro}
+                                    onChange={(e) => setFilterVerifiedPro(e.target.checked)}
+                                    className="sr-only"
+                                />
+                                <div className="flex items-center gap-2">
+                                    <div className="bg-gradient-to-r from-yellow-400 to-orange-400 text-white p-1 rounded-full">
+                                        <Crown className="w-3 h-3" />
+                                    </div>
+                                    <span className={`font-bold ${filterVerifiedPro ? 'text-yellow-700' : 'text-slate-700'}`}>
+                                        {isThai ? 'แสดงเฉพาะร้านรับรอง' : 'Verified Shops Only'}
+                                    </span>
+                                </div>
+                            </label>
+                        </TooltipTrigger>
+                        <TooltipContent>
+                            <p>{isThai ? 'การันตีประกันเงินมัดจำสูงสุด 1,000 บาท หากโดนโกง' : 'Guarantee deposit coverage up to 1,000 THB if scammed'}</p>
+                        </TooltipContent>
+                    </Tooltip>
+                </TooltipProvider>
             </div>
 
             {/* Other Service Filters */}
