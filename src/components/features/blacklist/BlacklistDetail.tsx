@@ -17,8 +17,6 @@ import {
     Plus,
     MessageCircle,
     Heart,
-    Sparkles,
-    Gift,
     Loader2
 } from 'lucide-react'
 import Link from 'next/link'
@@ -184,11 +182,10 @@ function HeartButton({ reportId, reporterId, initialHeartCount = 0 }: {
                     <button
                         onClick={handleHeart}
                         disabled={isLoading}
-                        className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full transition-all duration-200 ${
-                            hasHearted
-                                ? 'bg-pink-100 text-pink-600 hover:bg-pink-200'
-                                : 'bg-slate-100 text-slate-500 hover:bg-pink-50 hover:text-pink-500'
-                        }`}
+                        className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full transition-all duration-200 ${hasHearted
+                            ? 'bg-pink-100 text-pink-600 hover:bg-pink-200'
+                            : 'bg-slate-100 text-slate-500 hover:bg-pink-50 hover:text-pink-500'
+                            }`}
                     >
                         {isLoading ? (
                             <Loader2 className="w-5 h-5 animate-spin" />
@@ -330,23 +327,19 @@ export default function BlacklistDetail({ entry, reports }: Props) {
                 </CardContent>
             </Card>
 
-            {/* Karma Info Banner */}
+            {/* Heart Info Banner */}
             <div className="p-4 bg-gradient-to-r from-purple-50 to-pink-50 rounded-xl border border-purple-200">
                 <div className="flex items-center gap-3">
                     <div className="w-10 h-10 bg-purple-100 rounded-lg flex items-center justify-center">
-                        <Sparkles className="w-5 h-5 text-purple-500" />
+                        <Heart className="w-5 h-5 text-purple-500" />
                     </div>
                     <div className="flex-1">
                         <p className="text-sm font-medium text-purple-800">
                             กดหัวใจเพื่อให้กำลังใจผู้รายงาน
                         </p>
                         <p className="text-xs text-purple-600">
-                            ทุกหัวใจที่กด = +1 เครดิตปลอบใจให้ผู้รายงาน
+                            +1 เครดิตปลอบใจให้ผู้รายงาน (กดซ้ำเพื่อยกเลิก)
                         </p>
-                    </div>
-                    <div className="flex items-center gap-2 px-3 py-2 bg-white/60 rounded-lg">
-                        <Gift className="w-4 h-4 text-amber-500" />
-                        <span className="text-xs font-medium text-amber-700">1 หัวใจ = 1 เครดิต</span>
                     </div>
                 </div>
             </div>

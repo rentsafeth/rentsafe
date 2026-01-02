@@ -14,7 +14,7 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { Form, FormControl, FormDescription, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { Loader2, Upload, AlertTriangle, ShieldAlert, Info, Gift, Sparkles } from 'lucide-react';
+import { Loader2, Upload, AlertTriangle, Info } from 'lucide-react';
 import { toast } from 'sonner';
 
 export default function ReportForm({ userId }: { userId: string }) {
@@ -217,20 +217,9 @@ export default function ReportForm({ userId }: { userId: string }) {
                                     </h4>
                                     <p className="text-sm text-slate-600 mb-4">
                                         {isThai
-                                            ? 'รายงานมิจฉาชีพเพื่อช่วยเหลือคนอื่น และรับเครดิตปลอบใจเมื่อรายงานได้รับการยืนยัน!'
-                                            : 'Report the scammer to help others and earn karma credits when your report is verified!'}
+                                            ? 'รายงานมิจฉาชีพเพื่อช่วยเหลือคนอื่นไม่ให้ถูกโกงซ้ำ และรับเครดิตปลอบใจเมื่อมีคนกดให้กำลังใจ!'
+                                            : 'Report the scammer to help protect others and receive karma credits when you get hearts!'}
                                     </p>
-                                    <div className="flex items-center gap-3 mb-4 p-3 bg-white/60 rounded-lg">
-                                        <Gift className="w-5 h-5 text-amber-500" />
-                                        <div className="text-sm">
-                                            <span className="font-semibold text-amber-600">
-                                                {isThai ? '+10 เครดิตปลอบใจ' : '+10 Karma Credits'}
-                                            </span>
-                                            <span className="text-slate-500">
-                                                {isThai ? ' เมื่อรายงานได้รับการยืนยัน' : ' when report is verified'}
-                                            </span>
-                                        </div>
-                                    </div>
                                     <Button
                                         type="button"
                                         onClick={() => document.getElementById('report-form-start')?.scrollIntoView({ behavior: 'smooth' })}
@@ -243,20 +232,6 @@ export default function ReportForm({ userId }: { userId: string }) {
                             </div>
                         </CardContent>
                     </Card>
-
-                    <div className="p-4 bg-gradient-to-r from-purple-50 to-pink-50 rounded-xl border border-purple-200">
-                        <div className="flex items-center gap-3">
-                            <Sparkles className="w-6 h-6 text-purple-500" />
-                            <div className="text-left">
-                                <p className="text-sm font-bold text-purple-800">
-                                    {isThai ? 'ระบบเครดิตปลอบใจ' : 'Karma Credit System'}
-                                </p>
-                                <p className="text-xs text-purple-600">
-                                    {isThai ? 'สะสมเครดิตปลอบใจ เพื่อรับสิทธิพิเศษเร็วๆ นี้!' : 'Collect karma credits for special privileges coming soon!'}
-                                </p>
-                            </div>
-                        </div>
-                    </div>
                 </div>
                 {/* Show existing blacklist info if adding to existing entry */}
                 {blacklistInfo && (

@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { LayoutDashboard, ShieldAlert, LogOut, Settings, CheckCircle, MessageSquare } from 'lucide-react';
+import { LayoutDashboard, ShieldAlert, LogOut, Settings, CheckCircle, MessageSquare, GitMerge } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { createClient } from '@/lib/supabase/client';
 import { useRouter } from 'next/navigation';
@@ -13,6 +13,7 @@ const menuItems = [
     { href: '/admin/shops/manage', label: 'จัดการร้านค้า', icon: Settings },
     { href: '/admin/reports', label: 'ตรวจสอบรายงาน', icon: ShieldAlert },
     { href: '/admin/reviews', label: 'จัดการรีวิว', icon: MessageSquare },
+    { href: '/admin/blacklist-merge', label: 'Merge Blacklist', icon: GitMerge },
 ];
 
 import { useAlert } from '@/components/ui/alert-modal';

@@ -11,57 +11,123 @@ export async function POST(request: Request) {
 
         // Get IP
         const headersList = await headers();
-        const ip = headersList.get('x-forwarded-for') || 'unknown';
+        const ip = headersList.get('x-forwarded-for')?.split(',')[0]?.trim() ||
+            headersList.get('x-real-ip') ||
+            'unknown';
 
-        // Check if already liked by this IP
+        // Check if already liked by this IP or user
         const { data: existingLike } = await supabase
             .from('review_likes')
             .select('id')
             .eq('review_id', reviewId)
-            .eq('ip_address', ip)
+            .or(`ip_address.eq.${ip}${user ? `,user_id.eq.${user.id}` : ''}`)
             .single();
 
+        let action: 'liked' | 'unliked';
+        let newCount: number;
+
         if (existingLike) {
-            return NextResponse.json({ error: 'Already liked' }, { status: 400 });
+            // Already liked - UNLIKE (toggle off)
+            const { error: deleteError } = await supabase
+                .from('review_likes')
+                .delete()
+                .eq('id', existingLike.id);
+
+            if (deleteError) throw deleteError;
+
+            // Decrement count
+            const { data: review } = await supabase
+                .from('reviews')
+                .select('like_count')
+                .eq('id', reviewId)
+                .single();
+
+            newCount = Math.max((review?.like_count || 1) - 1, 0);
+
+            await supabase
+                .from('reviews')
+                .update({ like_count: newCount })
+                .eq('id', reviewId);
+
+            action = 'unliked';
+        } else {
+            // Not liked yet - LIKE (toggle on)
+            const { error: likeError } = await supabase
+                .from('review_likes')
+                .insert({
+                    review_id: reviewId,
+                    user_id: user?.id,
+                    ip_address: ip
+                });
+
+            if (likeError) throw likeError;
+
+            // Increment count
+            const { data: review } = await supabase
+                .from('reviews')
+                .select('like_count')
+                .eq('id', reviewId)
+                .single();
+
+            newCount = (review?.like_count || 0) + 1;
+
+            await supabase
+                .from('reviews')
+                .update({ like_count: newCount })
+                .eq('id', reviewId);
+
+            action = 'liked';
         }
 
-        // Insert Like
-        const { error: likeError } = await supabase
+        return NextResponse.json({ success: true, action, newCount });
+
+    } catch (error) {
+        console.error('Like Error:', error);
+        return NextResponse.json({ error: 'Internal Server Error' }, { status: 500 });
+    }
+}
+
+// GET - Check if user has liked a review
+export async function GET(request: Request) {
+    try {
+        const { searchParams } = new URL(request.url);
+        const reviewId = searchParams.get('reviewId');
+
+        if (!reviewId) {
+            return NextResponse.json({ error: 'reviewId required' }, { status: 400 });
+        }
+
+        const supabase = await createClient();
+        const { data: { user } } = await supabase.auth.getUser();
+
+        const headersList = await headers();
+        const ip = headersList.get('x-forwarded-for')?.split(',')[0]?.trim() ||
+            headersList.get('x-real-ip') ||
+            'unknown';
+
+        // Check if liked by IP or user
+        const { data: existingLike } = await supabase
             .from('review_likes')
-            .insert({
-                review_id: reviewId,
-                user_id: user?.id, // Optional
-                ip_address: ip
-            });
+            .select('id')
+            .eq('review_id', reviewId)
+            .or(`ip_address.eq.${ip}${user ? `,user_id.eq.${user.id}` : ''}`)
+            .single();
 
-        if (likeError) throw likeError;
-
-        // Increment count in reviews table (Atomic update)
-        // Note: Supabase doesn't support `increment` directly in JS client easily without RPC, 
-        // but we can do a raw query or fetch-update. 
-        // Better approach: Create a Database Function `increment_like_count`.
-        // For now, let's just fetch and update (optimistic locking not strictly needed for likes).
-
-        // Actually, let's use RPC if possible, or just simple update.
+        // Get current count
         const { data: review } = await supabase
             .from('reviews')
             .select('like_count')
             .eq('id', reviewId)
             .single();
 
-        const newCount = (review?.like_count || 0) + 1;
-
-        await supabase
-            .from('reviews')
-            .update({ like_count: newCount })
-            .eq('id', reviewId);
-
-        // TODO: Add Karma Credit logic here if needed (e.g. if review gets 10 likes, reviewer gets credit)
-
-        return NextResponse.json({ success: true, newCount });
+        return NextResponse.json({
+            success: true,
+            hasLiked: !!existingLike,
+            likeCount: review?.like_count || 0
+        });
 
     } catch (error) {
-        console.error('Like Error:', error);
+        console.error('Like Check Error:', error);
         return NextResponse.json({ error: 'Internal Server Error' }, { status: 500 });
     }
 }
