@@ -5,14 +5,14 @@ import { useTranslations, useLocale } from 'next-intl'
 import { useState, useEffect } from 'react'
 import { ShieldCheck, Search, FileWarning, Menu, X, User, LogOut, Globe, UserPlus } from 'lucide-react'
 import { createClient } from '@/lib/supabase/client'
-import { useRouter, usePathname } from 'next/navigation'
+import { usePathname } from 'next/navigation'
 import NotificationBell from '@/components/features/notifications/NotificationBell'
 import InstallPWAButton from '@/components/common/InstallPWAButton'
+import { signOutAction } from '@/app/actions/auth'
 
 export default function Navbar() {
     const t = useTranslations('Common')
     const locale = useLocale()
-    const router = useRouter()
     const pathname = usePathname()
     const [isMenuOpen, setIsMenuOpen] = useState(false)
     const [user, setUser] = useState<any>(null)
@@ -137,46 +137,17 @@ export default function Navbar() {
     }
 
     const handleLogout = async () => {
-        console.log('Logout clicked')
-
-        // Set a timeout to force redirect after 2 seconds
-        const forceRedirectTimeout = setTimeout(() => {
-            console.log('Force redirect due to timeout')
-            window.location.href = '/'
-        }, 2000)
-
-        const supabase = createClient()
-
+        console.log('Logout clicked - using server action')
         try {
-            // Clear all Supabase auth
-            await supabase.auth.signOut({ scope: 'global' })
-            console.log('SignOut successful')
+            // Use server action for proper cookie clearing
+            await signOutAction()
         } catch (error) {
-            console.error('Logout error:', error)
-        }
-
-        // Clear timeout since we're proceeding
-        clearTimeout(forceRedirectTimeout)
-
-        // Clear all storage
-        try {
+            console.error('Server logout error:', error)
+            // Fallback: clear client storage and redirect
             localStorage.clear()
             sessionStorage.clear()
-
-            // Clear all cookies
-            document.cookie.split(";").forEach((c) => {
-                document.cookie = c
-                    .replace(/^ +/, "")
-                    .replace(/=.*/, "=;expires=" + new Date().toUTCString() + ";path=/")
-            })
-            console.log('Storage cleared')
-        } catch (e) {
-            console.error('Error clearing storage:', e)
+            window.location.href = '/'
         }
-
-        // Force hard redirect
-        console.log('Redirecting to home')
-        window.location.href = '/'
     }
 
     const navLinks = [
