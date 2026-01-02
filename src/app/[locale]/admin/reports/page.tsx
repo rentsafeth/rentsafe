@@ -1,4 +1,4 @@
-import { createClient } from '@/lib/supabase/server';
+import { createAdminClient } from '@/lib/supabase/server';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
@@ -9,7 +9,7 @@ import Image from 'next/image';
 import ReportActions from '@/components/features/admin/ReportActions';
 
 export default async function AdminReportsPage() {
-    const supabase = await createClient();
+    const supabase = createAdminClient();
 
     const { data: reports } = await supabase
         .from('reports')
@@ -24,7 +24,7 @@ export default async function AdminReportsPage() {
 
     async function updateStatus(reportId: string, status: 'approved' | 'rejected') {
         'use server';
-        const supabase = await createClient();
+        const supabase = createAdminClient();
         const { error } = await supabase.from('reports').update({ status: status }).eq('id', reportId);
 
         if (error) {

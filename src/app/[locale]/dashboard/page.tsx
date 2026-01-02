@@ -41,7 +41,7 @@ export default async function DashboardPage() {
         .eq('user_id', user.id);
 
     const { count: userReportsCount } = await supabase
-        .from('blacklist_entries')
+        .from('reports')
         .select('*', { count: 'exact', head: true })
         .eq('reporter_id', user.id);
 
