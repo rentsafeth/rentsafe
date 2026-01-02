@@ -5,6 +5,7 @@ import { Check, X } from 'lucide-react';
 import { createClient } from '@/lib/supabase/client';
 import { toast } from 'sonner';
 import { useRouter } from 'next/navigation';
+import { useAlert } from '@/components/ui/alert-modal';
 
 interface AdminReviewActionsProps {
     reviewId: string;
@@ -15,67 +16,105 @@ interface AdminReviewActionsProps {
 export default function AdminReviewActions({ reviewId, type, relatedReviewId }: AdminReviewActionsProps) {
     const supabase = createClient();
     const router = useRouter();
+    const { showConfirm } = useAlert();
 
     const handleApprove = async () => {
-        try {
-            const { error } = await supabase
-                .from('reviews')
-                .update({ status: 'approved' })
-                .eq('id', reviewId);
+        showConfirm(
+            'คุณยืนยันที่จะอนุมัติรีวิวนี้ใช่หรือไม่? รีวิวจะถูกแสดงต่อสาธารณะทันที',
+            async () => {
+                try {
+                    const { error } = await supabase
+                        .from('reviews')
+                        .update({ status: 'approved' })
+                        .eq('id', reviewId);
 
-            if (error) throw error;
+                    if (error) throw error;
 
-            toast.success('อนุมัติรีวิวเรียบร้อย');
-            router.refresh();
-        } catch (error) {
-            console.error(error);
-            toast.error('เกิดข้อผิดพลาดในการอนุมัติ');
-        }
+                    toast.success('อนุมัติรีวิวเรียบร้อย');
+                    router.refresh();
+                } catch (error) {
+                    console.error(error);
+                    toast.error('เกิดข้อผิดพลาดในการอนุมัติ');
+                }
+            },
+            'ยืนยันการอนุมัติ'
+        );
     };
 
     const handleReject = async () => {
-        if (!confirm('ยืนยันที่จะปฏิเสธรีวิวนี้?')) return;
-        try {
-            const { error } = await supabase
-                .from('reviews')
-                .update({ status: 'rejected' })
-                .eq('id', reviewId);
+        showConfirm(
+            'คุณยืนยันที่จะปฏิเสธรีวิวนี้ใช่หรือไม่? รีวิวนี้จะไม่ถูกแสดงในหน้าเว็บบอร์ด',
+            async () => {
+                try {
+                    const { error } = await supabase
+                        .from('reviews')
+                        .update({ status: 'rejected' })
+                        .eq('id', reviewId);
 
-            if (error) throw error;
+                    if (error) throw error;
 
-            toast.success('ปฏิเสธรีวิวเรียบร้อย');
-            router.refresh();
-        } catch (error) {
-            console.error(error);
-            toast.error('เกิดข้อผิดพลาดในการปฏิเสธ');
-        }
+                    toast.success('ปฏิเสธรีวิวเรียบร้อย');
+                    router.refresh();
+                } catch (error) {
+                    console.error(error);
+                    toast.error('เกิดข้อผิดพลาดในการปฏิเสธ');
+                }
+            },
+            'ยืนยันการปฏิเสธ'
+        );
     };
 
     const handleKeepReview = async () => {
-        if (!confirm('ยืนยันที่จะยกคำร้องและคงรีวิวไว้?')) return;
-        try {
-            await supabase.from('review_disputes').update({ status: 'dismissed' }).eq('id', reviewId);
-            toast.success('ยกคำร้องเรียบร้อย');
-            router.refresh();
-        } catch (error) {
-            console.error(error);
-            toast.error('เกิดข้อผิดพลาด');
-        }
+        showConfirm(
+            'คุณยืนยันที่จะยกคำร้องและคงรีวิวนี้ไว้ใช่หรือไม่?',
+            async () => {
+                try {
+                    const { error } = await supabase
+                        .from('review_disputes')
+                        .update({ status: 'dismissed' })
+                        .eq('id', reviewId);
+
+                    if (error) throw error;
+
+                    toast.success('ยกคำร้องเรียบร้อย');
+                    router.refresh();
+                } catch (error) {
+                    console.error(error);
+                    toast.error('เกิดข้อผิดพลาด');
+                }
+            },
+            'ยืนยันการยกคำร้อง'
+        );
     };
 
     const handleDeleteReview = async () => {
-        if (!confirm('ยืนยันที่จะลบรีวิวนี้ตามคำร้อง?')) return;
-        try {
-            if (relatedReviewId) {
-                await supabase.from('reviews').update({ status: 'rejected' }).eq('id', relatedReviewId);
-            }
-            await supabase.from('review_disputes').update({ status: 'resolved' }).eq('id', reviewId);
-            toast.success('ลบรีวิวเรียบร้อย');
-            router.refresh();
-        } catch (error) {
-            console.error(error);
-            toast.error('เกิดข้อผิดพลาด');
-        }
+        showConfirm(
+            'คุณยืนยันที่จะลบรีวิวนี้ตามคำร้องใช่หรือไม่? รีวิวจะถูกเปลี่ยนสถานะเป็นถูกปฏิเสธ',
+            async () => {
+                try {
+                    if (relatedReviewId) {
+                        const { error: reviewError } = await supabase
+                            .from('reviews')
+                            .update({ status: 'rejected' })
+                            .eq('id', relatedReviewId);
+                        if (reviewError) throw reviewError;
+                    }
+
+                    const { error: disputeError } = await supabase
+                        .from('review_disputes')
+                        .update({ status: 'resolved' })
+                        .eq('id', reviewId);
+                    if (disputeError) throw disputeError;
+
+                    toast.success('ลบรีวิวเรียบร้อย');
+                    router.refresh();
+                } catch (error) {
+                    console.error(error);
+                    toast.error('เกิดข้อผิดพลาด');
+                }
+            },
+            'ยืนยันการลบรีวิว'
+        );
     };
 
     if (type === 'review') {

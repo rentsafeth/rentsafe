@@ -109,7 +109,7 @@ export default async function AdminReviewsPage() {
                                         <p className="text-slate-800">{review.comment}</p>
 
                                         {review.evidence_urls && review.evidence_urls.length > 0 && (
-                                            <div className="flex gap-2 mt-2">
+                                            <div className="flex flex-wrap gap-2 mt-2">
                                                 {review.evidence_urls.map((url: string, idx: number) => (
                                                     <a
                                                         key={idx}

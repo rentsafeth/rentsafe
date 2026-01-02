@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { LayoutDashboard, Store, ShieldAlert, LogOut, Settings, CheckCircle, MessageSquare } from 'lucide-react';
+import { LayoutDashboard, ShieldAlert, LogOut, Settings, CheckCircle, MessageSquare } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { createClient } from '@/lib/supabase/client';
 import { useRouter } from 'next/navigation';
@@ -15,14 +15,23 @@ const menuItems = [
     { href: '/admin/reviews', label: 'จัดการรีวิว', icon: MessageSquare },
 ];
 
+import { useAlert } from '@/components/ui/alert-modal';
+
 export default function AdminSidebar() {
     const pathname = usePathname();
     const router = useRouter();
     const supabase = createClient();
+    const { showConfirm } = useAlert();
 
     const handleLogout = async () => {
-        await supabase.auth.signOut();
-        router.push('/login');
+        showConfirm(
+            'คุณต้องการออกจากระบบใช่หรือไม่?',
+            async () => {
+                await supabase.auth.signOut();
+                router.push('/login');
+            },
+            'ยืนยันการออกจากระบบ'
+        );
     };
 
     return (

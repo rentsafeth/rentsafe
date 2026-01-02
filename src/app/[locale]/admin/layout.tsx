@@ -1,6 +1,7 @@
 import AdminSidebar from '@/components/features/admin/AdminSidebar';
 import { createClient } from '@/lib/supabase/server';
 import { redirect } from 'next/navigation';
+import { AlertProvider } from '@/components/ui/alert-modal';
 
 export default async function AdminLayout({
     children,
@@ -21,11 +22,13 @@ export default async function AdminLayout({
     }
 
     return (
-        <div className="flex min-h-screen bg-slate-100">
-            <AdminSidebar />
-            <main className="flex-1 p-4 md:p-8 overflow-y-auto">
-                {children}
-            </main>
-        </div>
+        <AlertProvider>
+            <div className="flex min-h-screen bg-slate-100">
+                <AdminSidebar />
+                <main className="flex-1 p-4 md:p-8 overflow-y-auto">
+                    {children}
+                </main>
+            </div>
+        </AlertProvider>
     );
 }
