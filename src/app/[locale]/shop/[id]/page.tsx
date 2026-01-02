@@ -107,9 +107,14 @@ export default async function ShopProfilePage({ params }: { params: Promise<{ id
         .select('status, ends_at')
         .eq('shop_id', id)
         .eq('status', 'active')
+        .order('ends_at', { ascending: false })
+        .limit(1)
         .maybeSingle();
 
-    const isVerifiedPro = !!(subData && new Date(subData.ends_at) > new Date());
+    // Use getTime() for consistent comparison
+    const now = new Date();
+    const endsAt = subData ? new Date(subData.ends_at) : null;
+    const isVerifiedPro = !!(endsAt && endsAt.getTime() > now.getTime());
 
     const getProvinceLabel = (value: string) => {
         return PROVINCES.find(p => p.value === value)?.label || value;
@@ -295,7 +300,7 @@ export default async function ShopProfilePage({ params }: { params: Promise<{ id
                                     <Link href={`/report?shop_id=${shop.id}`}>
                                         <Button variant="outline" className="text-red-600 border-red-200 hover:bg-red-50">
                                             <AlertTriangle className="w-4 h-4 mr-2" />
-                                            แจ้งความผิดปกติ
+                                            รายงาน
                                         </Button>
                                     </Link>
                                 </div>

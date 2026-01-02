@@ -11,7 +11,7 @@ import {
     Loader2, ShieldAlert, CheckCircle, MapPin, SearchX, AlertTriangle,
     CreditCard, Phone, Star, Search, SlidersHorizontal, Zap, Receipt,
     FileText, Banknote, Crown, MessageCircle, Heart, Gift, Sparkles,
-    ShieldCheck, TrendingUp, Users, AlertCircle, ExternalLink, LayoutGrid, List
+    ShieldCheck, TrendingUp, Users, AlertCircle, ExternalLink, LayoutGrid, List, Check
 } from 'lucide-react';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import Link from 'next/link';
@@ -876,8 +876,8 @@ export default function SearchResults() {
             {/* Verified Pro Filter - Highlighted */}
             <div className="flex">
                 <label className={`flex items-center gap-3 px-4 py-3 rounded-xl border-2 cursor-pointer transition-all duration-200 w-full sm:w-auto ${filterVerifiedPro
-                        ? 'bg-gradient-to-r from-yellow-50 to-orange-50 border-yellow-400 shadow-md'
-                        : 'bg-white border-slate-200 hover:border-yellow-200'
+                    ? 'bg-gradient-to-r from-yellow-50 to-orange-50 border-yellow-400 shadow-md'
+                    : 'bg-white border-slate-200 hover:border-yellow-200'
                     }`}>
                     <div className={`w-5 h-5 rounded border flex items-center justify-center transition-colors ${filterVerifiedPro ? 'bg-yellow-500 border-yellow-500' : 'border-slate-300 bg-white'
                         }`}>
