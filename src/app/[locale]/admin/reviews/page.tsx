@@ -111,9 +111,15 @@ export default async function AdminReviewsPage() {
                                         {review.evidence_urls && review.evidence_urls.length > 0 && (
                                             <div className="flex gap-2 mt-2">
                                                 {review.evidence_urls.map((url: string, idx: number) => (
-                                                    <div key={idx} className="relative w-16 h-16 rounded border overflow-hidden">
+                                                    <a
+                                                        key={idx}
+                                                        href={url}
+                                                        target="_blank"
+                                                        rel="noopener noreferrer"
+                                                        className="relative w-16 h-16 rounded border overflow-hidden hover:opacity-80 transition-opacity cursor-pointer"
+                                                    >
                                                         <Image src={url} alt="Evidence" fill className="object-cover" />
-                                                    </div>
+                                                    </a>
                                                 ))}
                                             </div>
                                         )}
