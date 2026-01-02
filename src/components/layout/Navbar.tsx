@@ -22,40 +22,62 @@ export default function Navbar() {
 
     useEffect(() => {
         const supabase = createClient()
+        let isMounted = true
 
         const getUser = async () => {
-            const { data: { session } } = await supabase.auth.getSession()
-            setUser(session?.user ?? null)
+            try {
+                const { data: { session } } = await supabase.auth.getSession()
+                if (!isMounted) return
 
-            if (session?.user) {
-                const { data: profile } = await supabase
-                    .from('profiles')
-                    .select('role')
-                    .eq('id', session.user.id)
-                    .single()
-                setRole(profile?.role ?? null)
+                setUser(session?.user ?? null)
+
+                if (session?.user) {
+                    const { data: profile } = await supabase
+                        .from('profiles')
+                        .select('role')
+                        .eq('id', session.user.id)
+                        .maybeSingle()
+
+                    if (isMounted) {
+                        setRole(profile?.role ?? null)
+                    }
+                }
+            } catch (error) {
+                console.error('Auth error:', error)
+            } finally {
+                if (isMounted) {
+                    setIsLoading(false)
+                }
             }
-            setIsLoading(false)
         }
 
         getUser()
 
         // Listen for auth changes
         const { data: { subscription } } = supabase.auth.onAuthStateChange(async (_event, session) => {
+            if (!isMounted) return
+
             setUser(session?.user ?? null)
             if (session?.user) {
                 const { data: profile } = await supabase
                     .from('profiles')
                     .select('role')
                     .eq('id', session.user.id)
-                    .single()
-                setRole(profile?.role ?? null)
+                    .maybeSingle()
+
+                if (isMounted) {
+                    setRole(profile?.role ?? null)
+                }
             } else {
                 setRole(null)
             }
+            setIsLoading(false)
         })
 
-        return () => subscription.unsubscribe()
+        return () => {
+            isMounted = false
+            subscription.unsubscribe()
+        }
     }, [])
 
     const switchLocale = (newLocale: string) => {

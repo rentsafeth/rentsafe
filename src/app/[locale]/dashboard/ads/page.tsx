@@ -140,101 +140,112 @@ export default function AdsPage() {
     };
 
     useEffect(() => {
+        let isMounted = true;
+
+        const loadData = async () => {
+            try {
+                const { data: { user } } = await supabase.auth.getUser();
+                if (!user || !isMounted) {
+                    if (!user) router.push('/login');
+                    return;
+                }
+
+                const { data: shopData, error: shopError } = await supabase
+                    .from('shops')
+                    .select('*')
+                    .eq('owner_id', user.id)
+                    .maybeSingle();
+
+                if (shopError || !shopData) {
+                    if (isMounted) router.push('/dashboard');
+                    return;
+                }
+
+                if (isMounted) setShop(shopData);
+
+                // Load Ad Settings
+                const { data: settings } = await supabase
+                    .from('shop_ad_settings')
+                    .select('*')
+                    .eq('shop_id', shopData.id)
+                    .maybeSingle();
+
+                if (settings && isMounted) {
+                    setAdSettings(settings);
+                }
+
+                // Load System Settings
+                const { data: sysSettings } = await supabase
+                    .from('system_settings')
+                    .select('*')
+                    .in('key', ['daily_boost_price', 'min_ppc_bid', 'max_ppc_bid', 'min_featured_bid']);
+
+                if (isMounted) {
+                    const settingsMap: Record<string, any> = {};
+                    sysSettings?.forEach(s => {
+                        settingsMap[s.key] = typeof s.value === 'string' ?
+                            (s.value.startsWith('"') ? s.value.replace(/"/g, '') : s.value) : s.value;
+                    });
+                    setSystemSettings(settingsMap);
+                }
+
+                // Load Today's Stats
+                const today = new Date().toISOString().split('T')[0];
+                const { data: dailyStats } = await supabase
+                    .from('ad_stats_daily')
+                    .select('*')
+                    .eq('shop_id', shopData.id)
+                    .eq('stat_date', today)
+                    .maybeSingle();
+
+                if (dailyStats && isMounted) {
+                    setTodayStats({
+                        impressions: dailyStats.impressions || 0,
+                        clicks: dailyStats.clicks || 0,
+                        credits_spent: dailyStats.credits_spent || 0,
+                        ctr: dailyStats.impressions > 0
+                            ? ((dailyStats.clicks / dailyStats.impressions) * 100)
+                            : 0,
+                    });
+                }
+
+                // Load Weekly Stats
+                const weekAgo = new Date();
+                weekAgo.setDate(weekAgo.getDate() - 7);
+                const { data: weekly } = await supabase
+                    .from('ad_stats_daily')
+                    .select('*')
+                    .eq('shop_id', shopData.id)
+                    .gte('stat_date', weekAgo.toISOString().split('T')[0])
+                    .order('stat_date', { ascending: true });
+
+                if (isMounted) setWeeklyStats(weekly || []);
+
+                // Load all schedules
+                const { data: schedules } = await supabase
+                    .from('ad_schedules')
+                    .select('*')
+                    .eq('shop_id', shopData.id)
+                    .neq('status', 'cancelled')
+                    .order('start_date', { ascending: true });
+
+                if (schedules && isMounted) {
+                    setBoostSchedules(schedules.filter(s => s.type === 'boost'));
+                    setPpcSchedules(schedules.filter(s => s.type === 'ppc'));
+                }
+
+            } catch (error) {
+                console.error('Error loading data:', error);
+            } finally {
+                if (isMounted) {
+                    setLoading(false);
+                }
+            }
+        };
+
         loadData();
+        return () => { isMounted = false; };
     }, []);
-
-    const loadData = async () => {
-        try {
-            const { data: { user } } = await supabase.auth.getUser();
-            if (!user) {
-                router.push('/login');
-                return;
-            }
-
-            const { data: shopData } = await supabase
-                .from('shops')
-                .select('*')
-                .eq('owner_id', user.id)
-                .single();
-
-            if (!shopData) {
-                router.push('/dashboard');
-                return;
-            }
-
-            setShop(shopData);
-
-            const { data: settings } = await supabase
-                .from('shop_ad_settings')
-                .select('*')
-                .eq('shop_id', shopData.id)
-                .single();
-
-            if (settings) {
-                setAdSettings(settings);
-            }
-
-            const { data: sysSettings } = await supabase
-                .from('system_settings')
-                .select('*')
-                .in('key', ['daily_boost_price', 'min_ppc_bid', 'max_ppc_bid', 'min_featured_bid']);
-
-            const settingsMap: Record<string, any> = {};
-            sysSettings?.forEach(s => {
-                settingsMap[s.key] = typeof s.value === 'string' ?
-                    (s.value.startsWith('"') ? s.value.replace(/"/g, '') : s.value) : s.value;
-            });
-            setSystemSettings(settingsMap);
-
-            const today = new Date().toISOString().split('T')[0];
-            const { data: dailyStats } = await supabase
-                .from('ad_stats_daily')
-                .select('*')
-                .eq('shop_id', shopData.id)
-                .eq('stat_date', today)
-                .single();
-
-            if (dailyStats) {
-                setTodayStats({
-                    impressions: dailyStats.impressions || 0,
-                    clicks: dailyStats.clicks || 0,
-                    credits_spent: dailyStats.credits_spent || 0,
-                    ctr: dailyStats.impressions > 0
-                        ? ((dailyStats.clicks / dailyStats.impressions) * 100)
-                        : 0,
-                });
-            }
-
-            const weekAgo = new Date();
-            weekAgo.setDate(weekAgo.getDate() - 7);
-            const { data: weekly } = await supabase
-                .from('ad_stats_daily')
-                .select('*')
-                .eq('shop_id', shopData.id)
-                .gte('stat_date', weekAgo.toISOString().split('T')[0])
-                .order('stat_date', { ascending: true });
-
-            setWeeklyStats(weekly || []);
-
-            // Load all schedules
-            const { data: schedules } = await supabase
-                .from('ad_schedules')
-                .select('*')
-                .eq('shop_id', shopData.id)
-                .neq('status', 'cancelled')
-                .order('start_date', { ascending: true });
-
-            if (schedules) {
-                setBoostSchedules(schedules.filter(s => s.type === 'boost'));
-                setPpcSchedules(schedules.filter(s => s.type === 'ppc'));
-            }
-
-        } catch (error) {
-            console.error('Error loading data:', error);
-        } finally {
-            setLoading(false);
-        }
-    };
 
     const savePPCSettings = async () => {
         if (!shop) return;
