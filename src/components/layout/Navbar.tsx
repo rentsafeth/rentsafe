@@ -23,6 +23,9 @@ export default function Navbar() {
         const supabase = createClient()
         let isMounted = true
 
+        // Admin email list - add admin emails here
+        const ADMIN_EMAILS = ['rentsafeth@gmail.com']
+
         // Try to get cached role immediately
         const cachedRole = localStorage.getItem('user_role')
         if (cachedRole) {
@@ -30,84 +33,43 @@ export default function Navbar() {
             console.log('Role from cache:', cachedRole)
         }
 
-        // Fail-safe: Force stop loading after 5 seconds
+        // Fail-safe: Force stop loading after 3 seconds
         const timeoutId = setTimeout(() => {
             if (isMounted) {
                 console.log('Navbar: Force stopping loading due to timeout')
                 setIsLoading(false)
             }
-        }, 5000)
-
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        const getRoleFromUser = (user: any): string | null => {
-            // Try to get role from app_metadata first (set by admin)
-            if (user?.app_metadata?.role) {
-                return user.app_metadata.role
-            }
-            // Then try user_metadata
-            if (user?.user_metadata?.role) {
-                return user.user_metadata.role
-            }
-            return null
-        }
-
-        const fetchProfileRole = async (userId: string): Promise<string | null> => {
-            try {
-                const { data: profile, error } = await supabase
-                    .from('profiles')
-                    .select('role')
-                    .eq('id', userId)
-                    .maybeSingle()
-
-                if (error) {
-                    console.error('Error fetching profile role:', error)
-                    return null
-                }
-                return profile?.role ?? null
-            } catch (err) {
-                console.error('Error fetching profile:', err)
-                return null
-            }
-        }
+        }, 3000)
 
         const checkUser = async () => {
             try {
-                const { data: { session }, error } = await supabase.auth.getSession()
-                if (error) {
-                    console.error('Session error:', error)
-                }
+                const { data: { session } } = await supabase.auth.getSession()
                 if (!isMounted) return
 
                 const currentUser = session?.user ?? null
                 setUser(currentUser)
 
                 if (currentUser) {
-                    // First try to get role from user metadata (faster, no RLS issues)
-                    let userRole = getRoleFromUser(currentUser)
-                    console.log('Role from metadata:', userRole)
+                    // Check if user email is in admin list
+                    const isAdmin = ADMIN_EMAILS.includes(currentUser.email || '')
+                    const userRole = isAdmin ? 'admin' : 'user'
 
-                    // If no role in metadata, try fetching from profiles table
-                    if (!userRole) {
-                        userRole = await fetchProfileRole(currentUser.id)
-                        console.log('Role from profiles table:', userRole)
-                    }
+                    console.log('User email:', currentUser.email, 'Role:', userRole)
 
-                    if (isMounted && userRole) {
-                        setRole(userRole)
-                        // Cache role in localStorage for faster subsequent loads
-                        localStorage.setItem('user_role', userRole)
-                        console.log('Final role set to:', userRole)
-                    }
+                    setRole(userRole)
+                    localStorage.setItem('user_role', userRole)
+
+                    // Stop loading immediately since we have the user
+                    setIsLoading(false)
+                    clearTimeout(timeoutId)
                 } else {
                     // User is not logged in, clear cached role
                     localStorage.removeItem('user_role')
+                    setIsLoading(false)
                 }
             } catch (error) {
                 console.error('Auth error:', error)
-            } finally {
-                if (isMounted) {
-                    setIsLoading(false)
-                }
+                setIsLoading(false)
             }
         }
 
@@ -121,14 +83,10 @@ export default function Navbar() {
             setUser(currentUser)
 
             if (currentUser) {
-                let userRole = getRoleFromUser(currentUser)
-                if (!userRole) {
-                    userRole = await fetchProfileRole(currentUser.id)
-                }
-                if (isMounted && userRole) {
-                    setRole(userRole)
-                    localStorage.setItem('user_role', userRole)
-                }
+                const isAdmin = ADMIN_EMAILS.includes(currentUser.email || '')
+                const userRole = isAdmin ? 'admin' : 'user'
+                setRole(userRole)
+                localStorage.setItem('user_role', userRole)
             } else {
                 setRole(null)
                 localStorage.removeItem('user_role')
