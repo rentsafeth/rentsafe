@@ -62,7 +62,7 @@ export default function SearchResults() {
     const locale = params.locale as string;
     const isThai = locale === 'th';
     const query = searchParams.get('q');
-    const type = searchParams.get('type') || 'blacklist';
+    const type = searchParams.get('type') || 'rental';
     const province = searchParams.get('province');
     const t = useTranslations('SearchPage');
     const tHome = useTranslations('HomePage');
@@ -110,7 +110,7 @@ export default function SearchResults() {
         if (selectedProvince && searchType === 'rental') params.set('province', selectedProvince);
 
         window.history.replaceState({}, '', `/search?${params.toString()}`);
-        fetchResults();
+        fetchResults(searchType, searchQuery, selectedProvince);
     };
 
     // Clear results when switching tabs
@@ -202,25 +202,26 @@ export default function SearchResults() {
         }
     };
 
-    const fetchResults = async () => {
+    const fetchResults = async (type: 'blacklist' | 'rental', q: string, prov: string) => {
         setLoading(true);
         setResults([]);
         setHasSearched(true);
 
         try {
-            if (searchType === 'rental') {
+            if (type === 'rental') {
+                // RENTAL SEARCH LOGIC: Only verified shops
                 let shopQuery = supabase
                     .from('shops')
                     .select('*')
                     .eq('verification_status', 'verified')
                     .eq('is_active', true);
 
-                if (selectedProvince) {
-                    shopQuery = shopQuery.contains('service_provinces', [selectedProvince]);
+                if (prov) {
+                    shopQuery = shopQuery.contains('service_provinces', [prov]);
                 }
 
-                if (searchQuery) {
-                    shopQuery = shopQuery.ilike('name', `%${searchQuery}%`);
+                if (q) {
+                    shopQuery = shopQuery.ilike('name', `%${q}%`);
                 }
 
                 const { data: shops } = await shopQuery;
@@ -276,22 +277,28 @@ export default function SearchResults() {
                     setTimeout(() => recordImpressions(shopResults), 500);
                 }
 
-            } else if (searchQuery) {
+            } else {
+                // BLACKLIST SEARCH LOGIC: Only suspicious entries and reported shops
+                if (!q) {
+                    setResults([]);
+                    return;
+                }
+
                 const { data: blacklistEntries } = await supabase
                     .from('blacklist_entries')
                     .select('*')
-                    .or(`bank_account_no.ilike.%${searchQuery}%,shop_names.cs.{${searchQuery}}`)
+                    .or(`bank_account_no.ilike.%${q}%,shop_names.cs.{${q}}`)
                     .order('total_reports', { ascending: false });
 
                 const { data: blacklistByPhone } = await supabase
                     .from('blacklist_entries')
                     .select('*')
-                    .contains('phone_numbers', [searchQuery]);
+                    .contains('phone_numbers', [q]);
 
                 const { data: shops } = await supabase
                     .from('shops')
                     .select('*')
-                    .or(`name.ilike.%${searchQuery}%,bank_account_no.ilike.%${searchQuery}%,phone_number.ilike.%${searchQuery}%`)
+                    .or(`name.ilike.%${q}%,bank_account_no.ilike.%${q}%,phone_number.ilike.%${q}%`)
                     .gt('report_count', 0);
 
                 const combinedResults: SearchResult[] = [];
@@ -320,8 +327,6 @@ export default function SearchResults() {
                 }
 
                 setResults(combinedResults);
-            } else {
-                setResults([]);
             }
         } catch (error) {
             console.error(error);
@@ -330,14 +335,24 @@ export default function SearchResults() {
         }
     };
 
+    // Sync state with URL parameters
     useEffect(() => {
-        if (query || province) {
-            fetchResults();
+        const typeFromUrl = searchParams.get('type') as 'blacklist' | 'rental' || 'rental';
+        const queryFromUrl = searchParams.get('q') || '';
+        const provinceFromUrl = searchParams.get('province') || '';
+
+        setSearchType(typeFromUrl);
+        setSearchQuery(queryFromUrl);
+        setSelectedProvince(provinceFromUrl);
+
+        if (queryFromUrl || provinceFromUrl || typeFromUrl === 'rental') {
+            fetchResults(typeFromUrl, queryFromUrl, provinceFromUrl);
         } else {
             setLoading(false);
+            setHasSearched(false);
         }
         // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, []);
+    }, [searchParams]);
 
     const formatMoney = (amount: number) => {
         return new Intl.NumberFormat('th-TH', {
@@ -389,21 +404,6 @@ export default function SearchResults() {
                             : 'Check rental shops before transfer, or find trusted shops'}
                     </p>
 
-                    {/* Stats */}
-                    <div className="grid grid-cols-3 gap-4 max-w-lg mx-auto mb-6">
-                        <div className="bg-white/10 rounded-xl p-3 backdrop-blur-sm">
-                            <div className="text-2xl font-bold text-white">500+</div>
-                            <div className="text-xs text-blue-200">{isThai ? 'รายงานมิจฉาชีพ' : 'Scam Reports'}</div>
-                        </div>
-                        <div className="bg-white/10 rounded-xl p-3 backdrop-blur-sm">
-                            <div className="text-2xl font-bold text-white">1,000+</div>
-                            <div className="text-xs text-blue-200">{isThai ? 'ร้านที่ตรวจสอบแล้ว' : 'Verified Shops'}</div>
-                        </div>
-                        <div className="bg-white/10 rounded-xl p-3 backdrop-blur-sm">
-                            <div className="text-2xl font-bold text-white">50M+</div>
-                            <div className="text-xs text-blue-200">{isThai ? 'บาทที่ช่วยรักษา' : 'THB Protected'}</div>
-                        </div>
-                    </div>
                 </div>
             </div>
         </div>
@@ -494,80 +494,118 @@ export default function SearchResults() {
     ), [searchType, searchQuery, selectedProvince, isThai, tHome]);
 
     // No Results Component with Report CTA
-    const NoResultsView = () => (
-        <div className="text-center py-16">
-            <div className="relative inline-block mb-6">
-                <div className="absolute inset-0 bg-green-500/20 rounded-full blur-2xl"></div>
-                <div className="relative w-24 h-24 bg-gradient-to-br from-green-400 to-emerald-500 rounded-full flex items-center justify-center">
-                    <CheckCircle className="w-12 h-12 text-white" />
-                </div>
-            </div>
-
-            <h3 className="text-2xl font-bold text-slate-800 mb-3">
-                {isThai ? 'ไม่พบข้อมูลในระบบ' : 'No Records Found'}
-            </h3>
-            <p className="text-slate-500 max-w-md mx-auto mb-8">
-                {isThai
-                    ? 'ข่าวดี! ไม่พบข้อมูลร้านนี้ใน Blacklist แต่ถ้าคุณเคยโดนโกงจากร้านนี้ ช่วยรายงานเพื่อปกป้องคนอื่น'
-                    : 'Good news! No records found in blacklist. But if you were scammed by this shop, please report to protect others.'}
-            </p>
-
-            {/* Report CTA Card */}
-            <Card className="max-w-lg mx-auto bg-gradient-to-br from-red-50 to-orange-50 border-red-200 shadow-lg">
-                <CardContent className="p-6">
-                    <div className="flex items-start gap-4">
-                        <div className="w-12 h-12 bg-red-100 rounded-xl flex items-center justify-center flex-shrink-0">
-                            <AlertTriangle className="w-6 h-6 text-red-600" />
+    const NoResultsView = () => {
+        if (searchType === 'blacklist') {
+            return (
+                <div className="text-center py-16">
+                    <div className="relative inline-block mb-6">
+                        <div className="absolute inset-0 bg-green-500/20 rounded-full blur-2xl"></div>
+                        <div className="relative w-24 h-24 bg-gradient-to-br from-green-400 to-emerald-500 rounded-full flex items-center justify-center">
+                            <CheckCircle className="w-12 h-12 text-white" />
                         </div>
-                        <div className="text-left flex-1">
-                            <h4 className="font-bold text-slate-800 mb-2">
-                                {isThai ? 'เคยโดนโกงจากร้านนี้?' : 'Were you scammed by this shop?'}
-                            </h4>
-                            <p className="text-sm text-slate-600 mb-4">
-                                {isThai
-                                    ? 'รายงานมิจฉาชีพเพื่อช่วยเหลือคนอื่น และรับเครดิตปลอบใจเมื่อรายงานได้รับการยืนยัน!'
-                                    : 'Report the scammer to help others and earn karma credits when your report is verified!'}
-                            </p>
-                            <div className="flex items-center gap-3 mb-4 p-3 bg-white/60 rounded-lg">
-                                <Gift className="w-5 h-5 text-amber-500" />
-                                <div className="text-sm">
-                                    <span className="font-semibold text-amber-600">
-                                        {isThai ? '+10 เครดิตปลอบใจ' : '+10 Karma Credits'}
-                                    </span>
-                                    <span className="text-slate-500">
-                                        {isThai ? ' เมื่อรายงานได้รับการยืนยัน' : ' when report is verified'}
-                                    </span>
+                    </div>
+
+                    <h3 className="text-2xl font-bold text-slate-800 mb-3">
+                        {isThai ? 'ไม่พบข้อมูลในระบบ' : 'No Records Found'}
+                    </h3>
+                    <p className="text-slate-500 max-w-md mx-auto mb-8">
+                        {isThai
+                            ? 'ข่าวดี! ไม่พบข้อมูลร้านนี้ใน Blacklist แต่ถ้าคุณเคยโดนโกงจากร้านนี้ ช่วยรายงานเพื่อปกป้องคนอื่น'
+                            : 'Good news! No records found in blacklist. But if you were scammed by this shop, please report to protect others.'}
+                    </p>
+
+                    {/* Report CTA Card */}
+                    <Card className="max-w-lg mx-auto bg-gradient-to-br from-red-50 to-orange-50 border-red-200 shadow-lg">
+                        <CardContent className="p-6">
+                            <div className="flex items-start gap-4">
+                                <div className="w-12 h-12 bg-red-100 rounded-xl flex items-center justify-center flex-shrink-0">
+                                    <AlertTriangle className="w-6 h-6 text-red-600" />
+                                </div>
+                                <div className="text-left flex-1">
+                                    <h4 className="font-bold text-slate-800 mb-2">
+                                        {isThai ? 'เคยโดนโกงจากร้านนี้?' : 'Were you scammed by this shop?'}
+                                    </h4>
+                                    <p className="text-sm text-slate-600 mb-4">
+                                        {isThai
+                                            ? 'รายงานมิจฉาชีพเพื่อช่วยเหลือคนอื่น และรับเครดิตปลอบใจเมื่อรายงานได้รับการยืนยัน!'
+                                            : 'Report the scammer to help others and earn karma credits when your report is verified!'}
+                                    </p>
+                                    <div className="flex items-center gap-3 mb-4 p-3 bg-white/60 rounded-lg">
+                                        <Gift className="w-5 h-5 text-amber-500" />
+                                        <div className="text-sm">
+                                            <span className="font-semibold text-amber-600">
+                                                {isThai ? '+10 เครดิตปลอบใจ' : '+10 Karma Credits'}
+                                            </span>
+                                            <span className="text-slate-500">
+                                                {isThai ? ' เมื่อรายงานได้รับการยืนยัน' : ' when report is verified'}
+                                            </span>
+                                        </div>
+                                    </div>
+                                    <Link href={`/report${searchQuery ? `?q=${encodeURIComponent(searchQuery)}` : ''}`}>
+                                        <Button className="w-full bg-gradient-to-r from-red-600 to-red-500 hover:from-red-700 hover:to-red-600 shadow-lg shadow-red-500/30">
+                                            <AlertTriangle className="w-4 h-4 mr-2" />
+                                            {isThai ? 'รายงานมิจฉาชีพ' : 'Report Scammer'}
+                                        </Button>
+                                    </Link>
                                 </div>
                             </div>
-                            <Link href={`/report${searchQuery ? `?q=${encodeURIComponent(searchQuery)}` : ''}`}>
-                                <Button className="w-full bg-gradient-to-r from-red-600 to-red-500 hover:from-red-700 hover:to-red-600 shadow-lg shadow-red-500/30">
-                                    <AlertTriangle className="w-4 h-4 mr-2" />
-                                    {isThai ? 'รายงานมิจฉาชีพ' : 'Report Scammer'}
-                                </Button>
-                            </Link>
+                        </CardContent>
+                    </Card>
+
+                    {/* Karma Info Banner */}
+                    <div className="mt-8 p-4 bg-gradient-to-r from-purple-50 to-pink-50 rounded-xl border border-purple-200 max-w-lg mx-auto">
+                        <div className="flex items-center gap-3">
+                            <Sparkles className="w-6 h-6 text-purple-500" />
+                            <div className="text-left">
+                                <p className="text-sm font-medium text-purple-800">
+                                    {isThai ? 'ระบบเครดิตปลอบใจ' : 'Karma Credit System'}
+                                </p>
+                                <p className="text-xs text-purple-600">
+                                    {isThai
+                                        ? 'สะสมเครดิตปลอบใจ เพื่อรับสิทธิพิเศษเร็วๆ นี้!'
+                                        : 'Collect karma credits for special rewards coming soon!'}
+                                </p>
+                            </div>
                         </div>
                     </div>
-                </CardContent>
-            </Card>
+                </div>
+            );
+        }
 
-            {/* Karma Info Banner */}
-            <div className="mt-8 p-4 bg-gradient-to-r from-purple-50 to-pink-50 rounded-xl border border-purple-200 max-w-lg mx-auto">
-                <div className="flex items-center gap-3">
-                    <Sparkles className="w-6 h-6 text-purple-500" />
-                    <div className="text-left">
-                        <p className="text-sm font-medium text-purple-800">
-                            {isThai ? 'ระบบเครดิตปลอบใจ' : 'Karma Credit System'}
-                        </p>
-                        <p className="text-xs text-purple-600">
-                            {isThai
-                                ? 'สะสมเครดิตปลอบใจ เพื่อรับสิทธิพิเศษเร็วๆ นี้!'
-                                : 'Collect karma credits for special rewards coming soon!'}
-                        </p>
+        // Rental Search No Results
+        return (
+            <div className="text-center py-16">
+                <div className="relative inline-block mb-6">
+                    <div className="absolute inset-0 bg-blue-500/10 rounded-full blur-2xl"></div>
+                    <div className="relative w-24 h-24 bg-slate-100 rounded-full flex items-center justify-center mx-auto">
+                        <SearchX className="w-12 h-12 text-slate-400" />
                     </div>
                 </div>
+
+                <h3 className="text-2xl font-bold text-slate-800 mb-3">
+                    {isThai ? 'ไม่พบร้านรถเช่า' : 'No Rental Shops Found'}
+                </h3>
+                <p className="text-slate-500 max-w-md mx-auto mb-8">
+                    {isThai
+                        ? 'ไม่พบร้านรถเช่าที่ตรงกับการค้นหาของคุณ ลองเปลี่ยนคำค้นหาหรือเลือกจังหวัดอื่น'
+                        : 'No rental shops found matching your search. Try changing the keyword or selecting another province.'}
+                </p>
+
+                <Button
+                    variant="outline"
+                    className="rounded-xl px-8"
+                    onClick={() => {
+                        setSearchQuery('');
+                        setSelectedProvince('');
+                        setResults([]);
+                        setHasSearched(false);
+                    }}
+                >
+                    {isThai ? 'ล้างการค้นหา' : 'Clear Search'}
+                </Button>
             </div>
-        </div>
-    );
+        );
+    };
 
     // Blacklist Result Card
     const BlacklistCard = ({ result }: { result: SearchResult }) => (
