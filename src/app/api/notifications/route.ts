@@ -18,53 +18,83 @@ export async function GET(request: NextRequest) {
         const offset = parseInt(searchParams.get('offset') || '0');
         const unreadOnly = searchParams.get('unread') === 'true';
 
-        // Get shop
+        // Get shop (if user owns one)
         const { data: shop } = await supabase
             .from('shops')
-            .select('id, is_verified_shop')
+            .select('id, is_verified_shop, owner_id')
             .eq('owner_id', user.id)
+            .maybeSingle();
+
+        let shopNotifications: any[] = [];
+        let shopUnreadCount = 0;
+
+        // Fetch shop-specific notifications if user has a shop
+        if (shop) {
+            let shopQuery = supabase
+                .from('notifications')
+                .select('*')
+                .or(`target_id.eq.${shop.id},shop_id.eq.${shop.id}`)
+                .order('created_at', { ascending: false });
+
+            if (unreadOnly) {
+                shopQuery = shopQuery.eq('is_read', false);
+            }
+
+            const { data } = await shopQuery;
+            shopNotifications = data || [];
+
+            // Get shop unread count
+            const { count } = await supabase
+                .from('notifications')
+                .select('*', { count: 'exact', head: true })
+                .or(`target_id.eq.${shop.id},shop_id.eq.${shop.id}`)
+                .eq('is_read', false);
+            shopUnreadCount = count || 0;
+        }
+
+        // Fetch admin notifications (system-wide)
+        // Get user's role
+        const { data: profile } = await supabase
+            .from('profiles')
+            .select('role')
+            .eq('id', user.id)
             .single();
 
-        if (!shop) {
-            return NextResponse.json({
-                notifications: [],
-                total: 0,
-                unread_count: 0,
-                has_more: false
-            });
-        }
+        const userRole = profile?.role || 'user';
 
-        // Build query for shop notifications
-        let query = supabase
-            .from('notifications')
-            .select('*', { count: 'exact' })
-            .or(`target_id.eq.${shop.id},shop_id.eq.${shop.id}`) // Check both target_id and shop_id
-            .order('created_at', { ascending: false })
-            .range(offset, offset + limit - 1);
+        let adminQuery = supabase
+            .from('admin_notifications')
+            .select('*')
+            .or(`target_group.eq.all,target_group.eq.${userRole === 'shop_owner' ? 'shop_owners' : 'users'}`)
+            .order('created_at', { ascending: false });
 
-        if (unreadOnly) {
-            query = query.eq('is_read', false);
-        }
+        const { data: adminNotificationsData } = await adminQuery;
 
-        const { data: notifications, error, count } = await query;
+        // Transform admin_notifications to match notification format
+        const adminNotifications = (adminNotificationsData || []).map((an: any) => ({
+            id: an.id,
+            shop_id: null,
+            type: an.type,
+            title: an.title,
+            message: an.message,
+            data: null,
+            is_read: false, // Admin notifications are always shown as unread for now
+            created_at: an.sent_at,
+        }));
 
-        if (error) {
-            console.error('Error fetching notifications:', error);
-            return NextResponse.json({ error: 'Failed to fetch notifications' }, { status: 500 });
-        }
+        // Merge notifications
+        const allNotifications = [...shopNotifications, ...adminNotifications]
+            .sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())
+            .slice(offset, offset + limit);
 
-        // Get unread count
-        const { count: unreadCount } = await supabase
-            .from('notifications')
-            .select('*', { count: 'exact', head: true })
-            .or(`target_id.eq.${shop.id},shop_id.eq.${shop.id}`)
-            .eq('is_read', false);
+        const totalCount = shopNotifications.length + adminNotifications.length;
+        const totalUnreadCount = shopUnreadCount + adminNotifications.length;
 
         return NextResponse.json({
-            notifications: notifications || [],
-            total: count || 0,
-            unread_count: unreadCount || 0,
-            has_more: (offset + limit) < (count || 0),
+            notifications: allNotifications,
+            total: totalCount,
+            unread_count: totalUnreadCount,
+            has_more: (offset + limit) < totalCount,
         });
     } catch (error) {
         console.error('Error in notifications API:', error);

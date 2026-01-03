@@ -86,7 +86,7 @@ export default function AdminContactPage() {
             if (userIds.length > 0) {
                 const { data: profilesData } = await supabase
                     .from('profiles')
-                    .select('id, email, first_name, last_name')
+                    .select('id, email, full_name')
                     .in('id', userIds);
 
                 if (profilesData) {
@@ -245,7 +245,7 @@ export default function AdminContactPage() {
                                             </td>
                                             <td className="px-6 py-4">
                                                 <div className="flex flex-col">
-                                                    <span className="font-medium">{ticket.profiles?.email || 'Unknown'}</span>
+                                                    <span className="font-medium">{ticket.profiles?.full_name || ticket.profiles?.email || 'Unknown User'}</span>
                                                     <span className="text-xs text-gray-500 flex items-center gap-1">
                                                         <Phone className="w-3 h-3" /> {ticket.contact_number}
                                                     </span>
