@@ -60,6 +60,7 @@ export async function POST(request: NextRequest) {
                         last_name: item.last_name,
                         reason_type: item.reason_type,
                         reason_detail: item.reason_detail,
+                        incident_date: item.incident_date || null,
                         severity: 'moderate', // Default severity for imported
                         status: 'approved',
                         reported_by_shop_id: null, // Assuming DB allows null for imports
