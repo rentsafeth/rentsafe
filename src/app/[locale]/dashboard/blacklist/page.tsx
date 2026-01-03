@@ -43,6 +43,7 @@ const REASON_TYPES = [
     { value: 'damage', label: 'ทำรถเสียหาย ไม่ยอมชดใช้', severity: 'moderate' },
     { value: 'no_pay', label: 'หนีไม่จ่ายค่าเช่า', severity: 'moderate' },
     { value: 'fake_docs', label: 'ใช้เอกสารปลอม', severity: 'severe' },
+    { value: 'pledge', label: 'เช่าจำนำ', severity: 'severe' },
     { value: 'other', label: 'อื่นๆ', severity: 'warning' },
 ];
 
