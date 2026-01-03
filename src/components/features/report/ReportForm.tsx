@@ -377,7 +377,22 @@ export default function ReportForm({ userId }: { userId: string }) {
                                         <FormItem>
                                             <FormLabel>เบอร์โทรศัพท์</FormLabel>
                                             <FormControl>
-                                                <Input placeholder="08x-xxx-xxxx" {...field} disabled={!!shopInfo} className={shopInfo ? 'bg-slate-100' : ''} />
+                                                <Input
+                                                    placeholder="08x-xxx-xxxx"
+                                                    {...field}
+                                                    onBlur={(e) => {
+                                                        field.onBlur(); // Handover to react-hook-form
+                                                        // Auto-format: remove non-digits
+                                                        if (field.value) {
+                                                            const cleaned = field.value.replace(/[^0-9]/g, '');
+                                                            if (cleaned !== field.value) {
+                                                                field.onChange(cleaned);
+                                                            }
+                                                        }
+                                                    }}
+                                                    disabled={!!shopInfo}
+                                                    className={shopInfo ? 'bg-slate-100' : ''}
+                                                />
                                             </FormControl>
                                             <FormMessage />
                                         </FormItem>
