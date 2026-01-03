@@ -181,18 +181,14 @@ export default function AdsPage() {
             }
 
             // Load System Settings
-            const { data: sysSettings } = await supabase
-                .from('system_settings')
-                .select('*')
-                .in('key', ['daily_boost_price', 'min_ppc_bid', 'max_ppc_bid', 'min_featured_bid']);
+            const { data: configData } = await supabase
+                .from('system_configs')
+                .select('value')
+                .eq('key', 'ads_settings')
+                .maybeSingle();
 
-            if (isMounted.current) {
-                const settingsMap: Record<string, any> = {};
-                sysSettings?.forEach(s => {
-                    settingsMap[s.key] = typeof s.value === 'string' ?
-                        (s.value.startsWith('"') ? s.value.replace(/"/g, '') : s.value) : s.value;
-                });
-                setSystemSettings(settingsMap);
+            if (isMounted.current && configData) {
+                setSystemSettings(configData.value);
             }
 
             // Load Today's Stats
@@ -523,9 +519,9 @@ export default function AdsPage() {
         }
     };
 
-    const boostPrice = parseInt(systemSettings.daily_boost_price) || 50;
-    const minPPC = parseInt(systemSettings.min_ppc_bid) || 1;
-    const maxPPC = parseInt(systemSettings.max_ppc_bid) || 100;
+    const boostPrice = systemSettings.daily_boost_price || 50;
+    const minPPC = systemSettings.ppc_min_bid || 1;
+    const maxPPC = 100; // Hardcoded max for now, or add to system settings later
 
     const isBoostActive = adSettings.boost_active &&
         adSettings.boost_expires_at &&

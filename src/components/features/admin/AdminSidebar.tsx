@@ -17,7 +17,6 @@ const menuItems = [
     { href: '/admin/reports/deletion-requests', label: 'คำขอลบรายงาน', icon: Trash2 },
     { href: '/admin/reviews', label: 'จัดการรีวิว', icon: MessageSquare },
     { href: '/admin/credits', label: 'จัดการเครดิต', icon: Coins },
-    { href: '/admin/payments', label: 'แจ้งโอนเงิน', icon: CreditCard },
     { href: '/admin/ads', label: 'จัดการโฆษณา', icon: Megaphone },
     { href: '/admin/notifications', label: 'แจ้งเตือน', icon: Bell },
     { href: '/admin/contact', label: 'รายการติดต่อ', icon: MessageSquare },
@@ -38,7 +37,6 @@ export default function AdminSidebar() {
         pendingDeletions: 0,
         pendingReviews: 0,
         pendingCredits: 0,
-        pendingPayments: 0,
         pendingTickets: 0
     });
 
@@ -106,7 +104,6 @@ export default function AdminSidebar() {
                                 else if (item.href === '/admin/reports/deletion-requests') count = stats.pendingDeletions;
                                 else if (item.href === '/admin/reviews') count = stats.pendingReviews;
                                 else if (item.href === '/admin/credits') count = stats.pendingCredits;
-                                else if (item.href === '/admin/payments') count = stats.pendingPayments;
                                 else if (item.href === '/admin/contact') count = stats.pendingTickets;
 
                                 return count > 0 ? (

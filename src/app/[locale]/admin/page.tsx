@@ -37,8 +37,10 @@ export default async function AdminDashboardPage() {
         .select('*', { count: 'exact', head: true })
         .eq('status', 'pending');
 
-    const { count: pendingPayments } = await supabase
-        .from('payment_notifications')
+
+
+    const { count: pendingTickets } = await supabase
+        .from('contact_tickets')
         .select('*', { count: 'exact', head: true })
         .eq('status', 'pending');
 
@@ -146,15 +148,17 @@ export default async function AdminDashboardPage() {
                     </Card>
                 </Link>
 
-                <Link href="/admin/payments">
+
+
+                <Link href="/admin/contact">
                     <Card className="hover:shadow-lg transition-shadow cursor-pointer h-full">
                         <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                            <CardTitle className="text-sm font-medium">รอแจ้งโอนเงิน</CardTitle>
-                            <CreditCard className="h-4 w-4 text-green-500" />
+                            <CardTitle className="text-sm font-medium">รอตรวจสอบ (Contact)</CardTitle>
+                            <MessageSquare className="h-4 w-4 text-purple-500" />
                         </CardHeader>
                         <CardContent>
-                            <div className="text-2xl font-bold">{pendingPayments || 0}</div>
-                            <p className="text-xs text-muted-foreground">สลิปโอนเงินที่รอตรวจสอบ</p>
+                            <div className="text-2xl font-bold">{pendingTickets || 0}</div>
+                            <p className="text-xs text-muted-foreground">รายการติดต่อที่รอตรวจสอบ</p>
                         </CardContent>
                     </Card>
                 </Link>

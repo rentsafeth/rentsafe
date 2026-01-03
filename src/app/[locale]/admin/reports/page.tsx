@@ -170,7 +170,30 @@ export default async function AdminReportsPage() {
                                         <p><span className="text-slate-400">บัญชีธนาคาร:</span> {report.manual_bank_account || '-'}</p>
                                         <p><span className="text-slate-400">เบอร์โทร:</span> {report.manual_phone_number || '-'}</p>
                                         <p><span className="text-slate-400">Line ID:</span> {report.manual_line_id || '-'}</p>
-                                        <p><span className="text-slate-400">Facebook:</span> {report.manual_facebook_url ? <a href={report.manual_facebook_url} target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline">Link</a> : '-'}</p>
+                                        <p>
+                                            <span className="text-slate-400">Facebook:</span>{' '}
+                                            {(() => {
+                                                // Try to get FB from social_links JSON
+                                                let fbUrl = null;
+                                                if (report.social_links && typeof report.social_links === 'object') {
+                                                    fbUrl = (report.social_links as any).facebook;
+                                                }
+                                                // Fallback to facebook_urls array
+                                                if (!fbUrl && report.facebook_urls && Array.isArray(report.facebook_urls) && report.facebook_urls.length > 0) {
+                                                    fbUrl = report.facebook_urls[0];
+                                                }
+                                                // Fallback to manual_facebook_url (legacy)
+                                                if (!fbUrl && report.manual_facebook_url) {
+                                                    fbUrl = report.manual_facebook_url;
+                                                }
+
+                                                return fbUrl ? (
+                                                    <a href={fbUrl} target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline truncate max-w-[200px] inline-block align-bottom">
+                                                        {fbUrl}
+                                                    </a>
+                                                ) : '-';
+                                            })()}
+                                        </p>
                                         {report.amount_lost && (
                                             <p><span className="text-slate-400">มูลค่าความเสียหาย:</span> {new Intl.NumberFormat('th-TH', { style: 'currency', currency: 'THB' }).format(report.amount_lost)}</p>
                                         )}

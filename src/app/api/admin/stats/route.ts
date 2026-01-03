@@ -20,7 +20,6 @@ export async function GET(request: NextRequest) {
             { count: pendingDeletions },
             { count: pendingReviews },
             { count: pendingCredits },
-            { count: pendingPayments },
             { count: pendingTickets }
         ] = await Promise.all([
             adminClient.from('shops').select('*', { count: 'exact', head: true }).eq('verification_status', 'pending'),
@@ -28,7 +27,6 @@ export async function GET(request: NextRequest) {
             adminClient.from('report_deletion_requests').select('*', { count: 'exact', head: true }).eq('status', 'pending'),
             adminClient.from('reviews').select('*', { count: 'exact', head: true }).eq('status', 'pending'),
             adminClient.from('credit_orders').select('*', { count: 'exact', head: true }).eq('status', 'pending'),
-            adminClient.from('payment_notifications').select('*', { count: 'exact', head: true }).eq('status', 'pending'),
             adminClient.from('contact_tickets').select('*', { count: 'exact', head: true }).eq('status', 'pending')
         ]);
 
@@ -38,7 +36,6 @@ export async function GET(request: NextRequest) {
             pendingDeletions: pendingDeletions || 0,
             pendingReviews: pendingReviews || 0,
             pendingCredits: pendingCredits || 0,
-            pendingPayments: pendingPayments || 0,
             pendingTickets: pendingTickets || 0
         });
     } catch (error) {

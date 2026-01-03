@@ -61,23 +61,51 @@ export default function AdminContactPage() {
     const fetchTickets = async () => {
         setLoading(true);
         try {
+            // First fetch tickets
             let query = supabase
                 .from('contact_tickets')
-                .select(`
-                    *,
-                    profiles (email, first_name, last_name)
-                `)
+                .select('*')
                 .order('created_at', { ascending: false });
 
             if (filterStatus !== 'all') {
                 query = query.eq('status', filterStatus);
             }
 
-            const { data, error } = await query;
-            if (error) throw error;
-            setTickets(data || []);
+            const { data: ticketsData, error: ticketsError } = await query;
+            if (ticketsError) throw ticketsError;
+
+            if (!ticketsData || ticketsData.length === 0) {
+                setTickets([]);
+                return;
+            }
+
+            // Then fetch profiles manually to avoid RLS join issues
+            const userIds = Array.from(new Set(ticketsData.map(t => t.user_id).filter(Boolean)));
+
+            let profilesMap: Record<string, any> = {};
+            if (userIds.length > 0) {
+                const { data: profilesData } = await supabase
+                    .from('profiles')
+                    .select('id, email, first_name, last_name')
+                    .in('id', userIds);
+
+                if (profilesData) {
+                    profilesData.forEach(p => {
+                        profilesMap[p.id] = p;
+                    });
+                }
+            }
+
+            // Combine data
+            const combinedTickets = ticketsData.map(ticket => ({
+                ...ticket,
+                profiles: profilesMap[ticket.user_id] || { email: 'Unknown User' }
+            }));
+
+            setTickets(combinedTickets);
         } catch (error) {
             console.error('Error fetching tickets:', error);
+            // alert('Error fetching tickets: ' + (error as any).message); // Optional debug
         } finally {
             setLoading(false);
         }
