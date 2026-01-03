@@ -648,89 +648,121 @@ export default function SearchResults() {
         );
     };
 
+    // Helper for risk status (Copied from BlacklistDetail)
+    const getRiskStatus = (entry: any, isThai: boolean) => {
+        const lastReport = new Date(entry.last_reported_at || entry.first_reported_at || new Date());
+        const now = new Date();
+        const daysSinceLastReport = (now.getTime() - lastReport.getTime()) / (1000 * 3600 * 24);
+
+        // Trend: Recent activity (< 30 days)
+        if (daysSinceLastReport < 30) {
+            return {
+                label: isThai ? '🔥 กำลังระบาด' : '🔥 Active Threat',
+                className: 'bg-red-600 text-white border-red-700 animate-pulse shadow-md'
+            };
+        }
+
+        // Impact: High Impact (Reports > 5 or Loss > 50,000)
+        if (entry.total_reports > 5 || entry.total_amount_lost > 50000) {
+            return {
+                label: isThai ? '🚨 เสียหายหนัก' : '🚨 High Risk',
+                className: 'bg-red-100 text-red-800 border-red-200'
+            };
+        }
+
+        // Default: Caution
+        return {
+            label: isThai ? '⚠️ เฝ้าระวัง' : '⚠️ Caution',
+            className: 'bg-orange-100 text-orange-800 border-orange-200'
+        };
+    };
+
     // Blacklist Result Card
-    const BlacklistCard = ({ result }: { result: SearchResult }) => (
-        <Card className="group overflow-hidden border-l-4 border-l-red-500 hover:shadow-xl transition-all duration-300 bg-gradient-to-r from-white to-red-50/30">
-            <CardContent className="p-6">
-                <div className="flex flex-col md:flex-row md:items-start md:justify-between gap-4">
-                    <div className="flex-1">
-                        {/* Header with badges */}
-                        <div className="flex items-center gap-2 mb-3 flex-wrap">
-                            <Badge className={`${severityColors[result.data.severity]} border px-3 py-1`}>
-                                <ShieldAlert className="w-3 h-3 mr-1" />
-                                {t(`severity.${result.data.severity}`)}
-                            </Badge>
-                            <Badge variant="outline" className="text-slate-600 border-slate-300">
-                                <Users className="w-3 h-3 mr-1" />
-                                {t('reportsCount', { count: result.data.total_reports })}
-                            </Badge>
-                            {result.data.heart_count > 0 && (
-                                <Badge variant="outline" className="text-pink-600 border-pink-200 bg-pink-50">
-                                    <Heart className="w-3 h-3 mr-1 fill-pink-500" />
-                                    {result.data.heart_count}
+    const BlacklistCard = ({ result }: { result: SearchResult }) => {
+        const status = getRiskStatus(result.data, isThai);
+
+        return (
+            <Card className="group overflow-hidden border-l-4 border-l-red-500 hover:shadow-xl transition-all duration-300 bg-gradient-to-r from-white to-red-50/30">
+                <CardContent className="p-6">
+                    <div className="flex flex-col md:flex-row md:items-start md:justify-between gap-4">
+                        <div className="flex-1">
+                            {/* Header with badges */}
+                            <div className="flex items-center gap-2 mb-3 flex-wrap">
+                                <Badge className={`${status.className} border px-3 py-1`}>
+                                    {status.label}
                                 </Badge>
-                            )}
+                                <Badge variant="outline" className="text-slate-600 border-slate-300">
+                                    <Users className="w-3 h-3 mr-1" />
+                                    {t('reportsCount', { count: result.data.total_reports })}
+                                </Badge>
+                                {result.data.heart_count > 0 && (
+                                    <Badge variant="outline" className="text-pink-600 border-pink-200 bg-pink-50">
+                                        <Heart className="w-3 h-3 mr-1 fill-pink-500" />
+                                        {result.data.heart_count}
+                                    </Badge>
+                                )}
+                            </div>
+
+                            {/* Shop Name */}
+                            <h3 className="text-xl font-bold text-slate-800 mb-3 group-hover:text-red-600 transition-colors">
+                                {result.data.shop_names?.[0] || t('unknownShop')}
+                            </h3>
+
+                            {/* Details */}
+                            <div className="space-y-2 text-sm">
+                                {result.data.bank_account_no && (
+                                    <div className="flex items-center gap-2 text-slate-600">
+                                        <CreditCard className="w-4 h-4 text-slate-400" />
+                                        <span className="font-mono font-medium text-red-700 bg-red-50 px-2 py-0.5 rounded">
+                                            {result.data.bank_account_no}
+                                        </span>
+                                    </div>
+                                )}
+                                {result.data.phone_numbers?.[0] && (
+                                    <div className="flex items-center gap-2 text-slate-600">
+                                        <Phone className="w-4 h-4 text-slate-400" />
+                                        <span className="font-medium">{result.data.phone_numbers[0]}</span>
+                                    </div>
+                                )}
+                                {result.data.line_ids?.[0] && (
+                                    <div className="flex items-center gap-2 text-slate-600">
+                                        <MessageCircle className="w-4 h-4 text-slate-400" />
+                                        <span className="font-medium text-green-700">{result.data.line_ids[0]}</span>
+                                    </div>
+                                )}
+                                {result.data.facebook_urls?.[0] && (
+                                    <div className="flex items-center gap-2 text-slate-600">
+                                        <Facebook className="w-4 h-4 text-slate-400" />
+                                        <span className="font-medium text-blue-700 truncate max-w-[200px]">
+                                            {result.data.facebook_urls[0].replace(/^https?:\/\/(www\.)?facebook\.com\//, '')}
+                                        </span>
+                                    </div>
+                                )}
+                                {result.data.total_amount_lost > 0 && (
+                                    <div className="flex items-center gap-2 mt-3">
+                                        <AlertCircle className="w-4 h-4 text-red-500" />
+                                        <span className="text-red-600 font-semibold">
+                                            {t('totalLoss')}: {formatMoney(result.data.total_amount_lost)}
+                                        </span>
+                                    </div>
+                                )}
+                            </div>
                         </div>
 
-                        {/* Shop Name */}
-                        <h3 className="text-xl font-bold text-slate-800 mb-3 group-hover:text-red-600 transition-colors">
-                            {result.data.shop_names?.[0] || t('unknownShop')}
-                        </h3>
-
-                        {/* Details */}
-                        <div className="space-y-2 text-sm">
-                            {result.data.bank_account_no && (
-                                <div className="flex items-center gap-2 text-slate-600">
-                                    <CreditCard className="w-4 h-4 text-slate-400" />
-                                    <span className="font-mono font-medium text-red-700 bg-red-50 px-2 py-0.5 rounded">
-                                        {result.data.bank_account_no}
-                                    </span>
-                                </div>
-                            )}
-                            {result.data.phone_numbers?.[0] && (
-                                <div className="flex items-center gap-2 text-slate-600">
-                                    <Phone className="w-4 h-4 text-slate-400" />
-                                    <span className="font-medium">{result.data.phone_numbers[0]}</span>
-                                </div>
-                            )}
-                            {result.data.line_ids?.[0] && (
-                                <div className="flex items-center gap-2 text-slate-600">
-                                    <MessageCircle className="w-4 h-4 text-slate-400" />
-                                    <span className="font-medium text-green-700">{result.data.line_ids[0]}</span>
-                                </div>
-                            )}
-                            {result.data.facebook_urls?.[0] && (
-                                <div className="flex items-center gap-2 text-slate-600">
-                                    <Facebook className="w-4 h-4 text-slate-400" />
-                                    <span className="font-medium text-blue-700 truncate max-w-[200px]">
-                                        {result.data.facebook_urls[0].replace(/^https?:\/\/(www\.)?facebook\.com\//, '')}
-                                    </span>
-                                </div>
-                            )}
-                            {result.data.total_amount_lost > 0 && (
-                                <div className="flex items-center gap-2 mt-3">
-                                    <AlertCircle className="w-4 h-4 text-red-500" />
-                                    <span className="text-red-600 font-semibold">
-                                        {t('totalLoss')}: {formatMoney(result.data.total_amount_lost)}
-                                    </span>
-                                </div>
-                            )}
+                        {/* Action Button */}
+                        <div className="flex flex-col gap-2">
+                            <Link href={`/blacklist/${result.data.id}`}>
+                                <Button className="bg-gradient-to-r from-red-600 to-red-500 hover:from-red-700 hover:to-red-600 shadow-md">
+                                    <ExternalLink className="w-4 h-4 mr-2" />
+                                    {t('viewDetails')}
+                                </Button>
+                            </Link>
                         </div>
                     </div>
-
-                    {/* Action Button */}
-                    <div className="flex flex-col gap-2">
-                        <Link href={`/blacklist/${result.data.id}`}>
-                            <Button className="bg-gradient-to-r from-red-600 to-red-500 hover:from-red-700 hover:to-red-600 shadow-md">
-                                <ExternalLink className="w-4 h-4 mr-2" />
-                                {t('viewDetails')}
-                            </Button>
-                        </Link>
-                    </div>
-                </div>
-            </CardContent>
-        </Card>
-    );
+                </CardContent>
+            </Card>
+        );
+    };
 
     // Shop Result Card
     const ShopCard = ({ result }: { result: SearchResult }) => (
