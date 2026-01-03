@@ -45,6 +45,7 @@ const REASON_TYPES: Record<string, string> = {
     fake_docs: 'ใช้เอกสารปลอม',
     other: 'อื่นๆ',
     imported: 'นำเข้าจากระบบ',
+    pledge: 'เช่าจำนำ',
 };
 
 const SEVERITY_CONFIG: Record<string, { label: string; color: string }> = {
