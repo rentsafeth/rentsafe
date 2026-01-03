@@ -57,6 +57,7 @@ interface Report {
     reporter_id: string
     manual_shop_name: string | null
     manual_shop_contact: string | null
+    manual_facebook_url: string | null
     manual_bank_account: string | null
     description: string
     evidence_urls: string[]
