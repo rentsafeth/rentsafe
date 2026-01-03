@@ -874,8 +874,8 @@ export default function AdminBlacklistPage() {
                             </Button>
                         </DialogFooter>
                     )}
-                </DialogContent> >
-            </Dialog >
-        </div >
+                </DialogContent>
+            </Dialog>
+        </div>
     );
 }
