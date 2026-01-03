@@ -556,7 +556,7 @@ ${entry.bank_account_no ? `💳 เลขบัญชี: ${entry.bank_account_n
                                     </div>
                                     <div className="flex flex-col gap-2">
                                         {entry.facebook_urls.map((url, i) => (
-                                            <FacebookLink key={i} url={url} isThai={isThai} />
+                                            <FacebookLink key={i} url={url} isThai={isThai} isFirst={i === 0} />
                                         ))}
                                     </div>
                                 </div>
