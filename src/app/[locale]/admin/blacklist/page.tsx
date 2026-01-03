@@ -212,35 +212,54 @@ export default function AdminBlacklistPage() {
         }
     };
 
+    const [importProgress, setImportProgress] = useState<{ current: number, total: number, success: number, failed: number, logs: string[] } | null>(null);
+
     const handleConfirmImport = async () => {
         setImporting(true);
+        setImportProgress({ current: 0, total: previewData.length, success: 0, failed: 0, logs: [] });
+
+        const results = { success: 0, failed: 0, errors: [] as any[] };
+
         try {
-            const response = await fetch('/api/admin/blacklist/import', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ reports: previewData }),
-            });
+            // Process one by one to show progress
+            for (let i = 0; i < previewData.length; i++) {
+                const item = previewData[i];
+                try {
+                    const response = await fetch('/api/admin/blacklist/import', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ reports: [item] }), // Send 1 item
+                    });
 
-            const result = await response.json();
+                    const result = await response.json();
 
-            if (!response.ok) {
-                throw new Error(result.error || 'Import failed');
+                    if (!response.ok || (result.errors && result.errors.length > 0)) {
+                        throw new Error(result.errors?.[0]?.error || 'Import failed');
+                    }
+
+                    results.success++;
+                    setImportProgress(prev => prev ? ({ ...prev, current: i + 1, success: prev.success + 1, logs: [`[OK] ${item.first_name}: สำเร็จ`, ...prev.logs].slice(0, 50) }) : null);
+                } catch (err: any) {
+                    results.failed++;
+                    results.errors.push({ name: item.first_name, error: err.message });
+                    setImportProgress(prev => prev ? ({ ...prev, current: i + 1, failed: prev.failed + 1, logs: [`[ERROR] ${item.first_name}: ${err.message}`, ...prev.logs].slice(0, 50) }) : null);
+                }
             }
 
-            if (result.count === 0 && result.errors && result.errors.length > 0) {
-                console.error(result.errors);
-                alert(`นำเข้าไม่สำเร็จ: ${result.errors[0].error || 'Unknown error'}`);
-            } else {
-                alert(`นำเข้าสำเร็จ ${result.count} รายการ ${result.errors?.length > 0 ? `(มีข้อผิดพลาด ${result.errors.length} รายการ)` : ''}`);
-                setShowImportModal(false);
-                setImportJson('');
-                setPreviewData([]);
-                setImportStep(1);
-                loadReports(); // Refresh list
-            }
+            // Finished
+            await new Promise(resolve => setTimeout(resolve, 500)); // Short delay to see 100%
+            alert(`นำเข้าเสร็จสิ้น\nสำเร็จ: ${results.success}\nล้มเหลว: ${results.failed}`);
+
+            setShowImportModal(false);
+            setImportJson('');
+            setPreviewData([]);
+            setImportStep(1);
+            setImportProgress(null);
+            loadReports(); // Refresh list
+
         } catch (error: any) {
-            console.error('Import error:', error);
-            alert(`เกิดข้อผิดพลาด: ${error.message}`);
+            console.error('Import fatal error:', error);
+            alert(`เกิดข้อผิดพลาดร้ายแรง: ${error.message}`);
         } finally {
             setImporting(false);
         }
@@ -263,9 +282,10 @@ export default function AdminBlacklistPage() {
                 `)
                 .order('created_at', { ascending: false });
 
-            if (statusFilter !== 'all') {
-                query = query.eq('status', statusFilter);
-            }
+            // Fetch all to calculate stats correctly on client side for now (or until pagination is needed)
+            // if (statusFilter !== 'all') {
+            //     query = query.eq('status', statusFilter);
+            // }
 
             const { data, error } = await query;
 
@@ -343,6 +363,10 @@ export default function AdminBlacklistPage() {
     };
 
     const filteredReports = reports.filter(report => {
+        // Filter by Status
+        if (statusFilter !== 'all' && report.status !== statusFilter) return false;
+
+        // Filter by Search
         if (!searchQuery) return true;
         const q = searchQuery.toLowerCase();
         return (
