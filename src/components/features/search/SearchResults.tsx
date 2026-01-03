@@ -732,44 +732,76 @@ export default function SearchResults() {
                                 )}
                             </div>
 
-                            {/* Shop Name */}
-                            <h3 className="text-xl font-bold text-slate-800 mb-3 group-hover:text-red-600 transition-colors">
-                                {result.data.shop_names?.[0] || t('unknownShop')}
-                            </h3>
+                            {/* Shop Name(s) */}
+                            <div className="mb-3">
+                                <h3 className="text-xl font-bold text-slate-800 group-hover:text-red-600 transition-colors">
+                                    {result.data.shop_names?.[0] || t('unknownShop')}
+                                </h3>
+                                {/* Show additional shop names/aliases if any */}
+                                {result.data.shop_names && result.data.shop_names.length > 1 && (
+                                    <div className="flex flex-wrap gap-1.5 mt-2">
+                                        <span className="text-xs text-slate-500 flex items-center">{isThai ? 'ชื่ออื่นๆ:' : 'Aliases:'}</span>
+                                        {result.data.shop_names.slice(1).map((name: string, idx: number) => (
+                                            <Badge key={idx} variant="secondary" className="bg-slate-100 text-slate-600 text-xs font-normal border-slate-200">
+                                                {name}
+                                            </Badge>
+                                        ))}
+                                    </div>
+                                )}
+                            </div>
 
                             {/* Details */}
                             <div className="space-y-2 text-sm">
                                 {result.data.bank_account_no && (
                                     <div className="flex items-center gap-2 text-slate-600">
-                                        <CreditCard className="w-4 h-4 text-slate-400" />
+                                        <CreditCard className="w-4 h-4 text-slate-400 shrink-0" />
                                         <span className="font-mono font-medium text-red-700 bg-red-50 px-2 py-0.5 rounded">
                                             {result.data.bank_account_no}
                                         </span>
                                     </div>
                                 )}
-                                {result.data.phone_numbers?.[0] && (
-                                    <div className="flex items-center gap-2 text-slate-600">
-                                        <Phone className="w-4 h-4 text-slate-400" />
-                                        <span className="font-medium">{result.data.phone_numbers[0]}</span>
+
+                                {/* Phone Numbers */}
+                                {result.data.phone_numbers && result.data.phone_numbers.length > 0 && (
+                                    <div className="flex flex-col gap-1">
+                                        {result.data.phone_numbers.map((phone: string, idx: number) => (
+                                            <div key={`phone-${idx}`} className="flex items-center gap-2 text-slate-600">
+                                                <Phone className="w-4 h-4 text-slate-400 shrink-0" />
+                                                <span className="font-medium">{phone}</span>
+                                            </div>
+                                        ))}
                                     </div>
                                 )}
-                                {result.data.line_ids?.[0] && (
-                                    <div className="flex items-center gap-2 text-slate-600">
-                                        <MessageCircle className="w-4 h-4 text-slate-400" />
-                                        <span className="font-medium text-green-700">{result.data.line_ids[0]}</span>
+
+                                {/* Line IDs */}
+                                {result.data.line_ids && result.data.line_ids.length > 0 && (
+                                    <div className="flex flex-col gap-1">
+                                        {result.data.line_ids.map((line: string, idx: number) => (
+                                            <div key={`line-${idx}`} className="flex items-center gap-2 text-slate-600">
+                                                <MessageCircle className="w-4 h-4 text-slate-400 shrink-0" />
+                                                <span className="font-medium text-green-700">{line}</span>
+                                            </div>
+                                        ))}
                                     </div>
                                 )}
-                                {result.data.facebook_urls?.[0] && (
-                                    <div className="flex items-center gap-2 text-slate-600">
-                                        <Facebook className="w-4 h-4 text-slate-400" />
-                                        <span className="font-medium text-blue-700 truncate max-w-[200px]">
-                                            {result.data.facebook_urls[0].replace(/^https?:\/\/(www\.)?facebook\.com\//, '')}
-                                        </span>
+
+                                {/* Facebook URLs */}
+                                {result.data.facebook_urls && result.data.facebook_urls.length > 0 && (
+                                    <div className="flex flex-col gap-1">
+                                        {result.data.facebook_urls.map((url: string, idx: number) => (
+                                            <div key={`fb-${idx}`} className="flex items-center gap-2 text-slate-600">
+                                                <Facebook className="w-4 h-4 text-slate-400 shrink-0" />
+                                                <span className="font-medium text-blue-700 truncate max-w-[200px]" title={url}>
+                                                    {url.replace(/^https?:\/\/(www\.)?facebook\.com\//, '')}
+                                                </span>
+                                            </div>
+                                        ))}
                                     </div>
                                 )}
+
                                 {result.data.total_amount_lost > 0 && (
-                                    <div className="flex items-center gap-2 mt-3">
-                                        <AlertCircle className="w-4 h-4 text-red-500" />
+                                    <div className="flex items-center gap-2 mt-3 pt-2 border-t border-slate-100">
+                                        <AlertCircle className="w-4 h-4 text-red-500 shrink-0" />
                                         <span className="text-red-600 font-semibold">
                                             {t('totalLoss')}: {formatMoney(result.data.total_amount_lost)}
                                         </span>
