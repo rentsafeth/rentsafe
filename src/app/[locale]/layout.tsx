@@ -7,6 +7,7 @@ import Footer from '@/components/layout/Footer';
 import BottomMenu from '@/components/layout/BottomMenu';
 import { Toaster } from '@/components/ui/sonner';
 import PWARegister from '@/components/PWARegister';
+import CookieConsent from '@/components/ui/CookieConsent';
 import "../globals.css";
 
 const BASE_URL = 'https://rentsafe.in.th';
@@ -121,6 +122,7 @@ export default async function RootLayout({
             {children}
           </main>
           <Footer />
+          <CookieConsent />
           <BottomMenu />
           <Toaster />
         </NextIntlClientProvider>
