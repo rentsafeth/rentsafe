@@ -99,7 +99,7 @@ export default function AdminContactPage() {
             // Combine data
             const combinedTickets = ticketsData.map(ticket => ({
                 ...ticket,
-                profiles: profilesMap[ticket.user_id] || { email: 'Unknown User' }
+                profiles: profilesMap[ticket.user_id] || { email: 'Unknown User', full_name: null }
             }));
 
             setTickets(combinedTickets);
