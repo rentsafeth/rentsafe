@@ -172,11 +172,25 @@ export default async function AdminReportsPage() {
                                         <p><span className="text-slate-400">Line ID:</span> {report.manual_line_id || '-'}</p>
                                         <p>
                                             <span className="text-slate-400">Facebook:</span>{' '}
-                                            {report.manual_facebook_url ? (
-                                                <a href={report.manual_facebook_url} target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline truncate max-w-[200px] inline-block align-bottom">
-                                                    Link
-                                                </a>
-                                            ) : '-'}
+                                            {(() => {
+                                                let fbUrl = report.manual_facebook_url;
+
+                                                // Fallback: Try to parse from manual_shop_contact
+                                                if (!fbUrl && report.manual_shop_contact) {
+                                                    const contactStr = report.manual_shop_contact as string;
+                                                    // Look for FB: or Facebook: followed by url
+                                                    const match = contactStr.match(/(?:FB|Facebook):\s*(https?:\/\/[^\s,]+)/i);
+                                                    if (match && match[1]) {
+                                                        fbUrl = match[1];
+                                                    }
+                                                }
+
+                                                return fbUrl ? (
+                                                    <a href={fbUrl} target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline truncate max-w-[200px] inline-block align-bottom">
+                                                        Link
+                                                    </a>
+                                                ) : '-';
+                                            })()}
                                         </p>
                                         {report.amount_lost && (
                                             <p><span className="text-slate-400">มูลค่าความเสียหาย:</span> {new Intl.NumberFormat('th-TH', { style: 'currency', currency: 'THB' }).format(report.amount_lost)}</p>
