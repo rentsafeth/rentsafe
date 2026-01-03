@@ -72,7 +72,7 @@ export default async function HomePage({ params }: { params: Promise<{ locale: s
     // Fetch recent approved reports (limit 3)
     const { data: recentReports } = await supabase
         .from('reports')
-        .select('id, manual_shop_name, description, created_at, shop_id, shops(name)')
+        .select('id, manual_shop_name, description, created_at, shop_id, blacklist_entry_id, shops(name)')
         .eq('status', 'approved')
         .order('created_at', { ascending: false })
         .limit(3)
@@ -270,9 +270,14 @@ export default async function HomePage({ params }: { params: Promise<{ locale: s
                             {recentReports.map((report: any) => {
                                 const shopName = report.shops?.name || report.manual_shop_name || 'Unknown'
                                 const relTime = formatRelativeTime(new Date(report.created_at))
+                                const blacklistUrl = report.blacklist_entry_id ? `/blacklist/${report.blacklist_entry_id}` : '#'
 
                                 return (
-                                    <div key={report.id} className="bg-white rounded-2xl border border-red-100 p-6 hover:shadow-lg transition-shadow">
+                                    <Link
+                                        key={report.id}
+                                        href={blacklistUrl}
+                                        className={`bg-white rounded-2xl border border-red-100 p-6 hover:shadow-lg transition-shadow block ${!report.blacklist_entry_id ? 'cursor-default' : ''}`}
+                                    >
                                         <div className="flex items-start gap-3 mb-4">
                                             <div className="w-10 h-10 bg-red-100 rounded-full flex items-center justify-center flex-shrink-0">
                                                 <AlertTriangle className="w-5 h-5 text-red-600" />
@@ -287,7 +292,7 @@ export default async function HomePage({ params }: { params: Promise<{ locale: s
                                         <p className="text-gray-600 text-sm line-clamp-2">
                                             {report.description}
                                         </p>
-                                    </div>
+                                    </Link>
                                 )
                             })}
                         </div>
