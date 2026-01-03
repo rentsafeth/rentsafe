@@ -153,15 +153,28 @@ export default function BlacklistDashboard() {
                     newState.id_card_number = formatIdCard(data.id_number);
                 }
 
-                if (data.th_first_name) newState.first_name = data.th_first_name;
-                if (data.th_last_name) newState.last_name = data.th_last_name;
+                if (data.th_first_name && data.th_last_name) {
+                    newState.first_name = data.th_first_name;
+                    newState.last_name = data.th_last_name;
+                } else if (data.th_name) {
+                    // Fallback: Parse th_name and remove titles
+                    let cleanName = data.th_name.trim();
+                    const titles = ['นาย', 'นางสาว', 'นาง', 'ด.ช.', 'ด.ญ.', 'เด็กชาย', 'เด็กหญิง', 'Ms.', 'Mr.', 'Mrs.'];
 
-                // Fallback for name if split fields are missing
-                if (!newState.first_name && data.th_name) {
-                    const parts = data.th_name.split(' ');
+                    // Sort by length desc to handle 'นางสาว' before 'นาง'
+                    const sortedTitles = titles.sort((a, b) => b.length - a.length);
+
+                    for (const title of sortedTitles) {
+                        if (cleanName.startsWith(title)) {
+                            cleanName = cleanName.substring(title.length).trim();
+                            break;
+                        }
+                    }
+
+                    const parts = cleanName.split(' ').filter((p: string) => p);
                     if (parts.length > 0) newState.first_name = parts[0];
                     if (parts.length > 1) newState.last_name = parts.slice(1).join(' ');
-                } else if (!newState.first_name && data.en_name) {
+                } else if (data.en_name) {
                     // Fallback to EN name
                     const parts = data.en_name.split(' ');
                     if (parts.length > 0) newState.first_name = parts[0];
