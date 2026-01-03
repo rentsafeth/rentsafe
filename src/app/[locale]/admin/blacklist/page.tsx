@@ -24,6 +24,7 @@ import {
     ExternalLink,
     ChevronDown,
     ChevronUp,
+    FileJson,
 } from 'lucide-react';
 import {
     Dialog,
@@ -31,6 +32,7 @@ import {
     DialogHeader,
     DialogTitle,
     DialogDescription,
+    DialogFooter,
 } from '@/components/ui/dialog';
 import Image from 'next/image';
 
@@ -40,6 +42,7 @@ const REASON_TYPES: Record<string, string> = {
     no_pay: 'หนีไม่จ่ายค่าเช่า',
     fake_docs: 'ใช้เอกสารปลอม',
     other: 'อื่นๆ',
+    imported: 'นำเข้าจากระบบ',
 };
 
 const SEVERITY_CONFIG: Record<string, { label: string; color: string }> = {
@@ -79,6 +82,14 @@ interface BlacklistReport {
     };
 }
 
+interface ImportPreviewItem {
+    first_name: string;
+    last_name: string;
+    id_card: string;
+    reason_detail: string;
+    reason_type: string;
+}
+
 export default function AdminBlacklistPage() {
     const [loading, setLoading] = useState(true);
     const [reports, setReports] = useState<BlacklistReport[]>([]);
@@ -88,6 +99,13 @@ export default function AdminBlacklistPage() {
     // Detail modal
     const [selectedReport, setSelectedReport] = useState<BlacklistReport | null>(null);
     const [showDetailModal, setShowDetailModal] = useState(false);
+
+    // Import modal
+    const [showImportModal, setShowImportModal] = useState(false);
+    const [importJson, setImportJson] = useState('');
+    const [previewData, setPreviewData] = useState<ImportPreviewItem[]>([]);
+    const [importing, setImporting] = useState(false);
+    const [importStep, setImportStep] = useState<1 | 2>(1);
 
     // Action states
     const [processing, setProcessing] = useState(false);
@@ -99,6 +117,100 @@ export default function AdminBlacklistPage() {
     useEffect(() => {
         loadReports();
     }, [statusFilter]);
+
+    const handleParseJson = () => {
+        try {
+            const rawData = JSON.parse(importJson);
+            if (!Array.isArray(rawData)) {
+                alert('รูปแบบ JSON ไม่ถูกต้อง: ต้องเป็น Array [{}, {}]');
+                return;
+            }
+
+            const parsed: ImportPreviewItem[] = rawData.map((item: any) => {
+                // Determine Name
+                let firstName = '';
+                let lastName = '';
+                let fullName = item['ชื่อ'] || item['name'] || '';
+
+                // Remove keys logic (Thai titles)
+                const titles = ['นาย', 'นางสาว', 'นาง', 'ด.ช.', 'ด.ญ.', 'ว่าที่ร้อยตรี', 'ดร.', 'Mr.', 'Mrs.', 'Ms.'];
+                const sortedTitles = titles.sort((a, b) => b.length - a.length);
+                let cleanName = fullName.trim();
+                for (const title of sortedTitles) {
+                    if (cleanName.startsWith(title)) {
+                        cleanName = cleanName.substring(title.length).trim();
+                        break;
+                    }
+                }
+                const parts = cleanName.split(/\s+/); // Split by any whitespace
+                if (parts.length > 0) firstName = parts[0];
+                if (parts.length > 1) lastName = parts.slice(1).join(' ');
+
+                // Determine ID Card
+                const idCard = (item['เลขบัตรประจำตัวประชาชน'] || item['id_card'] || item['id_number'] || '').replace(/\D/g, '');
+
+                // Determine Reason
+                const reasonDetail = item['รูปแบบการโกง'] || item['reason'] || item['reason_detail'] || '';
+
+                // Map reason type from keywords
+                let reasonType = 'imported';
+                const lowerReason = reasonDetail.toLowerCase();
+                if (lowerReason.includes('ไม่คืน') || lowerReason.includes('ขโมย')) reasonType = 'no_return';
+                else if (lowerReason.includes('ชน') || lowerReason.includes('จำนำ')) reasonType = 'damage'; // Assumed 'Pawn' is bad/damage related for car rental context or 'no_return'
+                if (lowerReason.includes('จำนำ')) reasonType = 'no_return'; // Correction: Pawn usually means lost car
+                else if (lowerReason.includes('ไม่จ่าย') || lowerReason.includes('ค้าง')) reasonType = 'no_pay';
+                else if (lowerReason.includes('ปลอม')) reasonType = 'fake_docs';
+
+                return {
+                    first_name: firstName,
+                    last_name: lastName,
+                    id_card: idCard,
+                    reason_detail: reasonDetail,
+                    reason_type: reasonType,
+                };
+            }).filter(item => item.first_name && item.id_card); // Filter invalid
+
+            setPreviewData(parsed);
+            setImportStep(2);
+        } catch (error) {
+            alert('JSON Parse Error: กรุณาตรวจสอบรูปแบบ JSON');
+        }
+    };
+
+    const handleConfirmImport = async () => {
+        setImporting(true);
+        try {
+            const response = await fetch('/api/admin/blacklist/import', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ reports: previewData }),
+            });
+
+            const result = await response.json();
+
+            if (!response.ok) {
+                throw new Error(result.error || 'Import failed');
+            }
+
+            alert(`นำเข้าสำเร็จ ${result.count} รายการ`);
+            setShowImportModal(false);
+            setImportJson('');
+            setPreviewData([]);
+            setImportStep(1);
+            loadReports(); // Refresh list
+        } catch (error: any) {
+            console.error('Import error:', error);
+            alert(`เกิดข้อผิดพลาด: ${error.message}`);
+        } finally {
+            setImporting(false);
+        }
+    };
+
+    const resetImport = () => {
+        setImportJson('');
+        setPreviewData([]);
+        setImportStep(1);
+    };
 
     const loadReports = async () => {
         setLoading(true);
@@ -234,11 +346,10 @@ export default function AdminBlacklistPage() {
                         <button
                             key={item.status}
                             onClick={() => setStatusFilter(item.status)}
-                            className={`p-4 rounded-lg border-2 transition-all ${
-                                statusFilter === item.status
-                                    ? 'border-blue-500 bg-blue-50'
-                                    : 'border-gray-200 bg-white hover:border-gray-300'
-                            }`}
+                            className={`p-4 rounded-lg border-2 transition-all ${statusFilter === item.status
+                                ? 'border-blue-500 bg-blue-50'
+                                : 'border-gray-200 bg-white hover:border-gray-300'
+                                }`}
                         >
                             <div className={`w-3 h-3 rounded-full ${item.color} mb-2`} />
                             <p className="text-2xl font-bold text-gray-900">
@@ -251,9 +362,9 @@ export default function AdminBlacklistPage() {
                     ))}
                 </div>
 
-                {/* Search */}
-                <div className="mb-6">
-                    <div className="relative">
+                {/* Actions Bar */}
+                <div className="flex flex-col md:flex-row gap-4 mb-6 justify-between items-center">
+                    <div className="relative w-full md:w-96">
                         <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400" />
                         <Input
                             placeholder="ค้นหาชื่อ, เลขบัตร, เบอร์โทร..."
@@ -262,6 +373,13 @@ export default function AdminBlacklistPage() {
                             className="pl-10"
                         />
                     </div>
+                    <Button
+                        onClick={() => setShowImportModal(true)}
+                        className="w-full md:w-auto bg-green-600 hover:bg-green-700 text-white"
+                    >
+                        <FileJson className="w-4 h-4 mr-2" />
+                        นำเข้า JSON
+                    </Button>
                 </div>
 
                 {/* Reports List */}
@@ -512,9 +630,8 @@ export default function AdminBlacklistPage() {
 
                             {/* Show decision for processed reports */}
                             {selectedReport.status !== 'pending' && (
-                                <div className={`p-4 rounded-lg ${
-                                    selectedReport.status === 'approved' ? 'bg-green-50' : 'bg-red-50'
-                                }`}>
+                                <div className={`p-4 rounded-lg ${selectedReport.status === 'approved' ? 'bg-green-50' : 'bg-red-50'
+                                    }`}>
                                     <h3 className="font-semibold mb-2">
                                         {selectedReport.status === 'approved' ? 'อนุมัติแล้ว' : 'ไม่อนุมัติ'}
                                     </h3>
@@ -530,6 +647,128 @@ export default function AdminBlacklistPage() {
                                     )}
                                 </div>
                             )}
+                        </div>
+                    )}
+                </DialogContent>
+            </Dialog>
+
+            {/* Import JSON Modal */}
+            <Dialog
+                open={showImportModal}
+                onOpenChange={(open) => {
+                    if (!open) resetImport();
+                    setShowImportModal(open);
+                }}
+            >
+                <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
+                    <DialogHeader>
+                        <DialogTitle className="flex items-center gap-2">
+                            <FileJson className="w-5 h-5 text-green-600" />
+                            นำเข้า Blacklist (JSON)
+                        </DialogTitle>
+                        <DialogDescription>
+                            นำเข้าข้อมูลแบล็คลิสต์จากไฟล์ JSON (รองรับรูปแบบ Array of Objects)
+                        </DialogDescription>
+                    </DialogHeader>
+
+                    {importStep === 1 ? (
+                        <div className="space-y-4">
+                            <div className="bg-yellow-50 p-4 rounded-md border border-yellow-200">
+                                <p className="text-sm text-yellow-800 font-semibold mb-2">รูปแบบข้อมูลที่รองรับ:</p>
+                                <pre className="text-xs bg-white p-2 rounded border border-yellow-200 overflow-auto">
+                                    {`[
+  {
+    "ชื่อ": "นาย สมชาย เข็มกลัด",
+    "เลขบัตรประจำตัวประชาชน": "1-2345-67890-12-3",
+    "รูปแบบการโกง": "ขโมยรถ"
+  },
+  ...
+]`}
+                                </pre>
+                            </div>
+                            <Textarea
+                                placeholder="วาง JSON ที่นี่..."
+                                value={importJson}
+                                onChange={(e) => setImportJson(e.target.value)}
+                                className="min-h-[300px] font-mono text-sm"
+                            />
+                            <div className="flex justify-end gap-2">
+                                <Button variant="outline" onClick={() => setShowImportModal(false)}>
+                                    ยกเลิก
+                                </Button>
+                                <Button onClick={handleParseJson} disabled={!importJson.trim()}>
+                                    ตรวจสอบข้อมูล
+                                </Button>
+                            </div>
+                        </div>
+                    ) : (
+                        <div className="space-y-4">
+                            <div className="flex items-center justify-between">
+                                <h3 className="font-semibold text-gray-900">
+                                    ตรวจสอบข้อมูล ({previewData.length} รายการ)
+                                </h3>
+                                <Button variant="outline" size="sm" onClick={() => setImportStep(1)}>
+                                    แก้ไข JSON
+                                </Button>
+                            </div>
+
+                            <div className="border rounded-md overflow-hidden">
+                                <div className="max-h-[400px] overflow-y-auto">
+                                    <table className="w-full text-sm text-left">
+                                        <thead className="text-xs text-gray-700 uppercase bg-gray-50 border-b sticky top-0">
+                                            <tr>
+                                                <th className="px-4 py-3">ชื่อ-นามสกุล</th>
+                                                <th className="px-4 py-3">เลขบัตร (Last 4)</th>
+                                                <th className="px-4 py-3">สาเหตุ</th>
+                                                <th className="px-4 py-3">ประเภท</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            {previewData.map((item, idx) => (
+                                                <tr key={idx} className="bg-white border-b hover:bg-gray-50">
+                                                    <td className="px-4 py-3 font-medium">
+                                                        {item.first_name} {item.last_name}
+                                                    </td>
+                                                    <td className="px-4 py-3 font-mono">
+                                                        ****{item.id_card.slice(-4)}
+                                                    </td>
+                                                    <td className="px-4 py-3 truncate max-w-[200px]" title={item.reason_detail}>
+                                                        {item.reason_detail}
+                                                    </td>
+                                                    <td className="px-4 py-3">
+                                                        <Badge variant="outline">
+                                                            {REASON_TYPES[item.reason_type] || item.reason_type}
+                                                        </Badge>
+                                                    </td>
+                                                </tr>
+                                            ))}
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+
+                            <DialogFooter>
+                                <Button variant="outline" onClick={() => setShowImportModal(false)}>
+                                    ยกเลิก
+                                </Button>
+                                <Button
+                                    className="bg-green-600 hover:bg-green-700"
+                                    onClick={handleConfirmImport}
+                                    disabled={importing}
+                                >
+                                    {importing ? (
+                                        <>
+                                            <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                                            กำลังนำเข้า...
+                                        </>
+                                    ) : (
+                                        <>
+                                            <CheckCircle className="w-4 h-4 mr-2" />
+                                            ยืนยันการนำเข้า ({previewData.length})
+                                        </>
+                                    )}
+                                </Button>
+                            </DialogFooter>
                         </div>
                     )}
                 </DialogContent>
