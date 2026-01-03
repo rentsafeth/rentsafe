@@ -377,6 +377,45 @@ export default function AdminBlacklistPage() {
         );
     });
 
+    const handleApproveAll = async () => {
+        if (!window.confirm(`ยืนยันการอนุมัติรายการที่รอตรวจสอบทั้งหมด ${filteredReports.length} รายการ?\n\nการกระทำนี้จะส่งแจ้งเตือนไปยังร้านค้าทันทีและไม่สามารถย้อนกลับได้`)) {
+            return;
+        }
+
+        setProcessing(true);
+        let success = 0;
+        let failed = 0;
+
+        try {
+            // Process sequentially to ensure triggers fire correctly without overloading
+            for (const report of filteredReports) {
+                try {
+                    const res = await fetch('/api/admin/blacklist/approve', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({
+                            report_id: report.id,
+                            admin_notes: 'Bulk approved (อนุมัติทั้งหมด)',
+                        }),
+                    });
+
+                    if (res.ok) success++;
+                    else failed++;
+                } catch (err) {
+                    failed++;
+                }
+            }
+
+            alert(`ประมวลผลเสร็จสิ้น\n✅ สำเร็จ: ${success}\n❌ ล้มเหลว: ${failed}`);
+            loadReports();
+        } catch (error) {
+            console.error('Bulk approve error:', error);
+            alert('เกิดข้อผิดพลาดในการประมวลผล');
+        } finally {
+            setProcessing(false);
+        }
+    };
+
     const formatDate = (dateString: string) => {
         return new Date(dateString).toLocaleDateString('th-TH', {
             year: 'numeric',
@@ -444,6 +483,21 @@ export default function AdminBlacklistPage() {
                         <FileJson className="w-4 h-4 mr-2" />
                         นำเข้า JSON / Excel
                     </Button>
+
+                    {statusFilter === 'pending' && filteredReports.length > 0 && (
+                        <Button
+                            onClick={handleApproveAll}
+                            disabled={processing}
+                            className="w-full md:w-auto bg-blue-600 hover:bg-blue-700 text-white"
+                        >
+                            {processing ? (
+                                <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                            ) : (
+                                <CheckCircle className="w-4 h-4 mr-2" />
+                            )}
+                            อนุมัติทั้งหมด ({filteredReports.length})
+                        </Button>
+                    )}
                 </div>
 
                 {/* Reports List */}
