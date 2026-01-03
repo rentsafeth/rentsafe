@@ -26,6 +26,7 @@ import {
     ChevronDown,
     ChevronUp,
     FileJson,
+    Edit,
 } from 'lucide-react';
 import {
     Dialog,
@@ -113,6 +114,8 @@ export default function AdminBlacklistPage() {
     const [processing, setProcessing] = useState(false);
     const [adminNotes, setAdminNotes] = useState('');
     const [rejectionReason, setRejectionReason] = useState('');
+    const [isEditing, setIsEditing] = useState(false);
+    const [editForm, setEditForm] = useState({ first_name: '', last_name: '', id_card_number: '' });
 
     const supabase = createClient();
 
@@ -355,10 +358,41 @@ export default function AdminBlacklistPage() {
         }
     };
 
+    const handleSaveEdit = async () => {
+        if (!selectedReport) return;
+        setProcessing(true);
+        try {
+            const res = await fetch('/api/admin/blacklist/update', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    report_id: selectedReport.id,
+                    ...editForm
+                })
+            });
+            if (!res.ok) throw new Error('Update failed');
+
+            alert('บันทึกข้อมูลสำเร็จ');
+            setIsEditing(false);
+            loadReports(); // Reload list
+            setShowDetailModal(false);
+        } catch (err) {
+            alert('เกิดข้อผิดพลาดในการบันทึก');
+        } finally {
+            setProcessing(false);
+        }
+    };
+
     const openDetail = (report: BlacklistReport) => {
         setSelectedReport(report);
         setAdminNotes(report.admin_notes || '');
         setRejectionReason(report.rejection_reason || '');
+        setEditForm({
+            first_name: report.first_name,
+            last_name: report.last_name,
+            id_card_number: (report as any).id_card_number || ''
+        });
+        setIsEditing(false);
         setShowDetailModal(true);
     };
 
@@ -684,8 +718,57 @@ export default function AdminBlacklistPage() {
                                 </p>
                             </div>
 
-                            {/* Admin Actions */}
-                            {selectedReport.status === 'pending' && (
+                            {/* Edit Mode UI */}
+                            {isEditing && (
+                                <div className="bg-blue-50 p-4 rounded-lg border border-blue-200">
+                                    <h4 className="font-semibold mb-3 flex items-center gap-2 text-blue-800">
+                                        <Edit className="w-4 h-4" />
+                                        แก้ไขข้อมูล
+                                    </h4>
+                                    <div className="space-y-3">
+                                        <div className="grid grid-cols-2 gap-3">
+                                            <div>
+                                                <label className="text-xs font-medium text-gray-500">ชื่อจริง</label>
+                                                <Input
+                                                    value={editForm.first_name}
+                                                    onChange={e => setEditForm(prev => ({ ...prev, first_name: e.target.value }))}
+                                                    className="bg-white"
+                                                />
+                                            </div>
+                                            <div>
+                                                <label className="text-xs font-medium text-gray-500">นามสกุล</label>
+                                                <Input
+                                                    value={editForm.last_name}
+                                                    onChange={e => setEditForm(prev => ({ ...prev, last_name: e.target.value }))}
+                                                    className="bg-white"
+                                                />
+                                            </div>
+                                        </div>
+                                        <div>
+                                            <label className="text-xs font-medium text-gray-500">เลขบัตรประชาชน (13 หลัก)</label>
+                                            <Input
+                                                value={editForm.id_card_number}
+                                                onChange={e => setEditForm(prev => ({ ...prev, id_card_number: e.target.value }))}
+                                                placeholder="กรอกให้ครบ 13 หลักเพื่ออัปเดต"
+                                                className="bg-white font-mono"
+                                                maxLength={13}
+                                            />
+                                            <p className="text-xs text-blue-600 mt-1">
+                                                * การใส่เลขบัตรใหม่จะเป็นการสร้าง Hash ใหม่และเก็บเลขเต็ม
+                                            </p>
+                                        </div>
+                                        <div className="flex justify-end gap-2 mt-2">
+                                            <Button variant="ghost" size="sm" onClick={() => setIsEditing(false)}>ยกเลิก</Button>
+                                            <Button size="sm" onClick={handleSaveEdit} disabled={processing}>
+                                                บันทึกการแก้ไข
+                                            </Button>
+                                        </div>
+                                    </div>
+                                </div>
+                            )}
+
+                            {/* Admin Actions (Hide when editing) */}
+                            {!isEditing && selectedReport.status === 'pending' && (
                                 <div className="border-t pt-6 space-y-4">
                                     <div>
                                         <label className="block text-sm font-medium text-gray-700 mb-1">
@@ -717,6 +800,14 @@ export default function AdminBlacklistPage() {
                                             onClick={() => setShowDetailModal(false)}
                                         >
                                             ปิด
+                                        </Button>
+                                        <Button
+                                            variant="outline"
+                                            onClick={() => setIsEditing(true)}
+                                            disabled={processing}
+                                        >
+                                            <Edit className="w-4 h-4 mr-2" />
+                                            แก้ไข
                                         </Button>
                                         <Button
                                             variant="destructive"

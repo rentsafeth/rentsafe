@@ -67,10 +67,9 @@ export async function GET(request: NextRequest) {
             const { data, error } = await supabase
                 .from('customer_blacklist')
                 .select(`
-                .select(`
                     id, id_card_last4, id_card_number, first_name, last_name, phone_number,
                     reason_type, reason_detail, severity, report_count, created_at, evidence_urls
-                    `)
+                `)
                 .eq('status', 'approved')
                 .eq('id', query.trim()); // Use original query
             results = data || [];
@@ -114,8 +113,8 @@ export async function GET(request: NextRequest) {
                     reason_type, reason_detail, severity, report_count, created_at, evidence_urls
                         `)
                     .eq('status', 'approved')
-                    .ilike('first_name', `% ${ nameParts[0]} % `)
-                    .ilike('last_name', `% ${ nameParts.slice(1).join(' ') } % `);
+                    .ilike('first_name', `% ${nameParts[0]} % `)
+                    .ilike('last_name', `% ${nameParts.slice(1).join(' ')} % `);
             } else {
                 // Search by either first name OR last name
                 nameQuery = supabase
@@ -125,7 +124,7 @@ export async function GET(request: NextRequest) {
                     reason_type, reason_detail, severity, report_count, created_at, evidence_urls
                     `)
                     .eq('status', 'approved')
-                    .or(`first_name.ilike.% ${ nameParts[0]} %, last_name.ilike.% ${ nameParts[0]} % `);
+                    .or(`first_name.ilike.% ${nameParts[0]} %, last_name.ilike.% ${nameParts[0]} % `);
             }
 
             const { data, error } = await nameQuery;
@@ -150,7 +149,7 @@ export async function GET(request: NextRequest) {
 
         // Return full data (No masking as requested)
         const isPro = shop.is_verified_shop;
-        
+
         // Get new remaining count
         const { data: newRemainingSearches } = await supabase
             .rpc('get_remaining_blacklist_searches', { p_shop_id: shop.id });
