@@ -118,7 +118,97 @@ export default function BlacklistDashboard() {
     const [isScanning, setIsScanning] = useState(false);
     const fileInputRef = useRef<HTMLInputElement>(null);
 
-    // ... (handleScanIdCard omitted for brevity as it is unchanged)
+    const handleScanIdCard = async (e: React.ChangeEvent<HTMLInputElement>) => {
+        const file = e.target.files?.[0];
+        if (!file) return;
+
+        if (file.size > 5 * 1024 * 1024) {
+            setAlertState({
+                isOpen: true,
+                type: 'warning',
+                title: 'ไฟล์ขนาดใหญ่เกินไป',
+                message: 'ไฟล์มีขนาดใหญ่เกิน 5MB',
+            });
+            return;
+        }
+
+        setIsScanning(true);
+        const formData = new FormData();
+        formData.append('file', file);
+
+        try {
+            const res = await fetch('/api/ocr/id-card', {
+                method: 'POST',
+                body: formData,
+            });
+
+            const data = await res.json();
+
+            if (!res.ok) {
+                throw new Error(data.details || data.error || 'Failed to scan ID card');
+            }
+
+            // Auto-fill form
+            setReportForm(prev => {
+                const newState = { ...prev };
+
+                if (data.id_number) {
+                    newState.id_card_number = formatIdCard(data.id_number);
+                }
+
+                if (data.th_first_name && data.th_last_name) {
+                    newState.first_name = data.th_first_name;
+                    newState.last_name = data.th_last_name;
+                } else if (data.th_name) {
+                    // Fallback: Parse th_name and remove titles
+                    let cleanName = data.th_name.trim();
+                    const titles = ['นาย', 'นางสาว', 'นาง', 'ด.ช.', 'ด.ญ.', 'เด็กชาย', 'เด็กหญิง', 'Ms.', 'Mr.', 'Mrs.'];
+
+                    // Sort by length desc to handle 'นางสาว' before 'นาง'
+                    const sortedTitles = titles.sort((a, b) => b.length - a.length);
+
+                    for (const title of sortedTitles) {
+                        if (cleanName.startsWith(title)) {
+                            cleanName = cleanName.substring(title.length).trim();
+                            break;
+                        }
+                    }
+
+                    const parts = cleanName.split(' ').filter((p: string) => p);
+                    if (parts.length > 0) newState.first_name = parts[0];
+                    if (parts.length > 1) newState.last_name = parts.slice(1).join(' ');
+                } else if (data.en_name) {
+                    // Fallback to EN name
+                    const parts = data.en_name.split(' ');
+                    if (parts.length > 0) newState.first_name = parts[0];
+                    if (parts.length > 1) newState.last_name = parts.slice(1).join(' ');
+                }
+
+                return newState;
+            });
+
+            setAlertState({
+                isOpen: true,
+                type: 'success',
+                title: 'สแกนสำเร็จ',
+                message: 'ดึงข้อมูลจากบัตรเรียบร้อยแล้ว',
+            });
+
+        } catch (error: any) {
+            console.error('OCR Error:', error);
+            setAlertState({
+                isOpen: true,
+                type: 'error',
+                title: 'สแกนไม่สำเร็จ',
+                message: 'ไม่สามารถอ่านข้อมูลจากบัตรได้ กรุณากรอกเอง',
+            });
+        } finally {
+            setIsScanning(false);
+            if (fileInputRef.current) {
+                fileInputRef.current.value = '';
+            }
+        }
+    };
 
     // Alert state
     const [alertState, setAlertState] = useState({
@@ -141,7 +231,16 @@ export default function BlacklistDashboard() {
         }
     }, [searchParams]); // Dependent on searchParams
 
-    // ... (checkSubscription omitted)
+    const checkSubscription = async () => {
+        try {
+            const response = await fetch('/api/subscription');
+            const data = await response.json();
+            setIsPro(data.is_pro || false);
+            setRemainingSearches(data.remaining_blacklist_searches ?? 3);
+        } catch (error) {
+            console.error('Error checking subscription:', error);
+        }
+    };
 
     const handleSearch = async (overrideQuery?: string) => {
         const queryToUse = overrideQuery || searchQuery;
