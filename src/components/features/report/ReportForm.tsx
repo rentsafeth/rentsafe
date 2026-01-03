@@ -87,7 +87,7 @@ export default function ReportForm({ userId }: { userId: string }) {
         resolver: zodResolver(formSchema),
         defaultValues: {
             shop_name: blacklistInfo?.shop_names?.[0] || '',
-            facebook_url: '',
+            facebook_url: blacklistInfo?.facebook_urls?.[0] || '',
             line_id: blacklistInfo?.line_ids?.[0] || '',
             phone_number: blacklistInfo?.phone_numbers?.[0] || '',
             bank_account_no: prefilledBank || blacklistInfo?.bank_account_no || '',
@@ -166,7 +166,14 @@ export default function ReportForm({ userId }: { userId: string }) {
                 reporter_id: userId,
                 shop_id: prefilledShopId || null, // If reporting a registered shop
                 manual_shop_name: values.shop_name,
-                manual_shop_contact: `FB: ${values.facebook_url}, Line: ${values.line_id}, Phone: ${values.phone_number}`,
+                manual_shop_contact: [
+                    values.facebook_url ? `FB: ${values.facebook_url}` : null,
+                    values.line_id ? `Line: ${values.line_id}` : null,
+                    values.phone_number ? `Phone: ${values.phone_number}` : null
+                ].filter(Boolean).join(', '),
+                manual_facebook_url: values.facebook_url || null,
+                manual_line_id: values.line_id || null,
+                manual_phone_number: values.phone_number || null,
                 manual_bank_account: `${values.bank_account_no} (${values.bank_account_name})`,
                 manual_id_card: values.id_card,
                 description: values.description,
@@ -312,7 +319,7 @@ export default function ReportForm({ userId }: { userId: string }) {
                                 )}
                             />
 
-                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                                 <FormField
                                     control={form.control}
                                     name="facebook_url"
@@ -334,6 +341,19 @@ export default function ReportForm({ userId }: { userId: string }) {
                                             <FormLabel>Line ID</FormLabel>
                                             <FormControl>
                                                 <Input placeholder="@..." {...field} disabled={!!shopInfo} className={shopInfo ? 'bg-slate-100' : ''} />
+                                            </FormControl>
+                                            <FormMessage />
+                                        </FormItem>
+                                    )}
+                                />
+                                <FormField
+                                    control={form.control}
+                                    name="phone_number"
+                                    render={({ field }) => (
+                                        <FormItem>
+                                            <FormLabel>เบอร์โทรศัพท์</FormLabel>
+                                            <FormControl>
+                                                <Input placeholder="08x-xxx-xxxx" {...field} disabled={!!shopInfo} className={shopInfo ? 'bg-slate-100' : ''} />
                                             </FormControl>
                                             <FormMessage />
                                         </FormItem>

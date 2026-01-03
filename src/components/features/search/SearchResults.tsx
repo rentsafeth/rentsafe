@@ -1,7 +1,7 @@
 'use client';
 
 import { createClient } from '@/lib/supabase/client';
-import { useSearchParams, useRouter, useParams } from 'next/navigation';
+import { useSearchParams, useParams } from 'next/navigation';
 import { useEffect, useState, useMemo, useCallback } from 'react';
 import { useTranslations } from 'next-intl';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -11,8 +11,10 @@ import {
     Loader2, ShieldAlert, CheckCircle, MapPin, SearchX, AlertTriangle,
     CreditCard, Phone, Star, Search, SlidersHorizontal, Zap, Receipt,
     FileText, Banknote, Crown, MessageCircle, Heart, Gift, Sparkles,
-    ShieldCheck, TrendingUp, Users, AlertCircle, ExternalLink, LayoutGrid, List, Check
+    ShieldCheck, TrendingUp, Users, AlertCircle, ExternalLink, LayoutGrid, List, Check, Facebook
 } from 'lucide-react';
+
+
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import Link from 'next/link';
 
@@ -57,7 +59,7 @@ const ALL_PROVINCES = [
 
 export default function SearchResults() {
     const searchParams = useSearchParams();
-    const router = useRouter();
+
     const params = useParams();
     const locale = params.locale as string;
     const isThai = locale === 'th';
@@ -683,6 +685,20 @@ export default function SearchResults() {
                                 <div className="flex items-center gap-2 text-slate-600">
                                     <Phone className="w-4 h-4 text-slate-400" />
                                     <span className="font-medium">{result.data.phone_numbers[0]}</span>
+                                </div>
+                            )}
+                            {result.data.line_ids?.[0] && (
+                                <div className="flex items-center gap-2 text-slate-600">
+                                    <MessageCircle className="w-4 h-4 text-slate-400" />
+                                    <span className="font-medium text-green-700">{result.data.line_ids[0]}</span>
+                                </div>
+                            )}
+                            {result.data.facebook_urls?.[0] && (
+                                <div className="flex items-center gap-2 text-slate-600">
+                                    <Facebook className="w-4 h-4 text-slate-400" />
+                                    <span className="font-medium text-blue-700 truncate max-w-[200px]">
+                                        {result.data.facebook_urls[0].replace(/^https?:\/\/(www\.)?facebook\.com\//, '')}
+                                    </span>
                                 </div>
                             )}
                             {result.data.total_amount_lost > 0 && (

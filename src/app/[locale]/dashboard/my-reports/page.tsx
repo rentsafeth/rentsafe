@@ -18,6 +18,9 @@ interface Report {
     id: string;
     manual_shop_name: string | null;
     manual_shop_contact: string | null;
+    manual_facebook_url?: string | null;
+    manual_line_id?: string | null;
+    manual_phone_number?: string | null;
     manual_bank_account: string | null;
     description: string;
     evidence_urls: string[];
@@ -250,6 +253,15 @@ export default function MyReportsPage() {
                                             <p className="text-sm text-gray-500">
                                                 ส่งเมื่อ {formatDate(report.created_at)}
                                             </p>
+                                            <div className="flex flex-wrap gap-2 mt-1 text-xs text-gray-500">
+                                                {report.manual_phone_number && <span>โทร: {report.manual_phone_number}</span>}
+                                                {report.manual_line_id && <span>Line: {report.manual_line_id}</span>}
+                                                {report.manual_facebook_url && (
+                                                    <a href={report.manual_facebook_url} target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline">
+                                                        Facebook Link
+                                                    </a>
+                                                )}
+                                            </div>
                                         </div>
                                         {report.amount_lost && report.amount_lost > 0 && (
                                             <Badge variant="outline" className="border-red-200 text-red-700">

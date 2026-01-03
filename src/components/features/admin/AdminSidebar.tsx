@@ -4,7 +4,7 @@
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { LayoutDashboard, ShieldAlert, LogOut, Settings, CheckCircle, MessageSquare, GitMerge, Trash2 } from 'lucide-react';
+import { LayoutDashboard, ShieldAlert, LogOut, Settings, CheckCircle, MessageSquare, GitMerge, Trash2, Coins, CreditCard, Megaphone, Bell, Users } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { createClient } from '@/lib/supabase/client';
 import { useRouter } from 'next/navigation';
@@ -16,6 +16,12 @@ const menuItems = [
     { href: '/admin/reports', label: 'ตรวจสอบรายงาน', icon: ShieldAlert },
     { href: '/admin/reports/deletion-requests', label: 'คำขอลบรายงาน', icon: Trash2 },
     { href: '/admin/reviews', label: 'จัดการรีวิว', icon: MessageSquare },
+    { href: '/admin/credits', label: 'จัดการเครดิต', icon: Coins },
+    { href: '/admin/payments', label: 'แจ้งโอนเงิน', icon: CreditCard },
+    { href: '/admin/ads', label: 'จัดการโฆษณา', icon: Megaphone },
+    { href: '/admin/notifications', label: 'แจ้งเตือน', icon: Bell },
+    { href: '/admin/contact', label: 'รายการติดต่อ', icon: MessageSquare },
+    { href: '/admin/users', label: 'จัดการผู้ใช้', icon: Users },
     { href: '/admin/blacklist-merge', label: 'Merge Blacklist', icon: GitMerge },
 ];
 
@@ -30,7 +36,10 @@ export default function AdminSidebar() {
         pendingShops: 0,
         pendingReports: 0,
         pendingDeletions: 0,
-        pendingReviews: 0
+        pendingReviews: 0,
+        pendingCredits: 0,
+        pendingPayments: 0,
+        pendingTickets: 0
     });
 
     useEffect(() => {
@@ -62,7 +71,7 @@ export default function AdminSidebar() {
     };
 
     return (
-        <div className="hidden md:flex w-64 bg-slate-900 text-white min-h-screen p-4 flex-col">
+        <div className="hidden md:flex w-64 bg-slate-900 text-white min-h-screen p-4 flex-col overflow-y-auto">
             <div className="mb-8 px-2">
                 <h1 className="text-2xl font-bold">RentSafe Admin</h1>
                 <p className="text-slate-400 text-sm">Management Console</p>
@@ -96,6 +105,9 @@ export default function AdminSidebar() {
                                 else if (item.href === '/admin/reports') count = stats.pendingReports;
                                 else if (item.href === '/admin/reports/deletion-requests') count = stats.pendingDeletions;
                                 else if (item.href === '/admin/reviews') count = stats.pendingReviews;
+                                else if (item.href === '/admin/credits') count = stats.pendingCredits;
+                                else if (item.href === '/admin/payments') count = stats.pendingPayments;
+                                else if (item.href === '/admin/contact') count = stats.pendingTickets;
 
                                 return count > 0 ? (
                                     <span className="bg-red-500 text-white text-xs font-bold px-2 py-0.5 rounded-full min-w-[20px] text-center">

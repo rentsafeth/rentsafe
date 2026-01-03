@@ -17,12 +17,25 @@ import {
     Plus,
     MessageCircle,
     Heart,
-    Loader2
+    Loader2,
+    Facebook,
+    ExternalLink
 } from 'lucide-react'
 import Link from 'next/link'
 import { useState, useEffect } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip'
+import {
+    AlertDialog,
+    AlertDialogAction,
+    AlertDialogCancel,
+    AlertDialogContent,
+    AlertDialogDescription,
+    AlertDialogFooter,
+    AlertDialogHeader,
+    AlertDialogTitle,
+    AlertDialogTrigger,
+} from "@/components/ui/alert-dialog"
 
 interface BlacklistEntry {
     id: string
@@ -30,6 +43,7 @@ interface BlacklistEntry {
     phone_numbers: string[]
     id_card_numbers: string[]
     line_ids: string[]
+    facebook_urls: string[]
     shop_names: string[]
     total_reports: number
     total_amount_lost: number
@@ -76,6 +90,96 @@ const severityLabels = {
     medium: 'ระดับกลาง',
     high: 'ระดับสูง',
     critical: 'อันตรายมาก',
+}
+
+// Facebook Link Component with Warning Logic
+function FacebookLink({ url }: { url: string }) {
+    const [showWarning, setShowWarning] = useState(false)
+    const [hasSeenWarning, setHasSeenWarning] = useState(false)
+
+    useEffect(() => {
+        const seen = localStorage.getItem('seen_fb_warning')
+        if (seen) {
+            setHasSeenWarning(true)
+        }
+    }, [])
+
+    const handleClick = (e: React.MouseEvent) => {
+        if (!hasSeenWarning) {
+            e.preventDefault()
+            setShowWarning(true)
+        }
+    }
+
+    const handleConfirm = () => {
+        localStorage.setItem('seen_fb_warning', 'true')
+        setHasSeenWarning(true)
+        setShowWarning(false)
+        window.open(url, '_blank', 'noopener,noreferrer')
+    }
+
+    // Clean URL for display
+    const displayUrl = url.replace(/^https?:\/\/(www\.)?facebook\.com\//, '').split('/')[0] || 'Facebook Page'
+
+    return (
+        <>
+            <div className="flex flex-col items-start">
+                <a
+                    href={url}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    onClick={handleClick}
+                    className={`flex items-center gap-2 text-sm font-medium transition-colors ${!hasSeenWarning
+                        ? 'text-blue-600 bg-blue-50 px-2 py-1 rounded-md border border-blue-200 hover:bg-blue-100 animate-pulse'
+                        : 'text-blue-600 hover:underline'
+                        }`}
+                >
+                    <Facebook className="w-4 h-4" />
+                    <span>{displayUrl}</span>
+                    <ExternalLink className="w-3 h-3" />
+                </a>
+
+                {!hasSeenWarning && (
+                    <div className="mt-1 text-xs text-orange-600 bg-orange-50 px-2 py-1 rounded border border-orange-100">
+                        ⚠️ ระวัง! มิจฉาชีพมักตั้งชื่อเลียนแบบเพจจริง
+                    </div>
+                )}
+
+                {hasSeenWarning && (
+                    <span className="text-[10px] text-slate-400 mt-0.5">
+                        ตรวจสอบให้แน่ใจว่าเป็นเพจจริง
+                    </span>
+                )}
+            </div>
+
+            <AlertDialog open={showWarning} onOpenChange={setShowWarning}>
+                <AlertDialogContent>
+                    <AlertDialogHeader>
+                        <AlertDialogTitle className="flex items-center gap-2 text-red-600">
+                            <AlertTriangle className="w-6 h-6" />
+                            คำเตือน: คุณกำลังจะไปที่เพจมิจฉาชีพ
+                        </AlertDialogTitle>
+                        <AlertDialogDescription className="space-y-3 pt-2">
+                            <p className="font-medium text-slate-900">
+                                "เนื่องจากส่วนใหญ่มิจฉาชีพจะตั้งชื่อเลียนแบบเพจจริง ให้กดที่ลิงก์เพื่อไปยังหน้าเพจมิจฉาชีพ"
+                            </p>
+                            <div className="bg-slate-50 p-3 rounded-lg text-sm text-slate-600">
+                                <p>✅ สังเกตยอดไลค์และผู้ติดตาม (เพจจริงมักมีเยอะ)</p>
+                                <p>✅ สังเกตวันที่สร้างเพจ (เพจปลอมมักเพิ่งสร้าง)</p>
+                                <p>✅ ชื่อบัญชีธนาคารต้องตรงกับชื่อร้าน/บริษัท</p>
+                            </div>
+                        </AlertDialogDescription>
+                    </AlertDialogHeader>
+                    <AlertDialogFooter>
+                        <AlertDialogCancel>ยกเลิก</AlertDialogCancel>
+                        <AlertDialogAction onClick={handleConfirm} className="bg-red-600 hover:bg-red-700">
+                            รับทราบและดำเนินการต่อ
+                        </AlertDialogAction>
+                    </AlertDialogFooter>
+                </AlertDialogContent>
+            </AlertDialog>
+        </>
+    )
 }
 
 // Heart Button Component
@@ -284,42 +388,93 @@ export default function BlacklistDetail({ entry, reports }: Props) {
                     </div>
 
                     {/* Identifiers */}
-                    <div className="bg-white/80 rounded-xl p-4 space-y-3 shadow-sm">
-                        <h4 className="font-semibold text-slate-800">{t('identifiers')}</h4>
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                    <div className="bg-white/80 rounded-xl p-4 space-y-4 shadow-sm">
+                        <h4 className="font-semibold text-slate-800 border-b border-slate-200 pb-2">{t('identifiers')}</h4>
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            {/* Bank Accounts */}
                             {entry.bank_account_no && (
-                                <div className="flex items-center gap-2 text-sm">
-                                    <CreditCard className="w-4 h-4 text-slate-500" />
-                                    <span className="text-slate-600">{t('bankAccount')}:</span>
-                                    <span className="font-mono font-medium text-red-700 bg-red-50 px-2 py-0.5 rounded">{entry.bank_account_no}</span>
+                                <div className="space-y-1">
+                                    <div className="flex items-center gap-2 text-sm text-slate-500">
+                                        <CreditCard className="w-4 h-4" />
+                                        <span>{t('bankAccount')}</span>
+                                    </div>
+                                    <div className="font-mono font-medium text-red-700 bg-red-50 px-3 py-2 rounded-lg border border-red-100 inline-block">
+                                        {entry.bank_account_no}
+                                    </div>
                                 </div>
                             )}
-                            {entry.phone_numbers?.length > 0 && entry.phone_numbers.map((phone, i) => (
-                                <div key={i} className="flex items-center gap-2 text-sm">
-                                    <Phone className="w-4 h-4 text-slate-500" />
-                                    <span className="text-slate-600">{t('phone')}:</span>
-                                    <span className="font-medium text-red-700">{phone}</span>
+
+                            {/* Phone Numbers */}
+                            {entry.phone_numbers?.length > 0 && (
+                                <div className="space-y-1">
+                                    <div className="flex items-center gap-2 text-sm text-slate-500">
+                                        <Phone className="w-4 h-4" />
+                                        <span>{t('phone')}</span>
+                                    </div>
+                                    <div className="flex flex-col gap-1">
+                                        {entry.phone_numbers.map((phone, i) => (
+                                            <span key={i} className="font-medium text-slate-800 bg-slate-50 px-2 py-1 rounded inline-block w-fit">
+                                                {phone}
+                                            </span>
+                                        ))}
+                                    </div>
                                 </div>
-                            ))}
-                            {entry.id_card_numbers?.length > 0 && entry.id_card_numbers.map((id, i) => (
-                                <div key={i} className="flex items-center gap-2 text-sm">
-                                    <User className="w-4 h-4 text-slate-500" />
-                                    <span className="text-slate-600">{t('idCard')}:</span>
-                                    <span className="font-mono font-medium text-red-700">{id}</span>
+                            )}
+
+                            {/* Line IDs */}
+                            {entry.line_ids?.length > 0 && (
+                                <div className="space-y-1">
+                                    <div className="flex items-center gap-2 text-sm text-slate-500">
+                                        <MessageCircle className="w-4 h-4" />
+                                        <span>Line ID</span>
+                                    </div>
+                                    <div className="flex flex-col gap-1">
+                                        {entry.line_ids.map((lineId, i) => (
+                                            <span key={i} className="font-medium text-green-700 bg-green-50 px-2 py-1 rounded border border-green-100 inline-block w-fit">
+                                                {lineId}
+                                            </span>
+                                        ))}
+                                    </div>
                                 </div>
-                            ))}
-                            {entry.line_ids?.length > 0 && entry.line_ids.map((lineId, i) => (
-                                <div key={i} className="flex items-center gap-2 text-sm">
-                                    <MessageCircle className="w-4 h-4 text-slate-500" />
-                                    <span className="text-slate-600">Line:</span>
-                                    <span className="font-medium text-red-700">{lineId}</span>
+                            )}
+
+                            {/* Facebook URLs */}
+                            {entry.facebook_urls?.length > 0 && (
+                                <div className="space-y-1">
+                                    <div className="flex items-center gap-2 text-sm text-slate-500">
+                                        <Facebook className="w-4 h-4" />
+                                        <span>Facebook</span>
+                                    </div>
+                                    <div className="flex flex-col gap-2">
+                                        {entry.facebook_urls.map((url, i) => (
+                                            <FacebookLink key={i} url={url} />
+                                        ))}
+                                    </div>
                                 </div>
-                            ))}
+                            )}
+
+                            {/* ID Cards */}
+                            {entry.id_card_numbers?.length > 0 && (
+                                <div className="space-y-1">
+                                    <div className="flex items-center gap-2 text-sm text-slate-500">
+                                        <User className="w-4 h-4" />
+                                        <span>{t('idCard')}</span>
+                                    </div>
+                                    <div className="flex flex-col gap-1">
+                                        {entry.id_card_numbers.map((id, i) => (
+                                            <span key={i} className="font-mono font-medium text-slate-700 bg-slate-50 px-2 py-1 rounded w-fit">
+                                                {id}
+                                            </span>
+                                        ))}
+                                    </div>
+                                </div>
+                            )}
                         </div>
+
                         {entry.shop_names?.length > 1 && (
-                            <div className="pt-2 border-t border-slate-200">
+                            <div className="pt-3 border-t border-slate-200 mt-2">
                                 <p className="text-sm text-slate-600">
-                                    {t('alsoKnownAs')}: {entry.shop_names.slice(1).join(', ')}
+                                    <span className="font-semibold">{t('alsoKnownAs')}:</span> {entry.shop_names.slice(1).join(', ')}
                                 </p>
                             </div>
                         )}

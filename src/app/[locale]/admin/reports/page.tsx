@@ -168,7 +168,9 @@ export default async function AdminReportsPage() {
                                     <p className="text-slate-700">{report.description}</p>
                                     <div className="mt-3 grid grid-cols-1 md:grid-cols-2 gap-2 text-sm text-slate-600">
                                         <p><span className="text-slate-400">บัญชีธนาคาร:</span> {report.manual_bank_account || '-'}</p>
-                                        <p><span className="text-slate-400">ช่องทางติดต่อ:</span> {report.manual_shop_contact || '-'}</p>
+                                        <p><span className="text-slate-400">เบอร์โทร:</span> {report.manual_phone_number || '-'}</p>
+                                        <p><span className="text-slate-400">Line ID:</span> {report.manual_line_id || '-'}</p>
+                                        <p><span className="text-slate-400">Facebook:</span> {report.manual_facebook_url ? <a href={report.manual_facebook_url} target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline">Link</a> : '-'}</p>
                                         {report.amount_lost && (
                                             <p><span className="text-slate-400">มูลค่าความเสียหาย:</span> {new Intl.NumberFormat('th-TH', { style: 'currency', currency: 'THB' }).format(report.amount_lost)}</p>
                                         )}

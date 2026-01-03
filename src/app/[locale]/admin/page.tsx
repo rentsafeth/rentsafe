@@ -1,6 +1,6 @@
 import { createAdminClient } from '@/lib/supabase/server';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Store, ShieldAlert, Users, CheckCircle, MessageSquare, Flag, Trash2 } from 'lucide-react';
+import { Store, ShieldAlert, Users, CheckCircle, MessageSquare, Flag, Trash2, Coins, CreditCard } from 'lucide-react';
 import Link from 'next/link';
 
 export default async function AdminDashboardPage() {
@@ -29,6 +29,16 @@ export default async function AdminDashboardPage() {
 
     const { count: pendingDeletions } = await supabase
         .from('report_deletion_requests')
+        .select('*', { count: 'exact', head: true })
+        .eq('status', 'pending');
+
+    const { count: pendingCredits } = await supabase
+        .from('credit_orders')
+        .select('*', { count: 'exact', head: true })
+        .eq('status', 'pending');
+
+    const { count: pendingPayments } = await supabase
+        .from('payment_notifications')
         .select('*', { count: 'exact', head: true })
         .eq('status', 'pending');
 
@@ -119,6 +129,32 @@ export default async function AdminDashboardPage() {
                         <CardContent>
                             <div className="text-2xl font-bold">{pendingDeletions || 0}</div>
                             <p className="text-xs text-muted-foreground">คำร้องขอลบที่รอตรวจสอบ</p>
+                        </CardContent>
+                    </Card>
+                </Link>
+
+                <Link href="/admin/credits">
+                    <Card className="hover:shadow-lg transition-shadow cursor-pointer h-full">
+                        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                            <CardTitle className="text-sm font-medium">รอเติมเครดิต</CardTitle>
+                            <Coins className="h-4 w-4 text-yellow-500" />
+                        </CardHeader>
+                        <CardContent>
+                            <div className="text-2xl font-bold">{pendingCredits || 0}</div>
+                            <p className="text-xs text-muted-foreground">คำขอเติมเครดิตที่รอตรวจสอบ</p>
+                        </CardContent>
+                    </Card>
+                </Link>
+
+                <Link href="/admin/payments">
+                    <Card className="hover:shadow-lg transition-shadow cursor-pointer h-full">
+                        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                            <CardTitle className="text-sm font-medium">รอแจ้งโอนเงิน</CardTitle>
+                            <CreditCard className="h-4 w-4 text-green-500" />
+                        </CardHeader>
+                        <CardContent>
+                            <div className="text-2xl font-bold">{pendingPayments || 0}</div>
+                            <p className="text-xs text-muted-foreground">สลิปโอนเงินที่รอตรวจสอบ</p>
                         </CardContent>
                     </Card>
                 </Link>
