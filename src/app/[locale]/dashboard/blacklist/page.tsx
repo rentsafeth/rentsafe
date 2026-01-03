@@ -84,6 +84,8 @@ interface SearchResult {
     severity: string;
     report_count: number;
     created_at: string;
+    id_card_number?: string;
+    evidence_urls?: string[];
 }
 
 export default function BlacklistDashboard() {
