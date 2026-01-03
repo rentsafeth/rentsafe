@@ -17,6 +17,7 @@ import { Badge } from '@/components/ui/badge';
 import { Loader2, Upload, AlertTriangle, Info, MapPin } from 'lucide-react';
 import { toast } from 'sonner';
 import MultiSelect from '@/components/ui/multi-select';
+import FacebookUrlGuideModal from './FacebookUrlGuideModal';
 
 // All Thai provinces
 const ALL_PROVINCES = [
@@ -347,7 +348,10 @@ export default function ReportForm({ userId }: { userId: string }) {
                                     name="facebook_url"
                                     render={({ field }) => (
                                         <FormItem>
-                                            <FormLabel>ลิงก์ Facebook / ชื่อเพจ</FormLabel>
+                                            <FormLabel className="flex items-center gap-1">
+                                                ลิงก์ Facebook / ชื่อเพจ
+                                                <FacebookUrlGuideModal />
+                                            </FormLabel>
                                             <FormControl>
                                                 <Input placeholder="https://facebook.com/..." {...field} disabled={!!shopInfo} className={shopInfo ? 'bg-slate-100' : ''} />
                                             </FormControl>
