@@ -1265,13 +1265,57 @@ export default function SearchResults() {
 
             {/* Results Grid/List */}
             <div className={viewMode === 'grid' ? 'grid grid-cols-1 gap-4' : 'flex flex-col gap-3'}>
-                {sortedResults.map((result, index) => (
-                    result.type === 'blacklist'
-                        ? <BlacklistCard key={index} result={result} />
-                        : viewMode === 'grid'
-                            ? <ShopCard key={index} result={result} />
-                            : <ShopListItem key={index} result={result} />
-                ))}
+                {searchType === 'blacklist' ? (
+                    // Blacklist Search Results: Split into Sections from Verified Shops & Blacklist Entries
+                    <div className="space-y-8">
+                        {/* 1. Verified / Safe Shops Section */}
+                        {results.some(r => r.type === 'shop') && (
+                            <div className="space-y-4">
+                                <div className="flex items-center gap-2 pb-2 border-b border-green-200">
+                                    <ShieldCheck className="w-5 h-5 text-green-600" />
+                                    <h3 className="font-bold text-lg text-green-800">
+                                        {isThai ? 'ร้านค้าที่ผ่านการตรวจสอบแล้ว (แนะนำ)' : 'Verified & Safe Shops (Recommended)'}
+                                    </h3>
+                                </div>
+                                <div className="grid grid-cols-1 gap-4">
+                                    {results
+                                        .filter(r => r.type === 'shop')
+                                        .map((result, index) => (
+                                            <ShopCard key={`shop-${index}`} result={result} />
+                                        ))}
+                                </div>
+                            </div>
+                        )}
+
+                        {/* 2. Blacklist Entries Section */}
+                        {results.some(r => r.type === 'blacklist') && (
+                            <div className="space-y-4">
+                                <div className="flex items-center gap-2 pb-2 border-b border-red-200 mt-4">
+                                    <AlertTriangle className="w-5 h-5 text-red-600" />
+                                    <h3 className="font-bold text-lg text-red-800">
+                                        {isThai ? 'ประวัติการร้องเรียน (Blacklist)' : 'Blacklist Reports'}
+                                    </h3>
+                                </div>
+                                <div className="grid grid-cols-1 gap-4">
+                                    {results
+                                        .filter(r => r.type === 'blacklist')
+                                        .map((result, index) => (
+                                            <BlacklistCard key={`bl-${index}`} result={result} />
+                                        ))}
+                                </div>
+                            </div>
+                        )}
+                    </div>
+                ) : (
+                    // Regular Rental Search Results
+                    sortedResults.map((result, index) => (
+                        result.type === 'blacklist'
+                            ? <BlacklistCard key={index} result={result} />
+                            : viewMode === 'grid'
+                                ? <ShopCard key={index} result={result} />
+                                : <ShopListItem key={index} result={result} />
+                    ))
+                )}
             </div>
         </div>
     );
