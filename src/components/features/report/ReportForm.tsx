@@ -151,15 +151,13 @@ export default function ReportForm({ userId }: { userId: string }) {
         try {
             // 1. Upload Images (Mocking implementation for now, assuming bucket exists)
             const evidenceUrls: string[] = [];
-            const fileInput = document.getElementById('evidence-upload') as HTMLInputElement;
-
-            if (!fileInput?.files?.length) {
+            if (selectedFiles.length === 0) {
                 throw new Error('กรุณาแนบหลักฐาน (รูปภาพ/สลิป/แชท)');
             }
 
             setUploading(true);
-            for (let i = 0; i < fileInput.files.length; i++) {
-                const file = fileInput.files[i];
+            for (const file of selectedFiles) {
+
 
                 // Check file size (5MB limit)
                 if (file.size > 5 * 1024 * 1024) {
@@ -524,48 +522,69 @@ export default function ReportForm({ userId }: { userId: string }) {
 
                             <FormItem>
                                 <FormLabel>หลักฐาน (รูปภาพ/สลิป/แชท) <span className="text-red-500">*</span></FormLabel>
-                                <div className={`border-2 border-dashed rounded-md p-6 text-center hover:bg-slate-50 transition cursor-pointer relative ${selectedFiles.length > 0 ? 'border-green-400 bg-green-50' : ''}`}>
+                                <div className={`border-2 border-dashed rounded-md p-6 text-center transition relative ${selectedFiles.length > 0 ? 'border-green-400 bg-green-50' : 'border-slate-300 hover:bg-slate-50'}`}>
                                     <Input
                                         id="evidence-upload"
                                         type="file"
                                         multiple
                                         accept="image/*"
-                                        className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
+                                        className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10"
                                         onChange={(e) => {
                                             const files = e.target.files;
                                             if (files) {
-                                                const fileArray = Array.from(files).slice(0, 5); // Max 5 files
-                                                setSelectedFiles(fileArray);
+                                                const newFiles = Array.from(files);
+                                                setSelectedFiles(prev => {
+                                                    const combined = [...prev, ...newFiles];
+                                                    // Limit to 5 files
+                                                    if (combined.length > 5) {
+                                                        toast.warning(t('maxFilesWarning', { count: 5, defaultMessage: 'อัปโหลดได้สูงสุด 5 รูป (ระบบตัดรูปที่เกินออก)' }));
+                                                        return combined.slice(0, 5);
+                                                    }
+                                                    return combined;
+                                                });
+                                                // Reset input value to allow selecting the same file again if needed
+                                                e.target.value = '';
                                             }
                                         }}
                                     />
                                     {selectedFiles.length === 0 ? (
-                                        <>
+                                        <div className="pointer-events-none">
                                             <Upload className="mx-auto h-8 w-8 text-slate-400 mb-2" />
                                             <p className="text-sm text-slate-600">คลิกเพื่ออัปโหลดรูปภาพหลักฐาน</p>
                                             <p className="text-xs text-slate-400 mt-1">รองรับไฟล์ JPG, PNG (สูงสุด 5 รูป, ไม่เกิน 5MB/รูป)</p>
-                                        </>
+                                        </div>
                                     ) : (
-                                        <>
-                                            <div className="flex items-center justify-center gap-2 mb-3">
+                                        <div className="relative z-20">
+                                            <div className="flex items-center justify-center gap-2 mb-3 pointer-events-none">
                                                 <div className="w-8 h-8 bg-green-500 rounded-full flex items-center justify-center">
                                                     <span className="text-white text-sm font-bold">✓</span>
                                                 </div>
                                                 <span className="text-green-700 font-semibold">เลือกแล้ว {selectedFiles.length} ไฟล์</span>
                                             </div>
-                                            <div className="flex flex-wrap gap-2 justify-center mb-2">
+                                            <div className="flex flex-wrap gap-3 justify-center mb-2">
                                                 {selectedFiles.map((file, index) => (
-                                                    <div key={index} className="relative">
+                                                    <div key={index} className="relative group">
                                                         <img
                                                             src={URL.createObjectURL(file)}
                                                             alt={file.name}
-                                                            className="w-16 h-16 object-cover rounded-md border-2 border-green-300"
+                                                            className="w-20 h-20 object-cover rounded-md border-2 border-green-300 bg-white"
                                                         />
+                                                        <button
+                                                            type="button"
+                                                            onClick={(e) => {
+                                                                e.stopPropagation(); // Prevent triggering file input
+                                                                e.preventDefault();
+                                                                setSelectedFiles(prev => prev.filter((_, i) => i !== index));
+                                                            }}
+                                                            className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full w-5 h-5 flex items-center justify-center text-xs opacity-0 group-hover:opacity-100 transition-opacity shadow-sm hover:bg-red-600"
+                                                        >
+                                                            ✕
+                                                        </button>
                                                     </div>
                                                 ))}
                                             </div>
-                                            <p className="text-xs text-green-600">คลิกเพื่อเปลี่ยนรูป</p>
-                                        </>
+                                            <p className="text-xs text-green-600 pointer-events-none">คลิกพื้นที่ว่างเพื่อเพิ่มรูป (สูงสุด 5 รูป)</p>
+                                        </div>
                                     )}
                                 </div>
                             </FormItem>
