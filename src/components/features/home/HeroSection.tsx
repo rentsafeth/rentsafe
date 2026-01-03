@@ -36,7 +36,7 @@ const ALL_PROVINCES = [
 export default function HeroSection({ stats }: HeroSectionProps) {
     const t = useTranslations('HomePage')
     const router = useRouter()
-    const [activeTab, setActiveTab] = useState<'blacklist' | 'rental'>('rental')
+    const [activeTab, setActiveTab] = useState<'blacklist' | 'rental'>('blacklist')
     const [searchQuery, setSearchQuery] = useState('')
     const [selectedProvince, setSelectedProvince] = useState('')
     const [rentalSearchQuery, setRentalSearchQuery] = useState('')

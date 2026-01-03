@@ -64,7 +64,7 @@ export default function SearchResults() {
     const locale = params.locale as string;
     const isThai = locale === 'th';
     const query = searchParams.get('q');
-    const type = searchParams.get('type') || 'rental';
+    const type = searchParams.get('type') || 'blacklist';
     const province = searchParams.get('province');
     const t = useTranslations('SearchPage');
     const tHome = useTranslations('HomePage');
@@ -339,7 +339,7 @@ export default function SearchResults() {
 
     // Sync state with URL parameters
     useEffect(() => {
-        const typeFromUrl = searchParams.get('type') as 'blacklist' | 'rental' || 'rental';
+        const typeFromUrl = searchParams.get('type') as 'blacklist' | 'rental' || 'blacklist';
         const queryFromUrl = searchParams.get('q') || '';
         const provinceFromUrl = searchParams.get('province') || '';
 
