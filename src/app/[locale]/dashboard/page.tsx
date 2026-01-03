@@ -344,8 +344,8 @@ export default async function DashboardPage() {
                             </Card>
                         </div>
 
-                        {/* Notifications Widget */}
-                        <NotificationPanel maxItems={5} showViewAll={true} />
+                        {/* Notifications Widget commmented out */}
+                        {/* <NotificationPanel maxItems={5} showViewAll={true} /> */}
 
                         {/* Shop Details Grid */}
                         <div className="grid md:grid-cols-2 gap-6">
