@@ -95,19 +95,27 @@ const severityLabels = {
     critical: 'อันตรายมาก',
 }
 
-// Facebook Link Component with Warning Logic
-function FacebookLink({ url }: { url: string }) {
+// Facebook Link Component with Warning Logic and Tutorial
+function FacebookLink({ url, isFirst = false }: { url: string; isFirst?: boolean }) {
     const [showWarning, setShowWarning] = useState(false)
     const [hasSeenWarning, setHasSeenWarning] = useState(false)
+    const [showTutorial, setShowTutorial] = useState(false)
     const [isMounted, setIsMounted] = useState(false)
 
     useEffect(() => {
         setIsMounted(true)
         const seen = localStorage.getItem('seen_fb_warning')
+        const seenTutorial = localStorage.getItem('seen_fb_tutorial')
+
         if (seen) {
             setHasSeenWarning(true)
         }
-    }, [])
+
+        // Show tutorial only for first Facebook link on first visit
+        if (isFirst && !seenTutorial) {
+            setTimeout(() => setShowTutorial(true), 800)
+        }
+    }, [isFirst])
 
     const handleClick = (e: React.MouseEvent) => {
         if (!hasSeenWarning) {
@@ -121,6 +129,11 @@ function FacebookLink({ url }: { url: string }) {
         setHasSeenWarning(true)
         setShowWarning(false)
         window.open(url, '_blank', 'noopener,noreferrer')
+    }
+
+    const handleTutorialClose = () => {
+        localStorage.setItem('seen_fb_tutorial', 'true')
+        setShowTutorial(false)
     }
 
     // Clean URL for display
@@ -146,15 +159,51 @@ function FacebookLink({ url }: { url: string }) {
 
     return (
         <>
-            <div className="flex flex-col items-start">
+            <div className="relative flex flex-col items-start">
+                {/* Tutorial Spotlight */}
+                {showTutorial && (
+                    <>
+                        {/* Backdrop */}
+                        <div
+                            className="fixed inset-0 bg-black/60 z-40"
+                            onClick={handleTutorialClose}
+                        />
+                        {/* Spotlight on link */}
+                        <div className="absolute -inset-3 bg-white rounded-lg shadow-2xl z-50 animate-pulse" />
+                        {/* Tutorial Popup */}
+                        <div className="absolute top-full left-0 mt-3 w-72 bg-gradient-to-br from-orange-50 to-red-50 border-2 border-orange-400 rounded-xl p-4 shadow-2xl z-50">
+                            <div className="flex items-start gap-3">
+                                <div className="w-10 h-10 bg-orange-500 rounded-full flex items-center justify-center flex-shrink-0">
+                                    <AlertTriangle className="w-5 h-5 text-white" />
+                                </div>
+                                <div className="flex-1">
+                                    <h4 className="font-bold text-orange-900 mb-1">ระวัง!</h4>
+                                    <p className="text-sm text-orange-800 mb-3">
+                                        มิจฉาชีพมักตั้งชื่อเลียนแบบเพจจริง คลิกที่นี่เพื่อเปิดไปยังเพจมิจฉาชีพโดยตรง
+                                    </p>
+                                    <button
+                                        onClick={handleTutorialClose}
+                                        className="w-full bg-orange-500 hover:bg-orange-600 text-white font-medium py-2 px-4 rounded-lg transition-colors">
+                                        เข้าใจแล้ว
+                                    </button>
+                                </div>
+                            </div>
+                            {/* Arrow pointing up */}
+                            <div className="absolute -top-2 left-6 w-4 h-4 bg-gradient-to-br from-orange-50 to-red-50 border-t-2 border-l-2 border-orange-400 transform rotate-45" />
+                        </div>
+                    </>
+                )}
+
                 <a
                     href={url}
                     target="_blank"
                     rel="noopener noreferrer"
                     onClick={handleClick}
-                    className={`flex items-center gap-2 text-sm font-medium transition-colors ${!hasSeenWarning
-                        ? 'text-blue-600 bg-blue-50 px-2 py-1 rounded-md border border-blue-200 hover:bg-blue-100 animate-pulse'
-                        : 'text-blue-600 hover:underline'
+                    className={`relative flex items-center gap-2 text-sm font-medium transition-colors ${showTutorial
+                            ? 'text-blue-600 bg-blue-50 px-2 py-1 rounded-md border-2 border-orange-400 z-50'
+                            : !hasSeenWarning
+                                ? 'text-blue-600 bg-blue-50 px-2 py-1 rounded-md border border-blue-200 hover:bg-blue-100 animate-pulse'
+                                : 'text-blue-600 bg-blue-50 px-2 py-1 rounded-md border border-blue-200 hover:bg-blue-100'
                         }`}
                 >
                     <Facebook className="w-4 h-4" />
@@ -162,17 +211,10 @@ function FacebookLink({ url }: { url: string }) {
                     <ExternalLink className="w-3 h-3" />
                 </a>
 
-                {!hasSeenWarning && (
-                    <div className="mt-1 text-xs text-orange-600 bg-orange-50 px-2 py-1 rounded border border-orange-100">
-                        ⚠️ ระวัง! มิจฉาชีพมักตั้งชื่อเลียนแบบเพจจริง
-                    </div>
-                )}
-
-                {hasSeenWarning && (
-                    <span className="text-[10px] text-slate-400 mt-0.5">
-                        ตรวจสอบให้แน่ใจว่าเป็นเพจจริง
-                    </span>
-                )}
+                {/* Always show warning message */}
+                <div className="mt-1 text-xs text-orange-600 bg-orange-50 px-2 py-1 rounded border border-orange-100">
+                    ⚠️ ระวัง! มิจฉาชีพมักตั้งชื่อเลียนแบบเพจจริง
+                </div>
             </div>
 
             <AlertDialog open={showWarning} onOpenChange={setShowWarning}>
@@ -184,7 +226,7 @@ function FacebookLink({ url }: { url: string }) {
                         </AlertDialogTitle>
                         <AlertDialogDescription className="space-y-3 pt-2">
                             <p className="font-medium text-slate-900">
-                                "เนื่องจากส่วนใหญ่มิจฉาชีพจะตั้งชื่อเลียนแบบเพจจริง ให้กดที่ลิงก์เพื่อไปยังหน้าเพจมิจฉาชีพ"
+                                เนื่องจากส่วนใหญ่มิจฉาชีพจะตั้งชื่อเลียนแบบเพจจริง ให้ตรวจสอบให้ดีก่อนติดต่อ
                             </p>
                             <div className="bg-slate-50 p-3 rounded-lg text-sm text-slate-600">
                                 <p>✅ สังเกตยอดไลค์และผู้ติดตาม (เพจจริงมักมีเยอะ)</p>
