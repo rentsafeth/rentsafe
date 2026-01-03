@@ -210,6 +210,10 @@ export default function BlacklistDashboard() {
         }
     };
 
+    // My reports state
+    const [myReports, setMyReports] = useState<BlacklistReport[]>([]);
+    const [loadingReports, setLoadingReports] = useState(false);
+
     // Alert state
     const [alertState, setAlertState] = useState({
         isOpen: false,
