@@ -19,7 +19,9 @@ import {
     Heart,
     Loader2,
     Facebook,
-    ExternalLink
+    ExternalLink,
+    Copy,
+    CheckCircle2
 } from 'lucide-react'
 import Link from 'next/link'
 import { useState, useEffect } from 'react'
@@ -331,6 +333,26 @@ function HeartButton({ reportId, reporterId, initialHeartCount = 0 }: {
 export default function BlacklistDetail({ entry, reports }: Props) {
     const t = useTranslations('BlacklistPage')
     const [expandedReport, setExpandedReport] = useState<string | null>(null)
+    const [copied, setCopied] = useState(false)
+
+    // Function to copy scammer details
+    const copyScammerDetails = async () => {
+        const details = `🚨 ข้อมูลมิจฉาชีพ - ${entry.shop_names?.[0] || 'ไม่ทราบชื่อ'}
+
+${entry.bank_account_no ? `💳 เลขบัญชี: ${entry.bank_account_no}\n` : ''}${entry.phone_numbers?.length > 0 ? `📞 เบอร์โทร: ${entry.phone_numbers.join(', ')}\n` : ''}${entry.line_ids?.length > 0 ? `💬 Line ID: ${entry.line_ids.join(', ')}\n` : ''}${entry.facebook_urls?.length > 0 ? `📘 Facebook: ${entry.facebook_urls[0]}\n` : ''}${entry.shop_names?.length > 1 ? `🏪 ชื่ออื่นๆ: ${entry.shop_names.slice(1).join(', ')}\n` : ''}
+📊 ถูกรายงาน: ${entry.total_reports} ครั้ง
+💰 ยอดเสียหายรวม: ${formatMoney(entry.total_amount_lost)}
+
+⚠️ ข้อมูลจาก RentSafe.in.th`
+
+        try {
+            await navigator.clipboard.writeText(details)
+            setCopied(true)
+            setTimeout(() => setCopied(false), 2000)
+        } catch (err) {
+            console.error('Failed to copy:', err)
+        }
+    }
 
     // Mask name for privacy
     const maskName = (name: string | null | undefined): string => {
@@ -499,6 +521,67 @@ export default function BlacklistDetail({ entry, reports }: Props) {
                                 </p>
                             </div>
                         )}
+                    </div>
+                </CardContent>
+            </Card>
+
+            {/* Emergency Action Card */}
+            <Card className="border-2 border-red-500 bg-gradient-to-br from-red-50 via-orange-50 to-yellow-50 overflow-hidden">
+                <CardContent className="pt-6">
+                    <div className="flex items-start gap-3 mb-4">
+                        <div className="w-12 h-12 bg-red-600 rounded-full flex items-center justify-center flex-shrink-0 animate-pulse">
+                            <AlertTriangle className="w-6 h-6 text-white" />
+                        </div>
+                        <div className="flex-1">
+                            <h3 className="text-lg font-bold text-red-900">พบบัญชี/เบอร์นี้?</h3>
+                            <p className="text-sm text-red-700 mt-1">ดำเนินการด่วน! ป้องกันการสูญเสียเงิน</p>
+                        </div>
+                    </div>
+
+                    <div className="grid md:grid-cols-3 gap-3">
+                        {/* Call 1441 */}
+                        <a
+                            href="tel:1441"
+                            className="bg-gradient-to-r from-red-600 to-red-700 hover:from-red-700 hover:to-red-800 text-white rounded-xl p-4 flex flex-col items-center justify-center gap-2 shadow-lg hover:shadow-xl transition-all group"
+                        >
+                            <Phone className="w-8 h-8 group-hover:scale-110 transition-transform" />
+                            <span className="font-bold text-lg">โทร 1441</span>
+                            <span className="text-xs text-red-100 text-center">อายัดบัญชีภายใน 1 ชม.</span>
+                        </a>
+
+                        {/* Report Online */}
+                        <a
+                            href="https://www.thaipoliceonline.go.th"
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white rounded-xl p-4 flex flex-col items-center justify-center gap-2 shadow-lg hover:shadow-xl transition-all group"
+                        >
+                            <FileText className="w-8 h-8 group-hover:scale-110 transition-transform" />
+                            <span className="font-bold">แจ้งความออนไลน์</span>
+                            <span className="text-xs text-blue-100 text-center flex items-center gap-1">
+                                ตำรวจไซเบอร์ <ExternalLink className="w-3 h-3" />
+                            </span>
+                        </a>
+
+                        {/* Copy Details */}
+                        <button
+                            onClick={copyScammerDetails}
+                            className="bg-gradient-to-r from-purple-600 to-purple-700 hover:from-purple-700 hover:to-purple-800 text-white rounded-xl p-4 flex flex-col items-center justify-center gap-2 shadow-lg hover:shadow-xl transition-all group"
+                        >
+                            {copied ? (
+                                <CheckCircle2 className="w-8 h-8 animate-bounce" />
+                            ) : (
+                                <Copy className="w-8 h-8 group-hover:scale-110 transition-transform" />
+                            )}
+                            <span className="font-bold">{copied ? 'คัดลอกแล้ว!' : 'คัดลอกข้อมูล'}</span>
+                            <span className="text-xs text-purple-100 text-center">สำหรับแจ้งความ</span>
+                        </button>
+                    </div>
+
+                    <div className="mt-4 p-3 bg-white/50 rounded-lg border border-red-200">
+                        <p className="text-xs text-red-800">
+                            <strong>💡 เคล็ดลับ:</strong> คัดลอกข้อมูลก่อน → โทร 1441 → จากนั้นแจ้งความออนไลน์เพื่อติดตามคดี
+                        </p>
                     </div>
                 </CardContent>
             </Card>
