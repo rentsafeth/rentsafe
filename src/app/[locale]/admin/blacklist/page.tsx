@@ -782,8 +782,8 @@ export default function AdminBlacklistPage() {
                                 </div>
                             </div>
                         ) : (
-                            <div className="space-y-4 h-full flex flex-col">
-                                <div className="flex items-center justify-between shrink-0">
+                            <div className="space-y-4">
+                                <div className="flex items-center justify-between">
                                     <h3 className="font-semibold text-gray-900">
                                         ตรวจสอบข้อมูล ({previewData.length} รายการ)
                                     </h3>
@@ -792,10 +792,10 @@ export default function AdminBlacklistPage() {
                                     </Button>
                                 </div>
 
-                                <div className="border rounded-md overflow-hidden flex-1 min-h-0 relative">
-                                    <div className="absolute inset-0 overflow-auto">
+                                <div className="border rounded-md overflow-hidden bg-white">
+                                    <div className="max-h-[60vh] overflow-y-auto">
                                         <table className="w-full text-sm text-left">
-                                            <thead className="text-xs text-gray-700 uppercase bg-gray-50 border-b sticky top-0">
+                                            <thead className="text-xs text-gray-700 uppercase bg-gray-50 border-b sticky top-0 z-10 shadow-sm">
                                                 <tr>
                                                     <th className="px-4 py-3 bg-gray-50">ชื่อ-นามสกุล</th>
                                                     <th className="px-4 py-3 bg-gray-50 text-center">เลขบัตร (Last 4)</th>
