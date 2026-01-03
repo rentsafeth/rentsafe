@@ -56,11 +56,24 @@ export async function GET(request: NextRequest) {
         // Detect query type and build appropriate search
         const isIdCard = /^\d{13}$/.test(cleanQuery);
         const isPhone = /^\d{9,10}$/.test(cleanQuery);
+        const isUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(cleanQuery);
 
         let results: any[] = [];
         let searchError: any = null;
 
-        if (isIdCard) {
+        if (isUuid) {
+            // Search by UUID (Exact Match)
+            const { data, error } = await supabase
+                .from('customer_blacklist')
+                .select(`
+                    id, id_card_last4, first_name, last_name, phone_number,
+                    reason_type, reason_detail, severity, report_count, created_at
+                `)
+                .eq('status', 'approved')
+                .eq('id', cleanQuery);
+            results = data || [];
+            searchError = error;
+        } else if (isIdCard) {
             // Search by ID card hash
             const hash = hashIdCard(cleanQuery);
             const { data, error } = await supabase

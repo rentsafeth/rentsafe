@@ -144,6 +144,9 @@ export default function NotificationsPage() {
             case 'blacklist_new':
             case 'blacklist_approved':
             case 'blacklist_rejected':
+                if (notification.data?.blacklist_id) {
+                    return `/dashboard/blacklist?q=${notification.data.blacklist_id}`;
+                }
                 return '/dashboard/blacklist';
             case 'subscription':
             case 'subscription_expired':
