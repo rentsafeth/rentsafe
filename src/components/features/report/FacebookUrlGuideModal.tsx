@@ -41,7 +41,7 @@ export default function FacebookUrlGuideModal() {
                             />
                             <Step
                                 num={2}
-                                text="กดปุ่ม 'ดูโปรไฟล์' (View Profile)"
+                                text="กดปุ่ม 'โปรไฟล์' (Profile)"
                                 icon={<Facebook className="w-8 h-8 text-blue-600" />}
                             />
                             <Step
@@ -51,7 +51,14 @@ export default function FacebookUrlGuideModal() {
                             />
                             <Step
                                 num={4}
-                                text="เลือกเมนู 'คัดลอกลิงก์' (Copy Link)"
+                                text={
+                                    <span>
+                                        เลือกเมนู 'คัดลอกลิงก์' (Copy Link)
+                                        <span className="text-xs text-slate-500 font-normal mt-1 block">
+                                            *หากลิงก์ยาว พิมพ์เฉพาะชื่อหลัง https://www.facebook.com/ ก็ได้ (เช่น facebook.com/<strong>kuntoncarrent</strong> ให้พิมพ์แค่ <strong>kuntoncarrent</strong>)
+                                        </span>
+                                    </span>
+                                }
                                 icon={<Copy className="w-8 h-8 text-green-600" />}
                             />
                         </div>
@@ -74,7 +81,14 @@ export default function FacebookUrlGuideModal() {
                             />
                             <Step
                                 num={3}
-                                text="เลือกเมนู 'คัดลอกลิงก์' (Copy Link)"
+                                text={
+                                    <span>
+                                        เลือกเมนู 'คัดลอกลิงก์' (Copy Link)
+                                        <span className="text-xs text-slate-500 font-normal mt-1 block">
+                                            *หากลิงก์ยาว พิมพ์เฉพาะชื่อหลัง https://www.facebook.com/ ก็ได้ (เช่น facebook.com/<strong>kuntoncarrent</strong> ให้พิมพ์แค่ <strong>kuntoncarrent</strong>)
+                                        </span>
+                                    </span>
+                                }
                                 icon={<Copy className="w-8 h-8 text-green-600" />}
                             />
                         </div>
@@ -85,14 +99,14 @@ export default function FacebookUrlGuideModal() {
     );
 }
 
-const Step = ({ num, text, icon }: { num: number, text: string, icon: React.ReactNode }) => (
+const Step = ({ num, text, icon }: { num: number, text: React.ReactNode, icon: React.ReactNode }) => (
     <div className="flex items-center gap-4 bg-slate-50 p-3 rounded-xl border border-slate-100">
         <div className="flex-shrink-0 w-8 h-8 flex items-center justify-center">
             {icon}
         </div>
         <div className="flex-1">
             <span className="text-xs font-bold text-slate-400 uppercase mb-0.5 block">Step {num}</span>
-            <p className="text-slate-700 text-sm font-medium">{text}</p>
+            <div className="text-slate-700 text-sm font-medium">{text}</div>
         </div>
     </div>
 );

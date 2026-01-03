@@ -14,7 +14,7 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { Form, FormControl, FormDescription, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { Loader2, Upload, AlertTriangle, Info, MapPin } from 'lucide-react';
+import { Loader2, Upload, AlertTriangle, Info, MapPin, ExternalLink } from 'lucide-react';
 import { toast } from 'sonner';
 import MultiSelect from '@/components/ui/multi-select';
 import FacebookUrlGuideModal from './FacebookUrlGuideModal';
@@ -353,7 +353,44 @@ export default function ReportForm({ userId }: { userId: string }) {
                                                 <FacebookUrlGuideModal />
                                             </FormLabel>
                                             <FormControl>
-                                                <Input placeholder="https://facebook.com/..." {...field} disabled={!!shopInfo} className={shopInfo ? 'bg-slate-100' : ''} />
+                                                <div className="flex gap-2">
+                                                    <Input
+                                                        placeholder="https://facebook.com/..."
+                                                        {...field}
+                                                        disabled={!!shopInfo}
+                                                        className={shopInfo ? 'bg-slate-100' : ''}
+                                                        onBlur={() => {
+                                                            field.onBlur();
+                                                            let val = field.value || '';
+                                                            val = val.trim();
+                                                            // Auto-prefix logic: if not empty and doesn't look like a URL
+                                                            if (val && !val.startsWith('http') && !val.includes('facebook.com')) {
+                                                                // Handle cases like "@username"
+                                                                const cleanVal = val.replace(/^@/, '');
+                                                                const newVal = `https://www.facebook.com/${cleanVal}`;
+                                                                field.onChange(newVal);
+                                                            }
+                                                        }}
+                                                    />
+                                                    {field.value && (
+                                                        <Button
+                                                            type="button"
+                                                            variant="outline"
+                                                            size="icon"
+                                                            className="shrink-0"
+                                                            onClick={() => {
+                                                                let url = field.value || '';
+                                                                if (!url.startsWith('http')) {
+                                                                    url = `https://${url}`;
+                                                                }
+                                                                window.open(url, '_blank');
+                                                            }}
+                                                            title="ทดสอบลิงก์"
+                                                        >
+                                                            <ExternalLink className="w-4 h-4" />
+                                                        </Button>
+                                                    )}
+                                                </div>
                                             </FormControl>
                                             <FormMessage />
                                         </FormItem>
