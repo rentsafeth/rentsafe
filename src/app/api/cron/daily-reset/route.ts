@@ -37,14 +37,20 @@ export async function GET(request: NextRequest) {
             console.log('[Cron] Successfully reset daily PPC spent');
         }
 
-        // 2. Expire old boosts
-        const { error: boostError } = await supabase.rpc('expire_boosts');
+        // 2. Process Daily Boosts (Activate & Expire)
+        const { data: boostResults, error: boostError } = await supabase.rpc('process_daily_boosts');
+
         if (boostError) {
-            console.error('[Cron] Error expiring boosts:', boostError);
-            results.errors.push(`Boost expire: ${boostError.message}`);
+            console.error('[Cron] Error processing boosts:', boostError);
+            results.errors.push(`Boost process: ${boostError.message}`);
         } else {
-            results.boosts_expired = true;
-            console.log('[Cron] Successfully expired old boosts');
+            // boostResults will be { activated: number, expired: number, ... }
+            if (boostResults && (boostResults.activated > 0 || boostResults.expired > 0)) {
+                results.boosts_expired = true; // Keep flag name for compatibility or rename if prefer
+                console.log(`[Cron] Boosts processed: Activated ${boostResults.activated}, Expired ${boostResults.expired}`);
+            } else {
+                console.log('[Cron] No boosts needing update');
+            }
         }
 
         // 3. Check and expire subscriptions
