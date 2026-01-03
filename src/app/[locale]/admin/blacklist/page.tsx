@@ -558,13 +558,25 @@ export default function AdminBlacklistPage() {
                             className="pl-10"
                         />
                     </div>
-                    <Button
-                        onClick={() => setShowImportModal(true)}
-                        className="w-full md:w-auto bg-green-600 hover:bg-green-700 text-white"
-                    >
-                        <FileJson className="w-4 h-4 mr-2" />
-                        นำเข้า JSON / Excel
-                    </Button>
+                    <div className="flex gap-2 w-full md:w-auto">
+                        {statusFilter === 'approved' && (
+                            <Button
+                                variant="outline"
+                                onClick={handleExportForUpdate}
+                                className="flex-1 md:flex-none text-green-700 border-green-200 bg-green-50 hover:bg-green-100"
+                            >
+                                <FileJson className="w-4 h-4 mr-2" />
+                                Export แก้ไข
+                            </Button>
+                        )}
+                        <Button
+                            onClick={() => setShowImportModal(true)}
+                            className="flex-1 md:flex-none bg-green-600 hover:bg-green-700 text-white"
+                        >
+                            <FileJson className="w-4 h-4 mr-2" />
+                            นำเข้า JSON / Excel
+                        </Button>
+                    </div>
 
                     {statusFilter === 'pending' && filteredReports.length > 0 && (
                         <Button
