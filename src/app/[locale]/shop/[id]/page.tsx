@@ -17,6 +17,7 @@ import ShopServiceBadges from '@/components/features/shop/ShopServiceBadges';
 import ShareShopButton from '@/components/features/shop/ShareShopButton';
 import ReviewFormModal from '@/components/features/shop/ReviewFormModal';
 import ReviewList from '@/components/features/shop/ReviewList';
+import ShopTour from '@/components/features/shop/ShopTour';
 
 const BASE_URL = 'https://rentsafe.in.th';
 export const dynamic = 'force-dynamic';
@@ -444,7 +445,7 @@ export default async function ShopProfilePage({ params }: { params: Promise<{ id
 
                                     {/* Facebook URLs */}
                                     {(shop.facebook_urls?.length > 0 ? shop.facebook_urls : (shop.facebook_url ? [shop.facebook_url] : [])).map((fbUrl: string, index: number) => (
-                                        <a key={`fb-${index}`} href={fbUrl} target="_blank" rel="noopener noreferrer"
+                                        <a key={`fb-${index}`} id={`shop-contact-facebook-${index}`} href={fbUrl} target="_blank" rel="noopener noreferrer"
                                             className="flex items-center gap-3 p-3 bg-slate-50 rounded-lg hover:bg-slate-100 transition-colors group">
                                             <div className="p-2 bg-blue-100 rounded-lg group-hover:bg-blue-200 transition-colors">
                                                 <Globe className="w-4 h-4 text-blue-600" />
@@ -479,7 +480,7 @@ export default async function ShopProfilePage({ params }: { params: Promise<{ id
 
                             {/* Bank Account Info */}
                             {(shop.bank_name || shop.bank_account_no) && (
-                                <Card>
+                                <Card id="shop-bank-card">
                                     <CardHeader className="pb-3">
                                         <CardTitle className="text-lg flex items-center gap-2">
                                             <CreditCard className="w-5 h-5 text-green-600" />
@@ -642,6 +643,7 @@ export default async function ShopProfilePage({ params }: { params: Promise<{ id
                     </div>
                 </div>
             </div>
+            <ShopTour isThai={isThai} isVerifiedPro={isVerifiedPro} />
         </>
     );
 }
