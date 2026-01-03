@@ -50,19 +50,20 @@ export async function GET(request: NextRequest) {
             }, { status: 429 });
         }
 
-        // Clean query for different search types
+        // Clean query for different search types (remove hyphens for ID card/Phone)
         const cleanQuery = query.replace(/-/g, '').replace(/\s+/g, ' ').trim();
 
-        // Detect query type and build appropriate search
+        // Detect query type
+        // Check UUID from original query (must have hyphens)
+        const isUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(query.trim());
         const isIdCard = /^\d{13}$/.test(cleanQuery);
         const isPhone = /^\d{9,10}$/.test(cleanQuery);
-        const isUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(cleanQuery);
 
         let results: any[] = [];
         let searchError: any = null;
 
         if (isUuid) {
-            // Search by UUID (Exact Match)
+            // Search by UUID (Use original query with hyphens)
             const { data, error } = await supabase
                 .from('customer_blacklist')
                 .select(`
@@ -70,7 +71,7 @@ export async function GET(request: NextRequest) {
                     reason_type, reason_detail, severity, report_count, created_at
                 `)
                 .eq('status', 'approved')
-                .eq('id', cleanQuery);
+                .eq('id', query.trim()); // Use original query
             results = data || [];
             searchError = error;
         } else if (isIdCard) {
