@@ -47,6 +47,7 @@ export default async function BlacklistDetailPage({ params }: { params: Promise<
             reporter_id,
             manual_shop_name,
             manual_shop_contact,
+            manual_facebook_url,
             manual_bank_account,
             description,
             evidence_urls,
