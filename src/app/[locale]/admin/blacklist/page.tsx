@@ -7,6 +7,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
+import * as XLSX from 'xlsx';
 import {
     ShieldAlert,
     Loader2,
@@ -88,6 +89,7 @@ interface ImportPreviewItem {
     id_card: string;
     reason_detail: string;
     reason_type: string;
+    incident_date?: string | null;
 }
 
 export default function AdminBlacklistPage() {
@@ -118,6 +120,125 @@ export default function AdminBlacklistPage() {
         loadReports();
     }, [statusFilter]);
 
+    const processImportData = (rawData: any[]) => {
+        return rawData.map((item: any) => {
+            // Determine Name
+            let firstName = '';
+            let lastName = '';
+            // Support columns: 'ชื่อ', 'name', 'First Name', etc.
+            let fullName = item['ชื่อ'] || item['name'] || item['Name'] || '';
+
+            // Remove keys logic (Thai titles)
+            const titles = ['ว่าที่ร้อยตรี', 'ดร.', 'นาย', 'นางสาว', 'นาง', 'ด.ช.', 'ด.ญ.', 'Mr.', 'Mrs.', 'Ms.'];
+            const sortedTitles = titles.sort((a, b) => b.length - a.length);
+            let cleanName = fullName.trim();
+            for (const title of sortedTitles) {
+                if (cleanName.startsWith(title)) {
+                    cleanName = cleanName.substring(title.length).trim();
+                    break;
+                }
+            }
+            const parts = cleanName.split(/\s+/); // Split by any whitespace
+            if (parts.length > 0) firstName = parts[0];
+            if (parts.length > 1) lastName = parts.slice(1).join(' ');
+
+            // Determine ID Card
+            const idCard = (item['เลขบัตรประจำตัวประชาชน'] || item['id_card'] || item['id_number'] || '').toString().replace(/\D/g, '');
+
+            // Determine Reason
+            const reasonDetail = item['รูปแบบการโกง'] || item['reason'] || item['reason_detail'] || '';
+
+            // Map reason type from keywords
+            let reasonType = 'other'; // Default to other instead of imported for clearer logic if unknown
+            const lowerReason = reasonDetail.toLowerCase();
+
+            if (lowerReason.includes('ไม่คืน') || lowerReason.includes('ขโมย') || lowerReason.includes('ขายต่อ') || lowerReason.includes('เชิด')) reasonType = 'no_return';
+            else if (lowerReason.includes('จำนำ')) reasonType = 'no_return'; // Severe: Pawning = Theft in this context usually
+            else if (lowerReason.includes('ชน') || lowerReason.includes('เสียหาย') || lowerReason.includes('รอย')) reasonType = 'damage';
+            else if (lowerReason.includes('ไม่จ่าย') || lowerReason.includes('ค้าง')) reasonType = 'no_pay';
+            else if (lowerReason.includes('ปลอม') || lowerReason.includes('เอกสารเท็จ')) reasonType = 'fake_docs';
+
+            // Date Parsing
+            let incidentDate = null;
+            if (item['วันที่บันทึก']) {
+                // Try to parse excel date or string date
+                // Excel might return a number (serial date) or string
+                const dateVal = item['วันที่บันทึก'];
+                if (typeof dateVal === 'number') {
+                    // Excel serial date to JS Date
+                    // Excel base date is 1900-01-01 roughly. 
+                    // JS Date = (ExcelSerial - 25569) * 86400 * 1000
+                    incidentDate = new Date((dateVal - 25569) * 86400 * 1000).toISOString();
+                } else if (typeof dateVal === 'string') {
+                    // Try parsing Thai format e.g., "4 เมษายน 2566"
+                    const thaiMonths = ['มกราคม', 'กุมภาพันธ์', 'มีนาคม', 'เมษายน', 'พฤษภาคม', 'มิถุนายน', 'กรกฎาคม', 'สิงหาคม', 'กันยายน', 'ตุลาคม', 'พฤศจิกายน', 'ธันวาคม'];
+                    const shortThaiMonths = ['ม.ค.', 'ก.พ.', 'มี.ค.', 'เม.ย.', 'พ.ค.', 'มิ.ย.', 'ก.ค.', 'ส.ค.', 'ก.ย.', 'ต.ค.', 'พ.ย.', 'ธ.ค.'];
+
+                    let dateStr = dateVal;
+                    let isThai = false;
+
+                    // Replace month names
+                    thaiMonths.forEach((m, i) => {
+                        if (dateStr.includes(m)) {
+                            dateStr = dateStr.replace(m, `${i + 1}`);
+                            isThai = true;
+                        }
+                    });
+
+                    if (!isThai) {
+                        shortThaiMonths.forEach((m, i) => {
+                            if (dateStr.includes(m)) {
+                                dateStr = dateStr.replace(m, `${i + 1}`);
+                                isThai = true;
+                            }
+                        });
+                    }
+
+                    // Helper assuming "Day Month Year" e.g., "4 4 2566"
+                    const dParts = dateStr.trim().split(' ');
+                    if (dParts.length === 3) {
+                        let year = parseInt(dParts[2]);
+                        if (year > 2400) year -= 543; // Convert BE to AD
+                        incidentDate = new Date(`${year}-${dParts[1]}-${dParts[0]}`).toISOString();
+                    }
+                }
+            }
+
+            return {
+                first_name: firstName,
+                last_name: lastName,
+                id_card: idCard,
+                reason_detail: reasonDetail,
+                reason_type: reasonType,
+                incident_date: incidentDate
+            };
+        }).filter(item => item.first_name && item.id_card);
+    };
+
+    const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+        const file = e.target.files?.[0];
+        if (!file) return;
+
+        const reader = new FileReader();
+        reader.onload = (evt) => {
+            try {
+                const bstr = evt.target?.result;
+                const wb = XLSX.read(bstr, { type: 'binary' });
+                const wsname = wb.SheetNames[0];
+                const ws = wb.Sheets[wsname];
+                const data = XLSX.utils.sheet_to_json(ws);
+
+                const parsed = processImportData(data);
+                setPreviewData(parsed);
+                setImportStep(2);
+            } catch (error) {
+                console.error('Excel Error:', error);
+                alert('ไม่สามารถอ่านไฟล์ Excel ได้');
+            }
+        };
+        reader.readAsBinaryString(file);
+    };
+
     const handleParseJson = () => {
         try {
             const rawData = JSON.parse(importJson);
@@ -126,50 +247,7 @@ export default function AdminBlacklistPage() {
                 return;
             }
 
-            const parsed: ImportPreviewItem[] = rawData.map((item: any) => {
-                // Determine Name
-                let firstName = '';
-                let lastName = '';
-                let fullName = item['ชื่อ'] || item['name'] || '';
-
-                // Remove keys logic (Thai titles)
-                const titles = ['นาย', 'นางสาว', 'นาง', 'ด.ช.', 'ด.ญ.', 'ว่าที่ร้อยตรี', 'ดร.', 'Mr.', 'Mrs.', 'Ms.'];
-                const sortedTitles = titles.sort((a, b) => b.length - a.length);
-                let cleanName = fullName.trim();
-                for (const title of sortedTitles) {
-                    if (cleanName.startsWith(title)) {
-                        cleanName = cleanName.substring(title.length).trim();
-                        break;
-                    }
-                }
-                const parts = cleanName.split(/\s+/); // Split by any whitespace
-                if (parts.length > 0) firstName = parts[0];
-                if (parts.length > 1) lastName = parts.slice(1).join(' ');
-
-                // Determine ID Card
-                const idCard = (item['เลขบัตรประจำตัวประชาชน'] || item['id_card'] || item['id_number'] || '').replace(/\D/g, '');
-
-                // Determine Reason
-                const reasonDetail = item['รูปแบบการโกง'] || item['reason'] || item['reason_detail'] || '';
-
-                // Map reason type from keywords
-                let reasonType = 'imported';
-                const lowerReason = reasonDetail.toLowerCase();
-                if (lowerReason.includes('ไม่คืน') || lowerReason.includes('ขโมย')) reasonType = 'no_return';
-                else if (lowerReason.includes('ชน') || lowerReason.includes('จำนำ')) reasonType = 'damage'; // Assumed 'Pawn' is bad/damage related for car rental context or 'no_return'
-                if (lowerReason.includes('จำนำ')) reasonType = 'no_return'; // Correction: Pawn usually means lost car
-                else if (lowerReason.includes('ไม่จ่าย') || lowerReason.includes('ค้าง')) reasonType = 'no_pay';
-                else if (lowerReason.includes('ปลอม')) reasonType = 'fake_docs';
-
-                return {
-                    first_name: firstName,
-                    last_name: lastName,
-                    id_card: idCard,
-                    reason_detail: reasonDetail,
-                    reason_type: reasonType,
-                };
-            }).filter(item => item.first_name && item.id_card); // Filter invalid
-
+            const parsed = processImportData(rawData);
             setPreviewData(parsed);
             setImportStep(2);
         } catch (error) {
@@ -378,7 +456,7 @@ export default function AdminBlacklistPage() {
                         className="w-full md:w-auto bg-green-600 hover:bg-green-700 text-white"
                     >
                         <FileJson className="w-4 h-4 mr-2" />
-                        นำเข้า JSON
+                        นำเข้า JSON / Excel
                     </Button>
                 </div>
 
@@ -652,7 +730,7 @@ export default function AdminBlacklistPage() {
                 </DialogContent>
             </Dialog>
 
-            {/* Import JSON Modal */}
+            {/* Import JSON/Excel Modal */}
             <Dialog
                 open={showImportModal}
                 onOpenChange={(open) => {
@@ -664,41 +742,57 @@ export default function AdminBlacklistPage() {
                     <DialogHeader>
                         <DialogTitle className="flex items-center gap-2">
                             <FileJson className="w-5 h-5 text-green-600" />
-                            นำเข้า Blacklist (JSON)
+                            นำเข้า Blacklist (JSON / Excel)
                         </DialogTitle>
                         <DialogDescription>
-                            นำเข้าข้อมูลแบล็คลิสต์จากไฟล์ JSON (รองรับรูปแบบ Array of Objects)
+                            นำเข้าข้อมูลแบล็คลิสต์จากไฟล์ JSON (Array) หรือไฟล์ Excel (.xlsx) <br />
+                            โดยระบบจะแยก ชื่อ-นามสกุล และจัดหมวดหมู่การโกงให้อัตโนมัติ
                         </DialogDescription>
                     </DialogHeader>
 
                     {importStep === 1 ? (
                         <div className="space-y-4">
-                            <div className="bg-yellow-50 p-4 rounded-md border border-yellow-200">
-                                <p className="text-sm text-yellow-800 font-semibold mb-2">รูปแบบข้อมูลที่รองรับ:</p>
-                                <pre className="text-xs bg-white p-2 rounded border border-yellow-200 overflow-auto">
-                                    {`[
-  {
-    "ชื่อ": "นาย สมชาย เข็มกลัด",
-    "เลขบัตรประจำตัวประชาชน": "1-2345-67890-12-3",
-    "รูปแบบการโกง": "ขโมยรถ"
-  },
-  ...
-]`}
-                                </pre>
+                            <div className="bg-blue-50 p-4 rounded-md border border-blue-200">
+                                <h3 className="text-sm font-semibold text-blue-800 mb-2">1. อัปโหลดไฟล์ Excel (.xlsx)</h3>
+                                <div className="flex items-center gap-3">
+                                    <Input
+                                        type="file"
+                                        accept=".xlsx, .xls"
+                                        onChange={handleFileUpload}
+                                        className="bg-white"
+                                    />
+                                    <span className="text-xs text-blue-600">*รองรับคอลัมน์: ชื่อ, เลขบัตร..., รูปแบบการโกง</span>
+                                </div>
                             </div>
-                            <Textarea
-                                placeholder="วาง JSON ที่นี่..."
-                                value={importJson}
-                                onChange={(e) => setImportJson(e.target.value)}
-                                className="min-h-[300px] font-mono text-sm"
-                            />
-                            <div className="flex justify-end gap-2">
-                                <Button variant="outline" onClick={() => setShowImportModal(false)}>
-                                    ยกเลิก
-                                </Button>
-                                <Button onClick={handleParseJson} disabled={!importJson.trim()}>
-                                    ตรวจสอบข้อมูล
-                                </Button>
+
+                            <div className="relative">
+                                <div className="absolute inset-0 flex items-center">
+                                    <span className="w-full border-t" />
+                                </div>
+                                <div className="relative flex justify-center text-xs uppercase">
+                                    <span className="bg-white px-2 text-gray-500">หรือ</span>
+                                </div>
+                            </div>
+
+                            <div className="bg-yellow-50 p-4 rounded-md border border-yellow-200">
+                                <h3 className="text-sm font-semibold text-yellow-800 mb-2">2. วางข้อมูล JSON โดยตรง</h3>
+                                <pre className="text-xs bg-white p-2 rounded border border-yellow-200 overflow-auto mb-2">
+                                    {`[{"ชื่อ": "นาย สมชาย", "เลขบัตร...": "1234...", "รูปแบบการโกง": "ขโมยรถ"}, ...]`}
+                                </pre>
+                                <Textarea
+                                    placeholder="วาง JSON ที่นี่..."
+                                    value={importJson}
+                                    onChange={(e) => setImportJson(e.target.value)}
+                                    className="min-h-[150px] font-mono text-sm"
+                                />
+                                <div className="flex justify-end gap-2 mt-2">
+                                    <Button variant="outline" onClick={() => setShowImportModal(false)}>
+                                        ยกเลิก
+                                    </Button>
+                                    <Button onClick={handleParseJson} disabled={!importJson.trim()}>
+                                        ตรวจสอบ JSON
+                                    </Button>
+                                </div>
                             </div>
                         </div>
                     ) : (
@@ -708,7 +802,7 @@ export default function AdminBlacklistPage() {
                                     ตรวจสอบข้อมูล ({previewData.length} รายการ)
                                 </h3>
                                 <Button variant="outline" size="sm" onClick={() => setImportStep(1)}>
-                                    แก้ไข JSON
+                                    ย้อนกลับ
                                 </Button>
                             </div>
 
@@ -721,6 +815,7 @@ export default function AdminBlacklistPage() {
                                                 <th className="px-4 py-3">เลขบัตร (Last 4)</th>
                                                 <th className="px-4 py-3">สาเหตุ</th>
                                                 <th className="px-4 py-3">ประเภท</th>
+                                                <th className="px-4 py-3">วันที่ (ถ้ามี)</th>
                                             </tr>
                                         </thead>
                                         <tbody>
@@ -739,6 +834,9 @@ export default function AdminBlacklistPage() {
                                                         <Badge variant="outline">
                                                             {REASON_TYPES[item.reason_type] || item.reason_type}
                                                         </Badge>
+                                                    </td>
+                                                    <td className="px-4 py-3 text-xs text-gray-500">
+                                                        {item.incident_date ? new Date(item.incident_date).toLocaleDateString('th-TH') : '-'}
                                                     </td>
                                                 </tr>
                                             ))}
