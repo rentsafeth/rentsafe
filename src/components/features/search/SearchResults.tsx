@@ -287,16 +287,28 @@ export default function SearchResults() {
                 }
 
                 // Search in shop_names array using textSearch (case-insensitive, partial match)
-                const { data: blacklistEntries } = await supabase
-                    .from('blacklist_entries')
-                    .select('*')
-                    .or(`bank_account_no.ilike.%${q}%,shop_names.cs.{"%${q}%"}`)
-                    .order('total_reports', { ascending: false });
+                // Use RPC for search to support partial matches in arrays (shop_names, etc.)
+                const { data: blacklistEntries, error } = await supabase
+                    .rpc('search_blacklist', { keyword: q });
 
-                const { data: blacklistByPhone } = await supabase
-                    .from('blacklist_entries')
-                    .select('*')
-                    .contains('phone_numbers', [q]);
+                if (error) {
+                    console.error('Search error:', error);
+                    // Fallback using simple text search if RPC fails/doesn't exist
+                    const { data: fallbackData } = await supabase
+                        .from('blacklist_entries')
+                        .select('*')
+                        .or(`bank_account_no.ilike.%${q}%`) // Only bank account reliable without RPC
+                        .order('total_reports', { ascending: false });
+
+                    if (fallbackData) {
+                        // Combine manually if needed or just use fallback
+                        // For now, let's just use what we can get via simpler query
+                        const combinedResults: SearchResult[] = [];
+                        fallbackData.forEach(entry => combinedResults.push({ type: 'blacklist', data: entry }));
+                        setResults(combinedResults);
+                        return;
+                    }
+                }
 
                 const { data: shops } = await supabase
                     .from('shops')
@@ -308,16 +320,9 @@ export default function SearchResults() {
                 const seenIds = new Set<string>();
 
                 if (blacklistEntries) {
-                    blacklistEntries.forEach(entry => {
-                        if (!seenIds.has(entry.id)) {
-                            seenIds.add(entry.id);
-                            combinedResults.push({ type: 'blacklist', data: entry });
-                        }
-                    });
-                }
-
-                if (blacklistByPhone) {
-                    blacklistByPhone.forEach(entry => {
+                    // Start: Sort by most relevant (this is basic, RPC returns default order)
+                    // We can re-sort in client by total_reports
+                    (blacklistEntries as any[]).sort((a, b) => b.total_reports - a.total_reports).forEach(entry => {
                         if (!seenIds.has(entry.id)) {
                             seenIds.add(entry.id);
                             combinedResults.push({ type: 'blacklist', data: entry });
