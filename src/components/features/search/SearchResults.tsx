@@ -17,6 +17,17 @@ import {
 
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import Link from 'next/link';
+import {
+    AlertDialog,
+    AlertDialogAction,
+    AlertDialogCancel,
+    AlertDialogContent,
+    AlertDialogDescription,
+    AlertDialogFooter,
+    AlertDialogHeader,
+    AlertDialogTitle,
+    AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
 
 type SearchResult = {
     type: 'shop' | 'blacklist';
@@ -310,18 +321,30 @@ export default function SearchResults() {
                     }
                 }
 
+                // Find shops matching query (Verified shops included)
                 const { data: shops } = await supabase
                     .from('shops')
                     .select('*')
-                    .or(`name.ilike.%${q}%,bank_account_no.ilike.%${q}%,phone_number.ilike.%${q}%`)
-                    .gt('report_count', 0);
+                    .or(`name.ilike.%${q}%,bank_account_no.ilike.%${q}%,phone_number.ilike.%${q}%`);
+                // Removed .gt('report_count', 0) to include good shops too
 
                 const combinedResults: SearchResult[] = [];
                 const seenIds = new Set<string>();
 
+                // 1. Priority: Verified Shops First (To provide safe alternative)
+                if (shops) {
+                    shops.filter(s => s.verification_status === 'verified').forEach(shop => {
+                        if (!seenIds.has(shop.id)) {
+                            seenIds.add(shop.id);
+                            // Mock isVerifiedPro for now based on status, or fetch properly if needed.
+                            // Assuming s.verification_status === 'verified' is enough for search context
+                            combinedResults.push({ type: 'shop', data: shop, isVerifiedPro: true });
+                        }
+                    });
+                }
+
+                // 2. Blacklist Entries (The main intent)
                 if (blacklistEntries) {
-                    // Start: Sort by most relevant (this is basic, RPC returns default order)
-                    // We can re-sort in client by total_reports
                     (blacklistEntries as any[]).sort((a, b) => b.total_reports - a.total_reports).forEach(entry => {
                         if (!seenIds.has(entry.id)) {
                             seenIds.add(entry.id);
@@ -330,8 +353,14 @@ export default function SearchResults() {
                     });
                 }
 
+                // 3. Other Shops (Unverified or Reported)
                 if (shops) {
-                    shops.forEach(shop => combinedResults.push({ type: 'shop', data: shop }));
+                    shops.filter(s => s.verification_status !== 'verified').forEach(shop => {
+                        if (!seenIds.has(shop.id)) {
+                            seenIds.add(shop.id);
+                            combinedResults.push({ type: 'shop', data: shop, isVerifiedPro: false });
+                        }
+                    });
                 }
 
                 setResults(combinedResults);
@@ -765,152 +794,206 @@ export default function SearchResults() {
     };
 
     // Shop Result Card
-    const ShopCard = ({ result }: { result: SearchResult }) => (
-        <Card className={`group overflow-hidden hover:shadow-xl transition-all duration-300 ${result.isVerifiedPro
-            ? 'border-l-4 border-l-yellow-500 bg-gradient-to-r from-white to-yellow-50/30'
-            : 'border-l-4 border-l-green-500 bg-gradient-to-r from-white to-green-50/30'
-            }`}>
-            <CardContent className="p-6">
-                <div className="flex flex-col md:flex-row md:items-start md:justify-between gap-4">
-                    <div className="flex-1">
-                        {/* Badges */}
-                        <div className="flex items-center gap-2 mb-3 flex-wrap">
+    const ShopCard = ({ result }: { result: SearchResult }) => {
+        // Helper to extract clean URL for display
+        const displayFacebook = result.data.facebook_url?.replace(/^https?:\/\/(www\.)?facebook\.com\//, '') || '';
+
+        return (
+            <Card className={`group overflow-hidden hover:shadow-xl transition-all duration-300 ${result.isVerifiedPro
+                ? 'border-l-4 border-l-yellow-500 bg-gradient-to-r from-white to-yellow-50/30'
+                : 'border-l-4 border-l-green-500 bg-gradient-to-r from-white to-green-50/30'
+                }`}>
+                <CardContent className="p-6">
+                    <div className="flex flex-col md:flex-row md:items-start md:justify-between gap-4">
+                        <div className="flex-1">
+                            {/* Badges */}
+                            <div className="flex items-center gap-2 mb-3 flex-wrap">
+                                {result.isVerifiedPro && (
+                                    <Badge className="bg-gradient-to-r from-yellow-400 to-orange-400 text-white border-0 shadow-sm px-3 py-1">
+                                        <Crown className="w-3 h-3 mr-1" />
+                                        {isThai ? 'ร้านรับรอง' : 'Verified Shop'}
+                                    </Badge>
+                                )}
+                                {result.isBoosted && (
+                                    <Badge className="bg-gradient-to-r from-yellow-100 to-orange-100 text-orange-700 border-orange-200">
+                                        <Zap className="w-3 h-3 mr-1" />
+                                        {isThai ? 'แนะนำ' : 'Featured'}
+                                    </Badge>
+                                )}
+                                {result.isPPC && !result.isBoosted && (
+                                    <Badge className="bg-gradient-to-r from-blue-100 to-indigo-100 text-indigo-700 border-indigo-200">
+                                        <Zap className="w-3 h-3 mr-1" />
+                                        {isThai ? 'แนะนำ' : 'Featured'}
+                                    </Badge>
+                                )}
+                                {!result.isVerifiedPro && (
+                                    <Badge className="bg-green-100 text-green-700 border-green-200">
+                                        <CheckCircle className="w-3 h-3 mr-1" />
+                                        {t('verifiedShop')}
+                                    </Badge>
+                                )}
+                                {result.data.report_count > 0 && (
+                                    <Badge className="bg-red-100 text-red-700 border-red-200">
+                                        <AlertTriangle className="w-3 h-3 mr-1" />
+                                        {t('hasReports', { count: result.data.report_count })}
+                                    </Badge>
+                                )}
+                            </div>
+
+                            {/* Service Badges */}
+                            <div className="flex items-center gap-2 mb-3 flex-wrap">
+                                {result.data.can_issue_tax_invoice && (
+                                    <Badge variant="outline" className="bg-blue-50 text-blue-700 border-blue-200 text-xs">
+                                        <Receipt className="w-3 h-3 mr-1" />
+                                        {isThai ? 'ใบกำกับภาษี' : 'Tax Invoice'}
+                                    </Badge>
+                                )}
+                                {result.data.can_issue_withholding_tax && (
+                                    <Badge variant="outline" className="bg-purple-50 text-purple-700 border-purple-200 text-xs">
+                                        <FileText className="w-3 h-3 mr-1" />
+                                        {isThai ? 'หัก ณ ที่จ่าย' : 'WHT'}
+                                    </Badge>
+                                )}
+                                {result.data.pay_on_pickup && (
+                                    <Badge variant="outline" className="bg-emerald-50 text-emerald-700 border-emerald-200 text-xs">
+                                        <Banknote className="w-3 h-3 mr-1" />
+                                        {isThai ? 'จ่ายตอนรับรถ' : 'Pay on Pickup'}
+                                    </Badge>
+                                )}
+                                {result.data.accept_credit_card && (
+                                    <Badge variant="outline" className="bg-violet-50 text-violet-700 border-violet-200 text-xs">
+                                        <CreditCard className="w-3 h-3 mr-1" />
+                                        {isThai ? 'บัตรเครดิต' : 'Credit Card'}
+                                    </Badge>
+                                )}
+                            </div>
+
+                            {/* Shop Name */}
+                            <h3 className="text-xl font-bold text-slate-800 mb-2 group-hover:text-blue-600 transition-colors">
+                                {result.data.name}
+                            </h3>
+
+                            {/* Details */}
+                            <div className="flex items-center gap-4 text-sm text-slate-600 flex-wrap">
+                                <div className="flex items-center gap-1">
+                                    <MapPin className="w-4 h-4 text-slate-400" />
+                                    <span>{result.data.service_provinces?.join(', ') || '-'}</span>
+                                </div>
+                                <div className="flex items-center gap-1">
+                                    <Star className="w-4 h-4 text-yellow-500 fill-yellow-500" />
+                                    <span className="font-medium">{result.data.rating_average?.toFixed(1) || '0.0'}</span>
+                                    <span className="text-slate-400">({result.data.review_count || 0})</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        {/* Action Buttons */}
+                        <div className="flex flex-col gap-2 items-end">
+                            {/* Contact buttons for ร้านรับรอง */}
                             {result.isVerifiedPro && (
-                                <Badge className="bg-gradient-to-r from-yellow-400 to-orange-400 text-white border-0 shadow-sm px-3 py-1">
-                                    <Crown className="w-3 h-3 mr-1" />
-                                    {isThai ? 'ร้านรับรอง' : 'Verified Shop'}
-                                </Badge>
-                            )}
-                            {result.isBoosted && (
-                                <Badge className="bg-gradient-to-r from-yellow-100 to-orange-100 text-orange-700 border-orange-200">
-                                    <Zap className="w-3 h-3 mr-1" />
-                                    {isThai ? 'แนะนำ' : 'Featured'}
-                                </Badge>
-                            )}
-                            {result.isPPC && !result.isBoosted && (
-                                <Badge className="bg-gradient-to-r from-blue-100 to-indigo-100 text-indigo-700 border-indigo-200">
-                                    <Zap className="w-3 h-3 mr-1" />
-                                    {isThai ? 'แนะนำ' : 'Featured'}
-                                </Badge>
-                            )}
-                            {!result.isVerifiedPro && (
-                                <Badge className="bg-green-100 text-green-700 border-green-200">
-                                    <CheckCircle className="w-3 h-3 mr-1" />
-                                    {t('verifiedShop')}
-                                </Badge>
-                            )}
-                            {result.data.report_count > 0 && (
-                                <Badge className="bg-red-100 text-red-700 border-red-200">
-                                    <AlertTriangle className="w-3 h-3 mr-1" />
-                                    {t('hasReports', { count: result.data.report_count })}
-                                </Badge>
-                            )}
-                        </div>
+                                <div className="flex flex-col gap-2 items-end w-full sm:w-auto">
+                                    <div className="flex gap-2">
+                                        {result.data.phone_number && (
+                                            <TooltipProvider>
+                                                <Tooltip>
+                                                    <TooltipTrigger asChild>
+                                                        <a
+                                                            href={`tel:${result.data.phone_number}`}
+                                                            className="inline-flex items-center justify-center w-10 h-10 rounded-full bg-green-100 text-green-600 hover:bg-green-200 transition-colors"
+                                                            onClick={() => handleShopClick(result)}
+                                                        >
+                                                            <Phone className="w-4 h-4" />
+                                                        </a>
+                                                    </TooltipTrigger>
+                                                    <TooltipContent>
+                                                        <p>{isThai ? 'โทร' : 'Call'} {result.data.phone_number}</p>
+                                                    </TooltipContent>
+                                                </Tooltip>
+                                            </TooltipProvider>
+                                        )}
+                                        {result.data.line_id && (
+                                            <TooltipProvider>
+                                                <Tooltip>
+                                                    <TooltipTrigger asChild>
+                                                        <a
+                                                            href={result.data.line_id.startsWith('@')
+                                                                ? `https://line.me/R/ti/p/${result.data.line_id}`
+                                                                : `https://line.me/R/ti/p/~${result.data.line_id}`}
+                                                            target="_blank"
+                                                            rel="noopener noreferrer"
+                                                            className="inline-flex items-center justify-center w-10 h-10 rounded-full bg-[#06C755]/10 text-[#06C755] hover:bg-[#06C755]/20 transition-colors"
+                                                            onClick={() => handleShopClick(result)}
+                                                        >
+                                                            <MessageCircle className="w-4 h-4" />
+                                                        </a>
+                                                    </TooltipTrigger>
+                                                    <TooltipContent>
+                                                        <p>LINE: {result.data.line_id}</p>
+                                                    </TooltipContent>
+                                                </Tooltip>
+                                            </TooltipProvider>
+                                        )}
+                                    </div>
 
-                        {/* Service Badges */}
-                        <div className="flex items-center gap-2 mb-3 flex-wrap">
-                            {result.data.can_issue_tax_invoice && (
-                                <Badge variant="outline" className="bg-blue-50 text-blue-700 border-blue-200 text-xs">
-                                    <Receipt className="w-3 h-3 mr-1" />
-                                    {isThai ? 'ใบกำกับภาษี' : 'Tax Invoice'}
-                                </Badge>
+                                    {/* Official Page Button with Safety Dialog */}
+                                    {result.data.facebook_url && (
+                                        <AlertDialog>
+                                            <AlertDialogTrigger asChild>
+                                                <Button size="sm" className="bg-gradient-to-r from-blue-600 to-blue-500 hover:from-blue-700 hover:to-blue-600 text-white shadow-sm w-full sm:w-auto">
+                                                    <CheckCircle className="w-3.5 h-3.5 mr-1.5 text-white" />
+                                                    {isThai ? 'เพจหลักร้านค้า (Official)' : 'Official Page'}
+                                                </Button>
+                                            </AlertDialogTrigger>
+                                            <AlertDialogContent className="border-green-200 bg-green-50/50">
+                                                <AlertDialogHeader>
+                                                    <AlertDialogTitle className="flex items-center text-green-700">
+                                                        <ShieldCheck className="w-6 h-6 mr-2 text-green-600" />
+                                                        {isThai ? 'ยืนยันร้านค้าปลอดภัย' : 'Verified Secure Shop'}
+                                                    </AlertDialogTitle>
+                                                    <AlertDialogDescription className="text-slate-600">
+                                                        {isThai
+                                                            ? `คุณกำลังจะเข้าสู่เพจ Facebook อย่างเป็นทางการของร้าน "${result.data.name}" ซึ่งผ่านการยืนยันตัวตนกับทาง RentSafe เรียบร้อยแล้ว มั่นใจได้ว่าไม่ใช่เพจปลอม`
+                                                            : `You are proceeding to the official Facebook page of "${result.data.name}", which has been verified by RentSafe. Guaranteed authentic.`}
+                                                        <div className="mt-4 p-3 bg-white rounded-lg border border-green-100 flex items-center gap-3">
+                                                            <div className="w-10 h-10 rounded-full bg-blue-100 flex items-center justify-center shrink-0">
+                                                                <Facebook className="w-5 h-5 text-blue-600" />
+                                                            </div>
+                                                            <div className="overflow-hidden">
+                                                                <p className="font-semibold text-slate-800 text-sm">Target Page</p>
+                                                                <p className="text-xs text-blue-600 truncate">{result.data.facebook_url}</p>
+                                                            </div>
+                                                        </div>
+                                                    </AlertDialogDescription>
+                                                </AlertDialogHeader>
+                                                <AlertDialogFooter>
+                                                    <AlertDialogCancel>{isThai ? 'ยกเลิก' : 'Cancel'}</AlertDialogCancel>
+                                                    <AlertDialogAction
+                                                        onClick={() => {
+                                                            handleShopClick(result);
+                                                            window.open(result.data.facebook_url, '_blank');
+                                                        }}
+                                                        className="bg-green-600 hover:bg-green-700 text-white"
+                                                    >
+                                                        {isThai ? 'ไปที่เพจหลักทันที' : 'Go to Official Page'}
+                                                    </AlertDialogAction>
+                                                </AlertDialogFooter>
+                                            </AlertDialogContent>
+                                        </AlertDialog>
+                                    )}
+                                </div>
                             )}
-                            {result.data.can_issue_withholding_tax && (
-                                <Badge variant="outline" className="bg-purple-50 text-purple-700 border-purple-200 text-xs">
-                                    <FileText className="w-3 h-3 mr-1" />
-                                    {isThai ? 'หัก ณ ที่จ่าย' : 'WHT'}
-                                </Badge>
-                            )}
-                            {result.data.pay_on_pickup && (
-                                <Badge variant="outline" className="bg-emerald-50 text-emerald-700 border-emerald-200 text-xs">
-                                    <Banknote className="w-3 h-3 mr-1" />
-                                    {isThai ? 'จ่ายตอนรับรถ' : 'Pay on Pickup'}
-                                </Badge>
-                            )}
-                            {result.data.accept_credit_card && (
-                                <Badge variant="outline" className="bg-violet-50 text-violet-700 border-violet-200 text-xs">
-                                    <CreditCard className="w-3 h-3 mr-1" />
-                                    {isThai ? 'บัตรเครดิต' : 'Credit Card'}
-                                </Badge>
-                            )}
-                        </div>
 
-                        {/* Shop Name */}
-                        <h3 className="text-xl font-bold text-slate-800 mb-2 group-hover:text-blue-600 transition-colors">
-                            {result.data.name}
-                        </h3>
-
-                        {/* Details */}
-                        <div className="flex items-center gap-4 text-sm text-slate-600 flex-wrap">
-                            <div className="flex items-center gap-1">
-                                <MapPin className="w-4 h-4 text-slate-400" />
-                                <span>{result.data.service_provinces?.join(', ') || '-'}</span>
-                            </div>
-                            <div className="flex items-center gap-1">
-                                <Star className="w-4 h-4 text-yellow-500 fill-yellow-500" />
-                                <span className="font-medium">{result.data.rating_average?.toFixed(1) || '0.0'}</span>
-                                <span className="text-slate-400">({result.data.review_count || 0})</span>
-                            </div>
+                            <Link href={`/shop/${result.data.id}`} onClick={() => handleShopClick(result)}>
+                                <Button variant="outline" className={`${result.isVerifiedPro ? 'border-2 w-full sm:w-auto' : 'border-2'} hover:bg-slate-50`}>
+                                    {t('viewShop')}
+                                </Button>
+                            </Link>
                         </div>
                     </div>
-
-                    {/* Action Buttons */}
-                    <div className="flex flex-col gap-2">
-                        {/* Contact buttons for ร้านรับรอง */}
-                        {result.isVerifiedPro && (
-                            <div className="flex gap-2 mb-2">
-                                {result.data.phone_number && (
-                                    <TooltipProvider>
-                                        <Tooltip>
-                                            <TooltipTrigger asChild>
-                                                <a
-                                                    href={`tel:${result.data.phone_number}`}
-                                                    className="inline-flex items-center justify-center w-10 h-10 rounded-full bg-green-100 text-green-600 hover:bg-green-200 transition-colors"
-                                                    onClick={() => handleShopClick(result)}
-                                                >
-                                                    <Phone className="w-4 h-4" />
-                                                </a>
-                                            </TooltipTrigger>
-                                            <TooltipContent>
-                                                <p>{isThai ? 'โทร' : 'Call'} {result.data.phone_number}</p>
-                                            </TooltipContent>
-                                        </Tooltip>
-                                    </TooltipProvider>
-                                )}
-                                {result.data.line_id && (
-                                    <TooltipProvider>
-                                        <Tooltip>
-                                            <TooltipTrigger asChild>
-                                                <a
-                                                    href={result.data.line_id.startsWith('@')
-                                                        ? `https://line.me/R/ti/p/${result.data.line_id}`
-                                                        : `https://line.me/R/ti/p/~${result.data.line_id}`}
-                                                    target="_blank"
-                                                    rel="noopener noreferrer"
-                                                    className="inline-flex items-center justify-center w-10 h-10 rounded-full bg-[#06C755]/10 text-[#06C755] hover:bg-[#06C755]/20 transition-colors"
-                                                    onClick={() => handleShopClick(result)}
-                                                >
-                                                    <MessageCircle className="w-4 h-4" />
-                                                </a>
-                                            </TooltipTrigger>
-                                            <TooltipContent>
-                                                <p>LINE: {result.data.line_id}</p>
-                                            </TooltipContent>
-                                        </Tooltip>
-                                    </TooltipProvider>
-                                )}
-                            </div>
-                        )}
-                        <Link href={`/shop/${result.data.id}`} onClick={() => handleShopClick(result)}>
-                            <Button variant="outline" className="border-2 hover:bg-slate-50">
-                                {t('viewShop')}
-                            </Button>
-                        </Link>
-                    </div>
-                </div>
-            </CardContent>
-        </Card>
-    );
+                </CardContent>
+            </Card>
+        );
+    };
 
     // Shop List Item (Compact View)
     const ShopListItem = ({ result }: { result: SearchResult }) => (
