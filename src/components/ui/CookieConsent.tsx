@@ -37,7 +37,7 @@ export default function CookieConsent() {
                     animate={{ y: 0, opacity: 1 }}
                     exit={{ y: 100, opacity: 0 }}
                     transition={{ duration: 0.5 }}
-                    className="fixed bottom-0 left-0 right-0 z-50 p-4 md:p-6"
+                    className="fixed bottom-20 md:bottom-0 left-0 right-0 z-[100] p-4 md:p-6"
                 >
                     <div className="max-w-4xl mx-auto bg-white/95 backdrop-blur shadow-2xl rounded-2xl border border-slate-200 p-4 md:flex items-center gap-6 ring-1 ring-black/5">
                         <div className="flex-1 flex gap-4">
