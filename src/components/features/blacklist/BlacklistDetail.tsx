@@ -21,7 +21,8 @@ import {
     Facebook,
     ExternalLink,
     Copy,
-    CheckCircle2
+    CheckCircle2,
+    MapPin
 } from 'lucide-react'
 import Link from 'next/link'
 import { useState, useEffect } from 'react'
@@ -47,6 +48,7 @@ interface BlacklistEntry {
     line_ids: string[]
     facebook_urls: string[]
     shop_names: string[]
+    scam_provinces?: string[] | null
     total_reports: number
     total_amount_lost: number
     first_reported_at: string
@@ -79,7 +81,11 @@ interface Report {
 interface Props {
     entry: BlacklistEntry
     reports: Report[]
+    locale?: string
 }
+
+// Helper function for i18n
+const getLocalizedText = (isThai: boolean, th: string, en: string) => isThai ? th : en;
 
 const severityColors = {
     low: 'bg-yellow-100 text-yellow-800 border-yellow-200',
@@ -88,15 +94,18 @@ const severityColors = {
     critical: 'bg-red-600 text-white border-red-700',
 }
 
-const severityLabels = {
-    low: 'ระดับต่ำ',
-    medium: 'ระดับกลาง',
-    high: 'ระดับสูง',
-    critical: 'อันตรายมาก',
-}
+const getSeverityLabel = (severity: string, isThai: boolean) => {
+    const labels: Record<string, { th: string, en: string }> = {
+        low: { th: 'ระดับต่ำ', en: 'Low Risk' },
+        medium: { th: 'ระดับกลาง', en: 'Medium Risk' },
+        high: { th: 'ระดับสูง', en: 'High Risk' },
+        critical: { th: 'อันตรายมาก', en: 'Critical' },
+    };
+    return isThai ? labels[severity]?.th : labels[severity]?.en;
+};
 
 // Facebook Link Component with Warning Logic and Tutorial
-function FacebookLink({ url, isFirst = false }: { url: string; isFirst?: boolean }) {
+function FacebookLink({ url, isFirst = false, isThai = true }: { url: string; isFirst?: boolean; isThai?: boolean }) {
     const [showWarning, setShowWarning] = useState(false)
     const [hasSeenWarning, setHasSeenWarning] = useState(false)
     const [showTutorial, setShowTutorial] = useState(false)
@@ -177,14 +186,18 @@ function FacebookLink({ url, isFirst = false }: { url: string; isFirst?: boolean
                                     <AlertTriangle className="w-5 h-5 text-white" />
                                 </div>
                                 <div className="flex-1">
-                                    <h4 className="font-bold text-orange-900 mb-1">ระวัง!</h4>
+                                    <h4 className="font-bold text-orange-900 mb-1">
+                                        {isThai ? 'ระวัง!' : 'Warning!'}
+                                    </h4>
                                     <p className="text-sm text-orange-800 mb-3">
-                                        มิจฉาชีพมักตั้งชื่อเลียนแบบเพจจริง คลิกที่นี่เพื่อเปิดไปยังเพจมิจฉาชีพโดยตรง
+                                        {isThai
+                                            ? 'มิจฉาชีพมักตั้งชื่อเลียนแบบเพจจริง คลิกที่นี่เพื่อเปิดไปยังเพจมิจฉาชีพโดยตรง'
+                                            : 'Scammers often impersonate real pages. Click here to open the scammer\'s page directly'}
                                     </p>
                                     <button
                                         onClick={handleTutorialClose}
                                         className="w-full bg-orange-500 hover:bg-orange-600 text-white font-medium py-2 px-4 rounded-lg transition-colors">
-                                        เข้าใจแล้ว
+                                        {isThai ? 'เข้าใจแล้ว' : 'Got it'}
                                     </button>
                                 </div>
                             </div>
@@ -200,10 +213,10 @@ function FacebookLink({ url, isFirst = false }: { url: string; isFirst?: boolean
                     rel="noopener noreferrer"
                     onClick={handleClick}
                     className={`relative flex items-center gap-2 text-sm font-medium transition-colors ${showTutorial
-                            ? 'text-blue-600 bg-blue-50 px-2 py-1 rounded-md border-2 border-orange-400 z-50'
-                            : !hasSeenWarning
-                                ? 'text-blue-600 bg-blue-50 px-2 py-1 rounded-md border border-blue-200 hover:bg-blue-100 animate-pulse'
-                                : 'text-blue-600 bg-blue-50 px-2 py-1 rounded-md border border-blue-200 hover:bg-blue-100'
+                        ? 'text-blue-600 bg-blue-50 px-2 py-1 rounded-md border-2 border-orange-400 z-50'
+                        : !hasSeenWarning
+                            ? 'text-blue-600 bg-blue-50 px-2 py-1 rounded-md border border-blue-200 hover:bg-blue-100 animate-pulse'
+                            : 'text-blue-600 bg-blue-50 px-2 py-1 rounded-md border border-blue-200 hover:bg-blue-100'
                         }`}
                 >
                     <Facebook className="w-4 h-4" />
@@ -213,7 +226,9 @@ function FacebookLink({ url, isFirst = false }: { url: string; isFirst?: boolean
 
                 {/* Always show warning message */}
                 <div className="mt-1 text-xs text-orange-600 bg-orange-50 px-2 py-1 rounded border border-orange-100">
-                    ⚠️ ระวัง! มิจฉาชีพมักตั้งชื่อเลียนแบบเพจจริง
+                    {isThai
+                        ? '⚠️ ระวัง! มิจฉาชีพมักตั้งชื่อเลียนแบบเพจจริง'
+                        : '⚠️ Warning! Scammers often impersonate real pages'}
                 </div>
             </div>
 
@@ -222,23 +237,27 @@ function FacebookLink({ url, isFirst = false }: { url: string; isFirst?: boolean
                     <AlertDialogHeader>
                         <AlertDialogTitle className="flex items-center gap-2 text-red-600">
                             <AlertTriangle className="w-6 h-6" />
-                            คำเตือน: คุณกำลังจะไปที่เพจมิจฉาชีพ
+                            {isThai
+                                ? 'คำเตือน: คุณกำลังจะไปที่เพจมิจฉาชีพ'
+                                : 'Warning: You are about to visit a scammer\'s page'}
                         </AlertDialogTitle>
                         <AlertDialogDescription className="space-y-3 pt-2">
                             <p className="font-medium text-slate-900">
-                                เนื่องจากส่วนใหญ่มิจฉาชีพจะตั้งชื่อเลียนแบบเพจจริง ให้ตรวจสอบให้ดีก่อนติดต่อ
+                                {isThai
+                                    ? 'เนื่องจากส่วนใหญ่มิจฉาชีพจะตั้งชื่อเลียนแบบเพจจริง ให้ตรวจสอบให้ดีก่อนติดต่อ'
+                                    : 'Since most scammers impersonate real pages, verify carefully before contacting'}
                             </p>
                             <div className="bg-slate-50 p-3 rounded-lg text-sm text-slate-600">
-                                <p>✅ สังเกตยอดไลค์และผู้ติดตาม (เพจจริงมักมีเยอะ)</p>
-                                <p>✅ สังเกตวันที่สร้างเพจ (เพจปลอมมักเพิ่งสร้าง)</p>
-                                <p>✅ ชื่อบัญชีธนาคารต้องตรงกับชื่อร้าน/บริษัท</p>
+                                <p>✅ {isThai ? 'สังเกตยอดไลค์และผู้ติดตาม (เพจจริงมักมีเยอะ)' : 'Check likes and followers (real pages usually have more)'}</p>
+                                <p>✅ {isThai ? 'สังเกตวันที่สร้างเพจ (เพจปลอมมักเพิ่งสร้าง)' : 'Check page creation date (fake pages are usually new)'}</p>
+                                <p>✅ {isThai ? 'ชื่อบัญชีธนาคารต้องตรงกับชื่อร้าน/บริษัท' : 'Bank account name must match shop/company name'}</p>
                             </div>
                         </AlertDialogDescription>
                     </AlertDialogHeader>
                     <AlertDialogFooter>
-                        <AlertDialogCancel>ยกเลิก</AlertDialogCancel>
+                        <AlertDialogCancel>{isThai ? 'ยกเลิก' : 'Cancel'}</AlertDialogCancel>
                         <AlertDialogAction onClick={handleConfirm} className="bg-red-600 hover:bg-red-700">
-                            รับทราบและดำเนินการต่อ
+                            {isThai ? 'รับทราบและดำเนินการต่อ' : 'Acknowledge and Continue'}
                         </AlertDialogAction>
                     </AlertDialogFooter>
                 </AlertDialogContent>
@@ -248,10 +267,11 @@ function FacebookLink({ url, isFirst = false }: { url: string; isFirst?: boolean
 }
 
 // Heart Button Component
-function HeartButton({ reportId, reporterId, initialHeartCount = 0 }: {
+function HeartButton({ reportId, reporterId, initialHeartCount = 0, isThai = true }: {
     reportId: string
     reporterId: string
     initialHeartCount?: number
+    isThai?: boolean
 }) {
     const [hasHearted, setHasHearted] = useState(false)
     const [heartCount, setHeartCount] = useState(initialHeartCount)
@@ -319,7 +339,7 @@ function HeartButton({ reportId, reporterId, initialHeartCount = 0 }: {
                         </div>
                     </TooltipTrigger>
                     <TooltipContent>
-                        <p>ไม่สามารถกดใจรายงานของตัวเองได้</p>
+                        <p>{isThai ? 'ไม่สามารถกดใจรายงานของตัวเองได้' : 'Cannot like your own report'}</p>
                     </TooltipContent>
                 </Tooltip>
             </TooltipProvider>
@@ -337,7 +357,7 @@ function HeartButton({ reportId, reporterId, initialHeartCount = 0 }: {
                         </Link>
                     </TooltipTrigger>
                     <TooltipContent>
-                        <p>เข้าสู่ระบบเพื่อกดให้กำลังใจ</p>
+                        <p>{isThai ? 'เข้าสู่ระบบเพื่อกดให้กำลังใจ' : 'Login to encourage'}</p>
                     </TooltipContent>
                 </Tooltip>
             </TooltipProvider>
@@ -365,17 +385,21 @@ function HeartButton({ reportId, reporterId, initialHeartCount = 0 }: {
                     </button>
                 </TooltipTrigger>
                 <TooltipContent>
-                    <p>{hasHearted ? 'ยกเลิกกำลังใจ' : 'กดให้กำลังใจ (+1 เครดิตให้ผู้รายงาน)'}</p>
+                    <p>{hasHearted
+                        ? (isThai ? 'ยกเลิกกำลังใจ' : 'Remove support')
+                        : (isThai ? 'กดให้กำลังใจ (+1 เครดิตให้ผู้รายงาน)' : 'Encourage (+1 credit to reporter)')}
+                    </p>
                 </TooltipContent>
             </Tooltip>
         </TooltipProvider>
     )
 }
 
-export default function BlacklistDetail({ entry, reports }: Props) {
+export default function BlacklistDetail({ entry, reports, locale = 'th' }: Props) {
     const t = useTranslations('BlacklistPage')
     const [expandedReport, setExpandedReport] = useState<string | null>(null)
     const [copied, setCopied] = useState(false)
+    const isThai = locale === 'th';
 
     // Function to copy scammer details
     const copyScammerDetails = async () => {
@@ -532,7 +556,7 @@ ${entry.bank_account_no ? `💳 เลขบัญชี: ${entry.bank_account_n
                                     </div>
                                     <div className="flex flex-col gap-2">
                                         {entry.facebook_urls.map((url, i) => (
-                                            <FacebookLink key={i} url={url} />
+                                            <FacebookLink key={i} url={url} isThai={isThai} />
                                         ))}
                                     </div>
                                 </div>
@@ -563,6 +587,25 @@ ${entry.bank_account_no ? `💳 เลขบัญชี: ${entry.bank_account_n
                                 </p>
                             </div>
                         )}
+
+                        {/* Scam Provinces */}
+                        {entry.scam_provinces && entry.scam_provinces.length > 0 && (
+                            <div className="pt-3 border-t border-slate-200 mt-2">
+                                <div className="flex items-center gap-2 text-sm text-slate-600 mb-2">
+                                    <MapPin className="w-4 h-4" />
+                                    <span className="font-semibold">
+                                        {isThai ? 'จังหวัดที่มีรายงาน' : 'Reported Provinces'}
+                                    </span>
+                                </div>
+                                <div className="flex flex-wrap gap-2">
+                                    {(entry.scam_provinces || []).map((province, i) => (
+                                        <Badge key={i} variant="outline" className="bg-red-50 border-red-200 text-red-700">
+                                            📍 {province}
+                                        </Badge>
+                                    ))}
+                                </div>
+                            </div>
+                        )}
                     </div>
                 </CardContent>
             </Card>
@@ -575,8 +618,12 @@ ${entry.bank_account_no ? `💳 เลขบัญชี: ${entry.bank_account_n
                             <AlertTriangle className="w-6 h-6 text-white" />
                         </div>
                         <div className="flex-1">
-                            <h3 className="text-lg font-bold text-red-900">พบบัญชี/เบอร์นี้?</h3>
-                            <p className="text-sm text-red-700 mt-1">ดำเนินการด่วน! ป้องกันการสูญเสียเงิน</p>
+                            <h3 className="text-lg font-bold text-red-900">
+                                {isThai ? 'พบบัญชี/เบอร์นี้?' : 'Found this account/number?'}
+                            </h3>
+                            <p className="text-sm text-red-700 mt-1">
+                                {isThai ? 'ดำเนินการด่วน! ป้องกันการสูญเสียเงิน' : 'Act now! Prevent financial loss'}
+                            </p>
                         </div>
                     </div>
 
@@ -587,8 +634,12 @@ ${entry.bank_account_no ? `💳 เลขบัญชี: ${entry.bank_account_n
                             className="bg-gradient-to-r from-red-600 to-red-700 hover:from-red-700 hover:to-red-800 text-white rounded-xl p-4 flex flex-col items-center justify-center gap-2 shadow-lg hover:shadow-xl transition-all group"
                         >
                             <Phone className="w-8 h-8 group-hover:scale-110 transition-transform" />
-                            <span className="font-bold text-lg">โทร 1441</span>
-                            <span className="text-xs text-red-100 text-center">อายัดบัญชีภายใน 1 ชม.</span>
+                            <span className="font-bold text-lg">
+                                {isThai ? 'โทร 1441' : 'Call 1441'}
+                            </span>
+                            <span className="text-xs text-red-100 text-center">
+                                {isThai ? 'อายัดบัญชีภายใน 1 ชม.' : 'Freeze account within 1 hr'}
+                            </span>
                         </a>
 
                         {/* Report Online */}
@@ -599,9 +650,11 @@ ${entry.bank_account_no ? `💳 เลขบัญชี: ${entry.bank_account_n
                             className="bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white rounded-xl p-4 flex flex-col items-center justify-center gap-2 shadow-lg hover:shadow-xl transition-all group"
                         >
                             <FileText className="w-8 h-8 group-hover:scale-110 transition-transform" />
-                            <span className="font-bold">แจ้งความออนไลน์</span>
+                            <span className="font-bold">
+                                {isThai ? 'แจ้งความออนไลน์' : 'Report Online'}
+                            </span>
                             <span className="text-xs text-blue-100 text-center flex items-center gap-1">
-                                ตำรวจไซเบอร์ <ExternalLink className="w-3 h-3" />
+                                {isThai ? 'ตำรวจไซเบอร์' : 'Cyber Police'} <ExternalLink className="w-3 h-3" />
                             </span>
                         </a>
 
@@ -615,14 +668,23 @@ ${entry.bank_account_no ? `💳 เลขบัญชี: ${entry.bank_account_n
                             ) : (
                                 <Copy className="w-8 h-8 group-hover:scale-110 transition-transform" />
                             )}
-                            <span className="font-bold">{copied ? 'คัดลอกแล้ว!' : 'คัดลอกข้อมูล'}</span>
-                            <span className="text-xs text-purple-100 text-center">สำหรับแจ้งความ</span>
+                            <span className="font-bold">
+                                {copied
+                                    ? (isThai ? 'คัดลอกแล้ว!' : 'Copied!')
+                                    : (isThai ? 'คัดลอกข้อมูล' : 'Copy Details')}
+                            </span>
+                            <span className="text-xs text-purple-100 text-center">
+                                {isThai ? 'สำหรับแจ้งความ' : 'For reporting'}
+                            </span>
                         </button>
                     </div>
 
                     <div className="mt-4 p-3 bg-white/50 rounded-lg border border-red-200">
                         <p className="text-xs text-red-800">
-                            <strong>💡 เคล็ดลับ:</strong> คัดลอกข้อมูลก่อน → โทร 1441 → จากนั้นแจ้งความออนไลน์เพื่อติดตามคดี
+                            <strong>💡 {isThai ? 'เคล็ดลับ:' : 'Tip:'}</strong>
+                            {isThai
+                                ? ' คัดลอกข้อมูลก่อน → โทร 1441 → จากนั้นแจ้งความออนไลน์เพื่อติดตามคดี'
+                                : ' Copy details first → Call 1441 → Then report online to track the case'}
                         </p>
                     </div>
                 </CardContent>
@@ -636,10 +698,14 @@ ${entry.bank_account_no ? `💳 เลขบัญชี: ${entry.bank_account_n
                     </div>
                     <div className="flex-1">
                         <p className="text-sm font-medium text-purple-800">
-                            กดหัวใจเพื่อให้กำลังใจผู้รายงาน
+                            {isThai
+                                ? 'กดหัวใจเพื่อให้กำลังใจผู้รายงาน'
+                                : 'Click heart to encourage reporters'}
                         </p>
                         <p className="text-xs text-purple-600">
-                            +1 เครดิตปลอบใจให้ผู้รายงาน (กดซ้ำเพื่อยกเลิก)
+                            {isThai
+                                ? '+1 เครดิตปลอบใจให้ผู้รายงาน (กดซ้ำเพื่อยกเลิก)'
+                                : '+1 karma credit to reporter (click again to cancel)'}
                         </p>
                     </div>
                 </div>

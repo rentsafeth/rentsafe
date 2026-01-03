@@ -34,6 +34,7 @@ export async function POST(request: NextRequest) {
             manual_phone_number: body.manual_phone_number,
             manual_bank_account: body.manual_bank_account,
             manual_id_card: body.manual_id_card,
+            scam_provinces: Array.isArray(body.scam_provinces) ? body.scam_provinces : [],
             description: body.description,
             evidence_urls: body.evidence_urls || [],
             incident_date: body.incident_date,

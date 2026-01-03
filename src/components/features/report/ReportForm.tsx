@@ -14,8 +14,29 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { Form, FormControl, FormDescription, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { Loader2, Upload, AlertTriangle, Info } from 'lucide-react';
+import { Loader2, Upload, AlertTriangle, Info, MapPin } from 'lucide-react';
 import { toast } from 'sonner';
+import MultiSelect from '@/components/ui/multi-select';
+
+// All Thai provinces
+const ALL_PROVINCES = [
+    'กรุงเทพมหานคร', 'กระบี่', 'กาญจนบุรี', 'กาฬสินธุ์', 'กำแพงเพชร',
+    'ขอนแก่น', 'จันทบุรี', 'ฉะเชิงเทรา', 'ชลบุรี', 'ชัยนาท',
+    'ชัยภูมิ', 'ชุมพร', 'เชียงราย', 'เชียงใหม่', 'ตรัง',
+    'ตราด', 'ตาก', 'นครนายก', 'นครปฐม', 'นครพนม',
+    'นครราชสีมา', 'นครศรีธรรมราช', 'นครสวรรค์', 'นนทบุรี', 'นราธิวาส',
+    'น่าน', 'บึงกาฬ', 'บุรีรัมย์', 'ปทุมธานี', 'ประจวบคีรีขันธ์',
+    'ปราจีนบุรี', 'ปัตตานี', 'พระนครศรีอยุธยา', 'พังงา', 'พัทลุง',
+    'พิจิตร', 'พิษณุโลก', 'เพชรบุรี', 'เพชรบูรณ์', 'แพร่',
+    'พะเยา', 'ภูเก็ต', 'มหาสารคาม', 'มุกดาหาร', 'แม่ฮ่องสอน',
+    'ยะลา', 'ยโสธร', 'ร้อยเอ็ด', 'ระนอง', 'ระยอง',
+    'ราชบุรี', 'ลพบุรี', 'ลำปาง', 'ลำพูน', 'เลย',
+    'ศรีสะเกษ', 'สกลนคร', 'สงขลา', 'สตูล', 'สมุทรปราการ',
+    'สมุทรสงคราม', 'สมุทรสาคร', 'สระแก้ว', 'สระบุรี', 'สิงห์บุรี',
+    'สุโขทัย', 'สุพรรณบุรี', 'สุราษฎร์ธานี', 'สุรินทร์', 'หนองคาย',
+    'หนองบัวลำภู', 'อ่างทอง', 'อุดรธานี', 'อุทัยธานี', 'อุตรดิตถ์',
+    'อุบลราชธานี', 'อำนาจเจริญ'
+];
 
 export default function ReportForm({ userId }: { userId: string }) {
     const router = useRouter();
@@ -42,6 +63,7 @@ export default function ReportForm({ userId }: { userId: string }) {
         bank_account_no: z.string().optional(),
         bank_account_name: z.string().optional(),
         id_card: z.string().optional(),
+        scam_provinces: z.string().array().optional(),
         description: z.string().min(10, t('validation.descriptionMin')),
         incident_date: z.string().refine((val) => !isNaN(Date.parse(val)), t('validation.dateRequired')),
         amount_lost: z.string().optional(),
@@ -93,6 +115,7 @@ export default function ReportForm({ userId }: { userId: string }) {
             bank_account_no: prefilledBank || blacklistInfo?.bank_account_no || '',
             bank_account_name: '',
             id_card: blacklistInfo?.id_card_numbers?.[0] || '',
+            scam_provinces: [],
             description: '',
             incident_date: new Date().toISOString().split('T')[0],
             amount_lost: '',
@@ -176,6 +199,7 @@ export default function ReportForm({ userId }: { userId: string }) {
                 manual_phone_number: values.phone_number || null,
                 manual_bank_account: `${values.bank_account_no} (${values.bank_account_name})`,
                 manual_id_card: values.id_card,
+                scam_provinces: values.scam_provinces || [],
                 description: values.description,
                 evidence_urls: evidenceUrls,
                 incident_date: values.incident_date,
@@ -398,6 +422,34 @@ export default function ReportForm({ userId }: { userId: string }) {
                                         <FormLabel>เลขบัตรประชาชน (ถ้ามี)</FormLabel>
                                         <FormControl>
                                             <Input placeholder="ระบุเลขบัตรประชาชน..." {...field} disabled={!!shopInfo} className={shopInfo ? 'bg-slate-100' : ''} />
+                                        </FormControl>
+                                        <FormMessage />
+                                    </FormItem>
+                                )}
+                            />
+
+                            {/* Multi-select for provinces */}
+                            <FormField
+                                control={form.control}
+                                name="scam_provinces"
+                                render={({ field }) => (
+                                    <FormItem>
+                                        <FormLabel className="flex items-center gap-2">
+                                            <MapPin className="w-4 h-4" />
+                                            {isThai ? 'จังหวัดที่มิจฉาชีพแอบอ้าง (ถ้าทราบ)' : 'Scammer\'s Claimed Province (if known)'}
+                                        </FormLabel>
+                                        <FormDescription>
+                                            {isThai
+                                                ? 'เลือกจังหวัดที่มิจฉาชีพอ้างว่าอยู่/ให้บริการ (เลือกได้หลายจังหวัด)'
+                                                : 'Select province(s) the scammer claimed to be located/operate in (multiple selection allowed)'}
+                                        </FormDescription>
+                                        <FormControl>
+                                            <MultiSelect
+                                                options={ALL_PROVINCES.map(p => ({ label: p, value: p }))}
+                                                selected={field.value || []}
+                                                onChange={field.onChange}
+                                                placeholder={isThai ? 'เลือกจังหวัด (ไม่บังคับ)' : 'Select Province (Optional)'}
+                                            />
                                         </FormControl>
                                         <FormMessage />
                                     </FormItem>
