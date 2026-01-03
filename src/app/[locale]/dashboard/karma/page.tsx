@@ -76,15 +76,15 @@ export default async function KarmaHistoryPage() {
                             {transactions.map((tx) => (
                                 <div key={tx.id} className="flex items-center justify-between p-4 border rounded-lg hover:bg-gray-50 transition-colors">
                                     <div className="flex items-start gap-4">
-                                        <div className={`p-2 rounded-full ${tx.transaction_type === 'credit'
+                                        <div className={`p-2 rounded-full ${tx.type === 'credit' || tx.type === 'report_approved' || tx.amount > 0
                                             ? 'bg-green-100 text-green-600'
                                             : 'bg-red-100 text-red-600'
                                             }`}>
-                                            {tx.transaction_type === 'credit' ? <TrendingUp className="w-5 h-5" /> : <TrendingDown className="w-5 h-5" />}
+                                            {(tx.type === 'credit' || tx.type === 'report_approved' || tx.amount > 0) ? <TrendingUp className="w-5 h-5" /> : <TrendingDown className="w-5 h-5" />}
                                         </div>
                                         <div>
                                             <p className="font-medium text-gray-900">
-                                                {tx.description || (tx.transaction_type === 'credit' ? 'ได้รับเครดิต' : 'หักเครดิต')}
+                                                {tx.description || ((tx.type === 'credit' || tx.type === 'report_approved') ? 'ได้รับเครดิต' : 'หักเครดิต')}
                                             </p>
                                             <p className="text-sm text-gray-500">
                                                 {new Date(tx.created_at).toLocaleString('th-TH', {
@@ -98,9 +98,9 @@ export default async function KarmaHistoryPage() {
                                             </p>
                                         </div>
                                     </div>
-                                    <div className={`text-lg font-bold ${tx.transaction_type === 'credit' ? 'text-green-600' : 'text-red-600'
+                                    <div className={`text-lg font-bold ${(tx.type === 'credit' || tx.type === 'report_approved' || tx.amount > 0) ? 'text-green-600' : 'text-red-600'
                                         }`}>
-                                        {tx.transaction_type === 'credit' ? '+' : ''}{tx.amount}
+                                        {(tx.type === 'credit' || tx.type === 'report_approved' || tx.amount > 0) ? '+' : ''}{Math.abs(tx.amount)}
                                     </div>
                                 </div>
                             ))}
