@@ -286,10 +286,11 @@ export default function SearchResults() {
                     return;
                 }
 
+                // Search in shop_names array using textSearch (case-insensitive, partial match)
                 const { data: blacklistEntries } = await supabase
                     .from('blacklist_entries')
                     .select('*')
-                    .or(`bank_account_no.ilike.%${q}%,shop_names.cs.{${q}}`)
+                    .or(`bank_account_no.ilike.%${q}%,shop_names.cs.{"%${q}%"}`)
                     .order('total_reports', { ascending: false });
 
                 const { data: blacklistByPhone } = await supabase
