@@ -87,21 +87,32 @@ interface Props {
 // Helper function for i18n
 const getLocalizedText = (isThai: boolean, th: string, en: string) => isThai ? th : en;
 
-const severityColors = {
-    low: 'bg-yellow-100 text-yellow-800 border-yellow-200',
-    medium: 'bg-orange-100 text-orange-800 border-orange-200',
-    high: 'bg-red-100 text-red-800 border-red-200',
-    critical: 'bg-red-600 text-white border-red-700',
-}
+const getRiskStatus = (entry: BlacklistEntry, isThai: boolean) => {
+    const lastReport = new Date(entry.last_reported_at || entry.first_reported_at);
+    const now = new Date();
+    const daysSinceLastReport = (now.getTime() - lastReport.getTime()) / (1000 * 3600 * 24);
 
-const getSeverityLabel = (severity: string, isThai: boolean) => {
-    const labels: Record<string, { th: string, en: string }> = {
-        low: { th: 'ระดับต่ำ', en: 'Low Risk' },
-        medium: { th: 'ระดับกลาง', en: 'Medium Risk' },
-        high: { th: 'ระดับสูง', en: 'High Risk' },
-        critical: { th: 'อันตรายมาก', en: 'Critical' },
+    // Trend: Recent activity (< 30 days)
+    if (daysSinceLastReport < 30) {
+        return {
+            label: isThai ? '🔥 กำลังระบาด (มีคนเพิ่งโดน)' : '🔥 Active Threat (Recently Reported)',
+            className: 'bg-red-600 text-white border-red-700 animate-pulse shadow-md'
+        };
+    }
+
+    // Impact: High Impact (Reports > 5 or Loss > 50,000)
+    if (entry.total_reports > 5 || entry.total_amount_lost > 50000) {
+        return {
+            label: isThai ? '🚨 ผู้เสียหายจำนวนมาก' : '🚨 High Risk (Many Victims)',
+            className: 'bg-red-100 text-red-800 border-red-200'
+        };
+    }
+
+    // Default: Caution
+    return {
+        label: isThai ? '⚠️ เฝ้าระวัง (ตรวจสอบก่อนโอน)' : '⚠️ Caution (Verify before transfer)',
+        className: 'bg-orange-100 text-orange-800 border-orange-200'
     };
-    return isThai ? labels[severity]?.th : labels[severity]?.en;
 };
 
 // Facebook Link Component with Warning Logic and Tutorial
@@ -465,10 +476,14 @@ ${entry.bank_account_no ? `💳 เลขบัญชี: ${entry.bank_account_n
                                 </p>
                             </div>
                         </div>
-                        <Badge className={`${severityColors[entry.severity]} text-sm px-3 py-1 shadow-sm`}>
-                            <AlertTriangle className="w-4 h-4 mr-1" />
-                            {t(`severity.${entry.severity}`)}
-                        </Badge>
+                        {(() => {
+                            const status = getRiskStatus(entry, isThai);
+                            return (
+                                <Badge className={`${status.className} text-sm px-3 py-1`}>
+                                    {status.label}
+                                </Badge>
+                            );
+                        })()}
                     </div>
                 </CardHeader>
                 <CardContent>
@@ -849,6 +864,6 @@ ${entry.bank_account_no ? `💳 เลขบัญชี: ${entry.bank_account_n
                     ))
                 )}
             </div>
-        </div>
+        </div >
     )
 }
