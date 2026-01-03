@@ -724,158 +724,157 @@ export default function AdminBlacklistPage() {
                     setShowImportModal(open);
                 }}
             >
-                <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
-                    <DialogHeader>
+                <DialogContent className="w-[95vw] max-w-4xl max-h-[90vh] flex flex-col p-0 gap-0 overflow-hidden">
+                    <DialogHeader className="p-6 pb-2 shrink-0">
                         <DialogTitle className="flex items-center gap-2">
                             <FileJson className="w-5 h-5 text-green-600" />
                             นำเข้า Blacklist (JSON / Excel)
                         </DialogTitle>
                         <DialogDescription>
-                            นำเข้าข้อมูลแบล็คลิสต์จากไฟล์ JSON (Array) หรือไฟล์ Excel (.xlsx) <br />
-                            โดยระบบจะแยก ชื่อ-นามสกุล และจัดหมวดหมู่การโกงให้อัตโนมัติ
+                            นำเข้าข้อมูลแบล็คลิสต์จากไฟล์ JSON (Array) หรือไฟล์ Excel (.xlsx)
                         </DialogDescription>
                     </DialogHeader>
 
-                    {importStep === 1 ? (
-                        <div className="space-y-4">
-                            <div className="bg-blue-50 p-4 rounded-md border border-blue-200">
-                                <h3 className="text-sm font-semibold text-blue-800 mb-2">1. อัปโหลดไฟล์ Excel (.xlsx)</h3>
-                                <div className="flex items-center gap-3">
-                                    <Input
-                                        type="file"
-                                        accept=".xlsx, .xls"
-                                        onChange={handleFileUpload}
-                                        className="bg-white"
+                    <div className="p-6 pt-2 overflow-y-auto flex-1">
+                        {importStep === 1 ? (
+                            <div className="space-y-4">
+                                <div className="bg-blue-50 p-4 rounded-md border border-blue-200">
+                                    <h3 className="text-sm font-semibold text-blue-800 mb-2">1. อัปโหลดไฟล์ Excel (.xlsx)</h3>
+                                    <div className="flex flex-col md:flex-row items-start md:items-center gap-3">
+                                        <Input
+                                            type="file"
+                                            accept=".xlsx, .xls"
+                                            onChange={handleFileUpload}
+                                            className="bg-white"
+                                        />
+                                        <span className="text-xs text-blue-600 mt-1 md:mt-0">*รองรับคอลัมน์: ชื่อ, เลขบัตร..., รูปแบบการโกง</span>
+                                    </div>
+                                </div>
+
+                                <div className="relative py-2">
+                                    <div className="absolute inset-0 flex items-center">
+                                        <span className="w-full border-t" />
+                                    </div>
+                                    <div className="relative flex justify-center text-xs uppercase">
+                                        <span className="bg-white px-2 text-gray-500">หรือ</span>
+                                    </div>
+                                </div>
+
+                                <div className="bg-yellow-50 p-4 rounded-md border border-yellow-200">
+                                    <h3 className="text-sm font-semibold text-yellow-800 mb-2">2. วางข้อมูล JSON โดยตรง</h3>
+                                    <pre className="hidden md:block text-xs bg-white p-2 rounded border border-yellow-200 overflow-auto mb-2 font-mono whitespace-pre-wrap">
+                                        {`[{"ชื่อ": "นาย สมชาย", "เลขบัตร...": "1234...", "รูปแบบการโกง": "ขโมยรถ"}, ...]`}
+                                    </pre>
+                                    <Textarea
+                                        placeholder="วาง JSON ที่นี่..."
+                                        value={importJson}
+                                        onChange={(e) => setImportJson(e.target.value)}
+                                        className="min-h-[120px] font-mono text-sm"
                                     />
-                                    <span className="text-xs text-blue-600">*รองรับคอลัมน์: ชื่อ, เลขบัตร..., รูปแบบการโกง</span>
+                                    <div className="flex justify-end gap-2 mt-2">
+                                        <Button variant="outline" onClick={() => setShowImportModal(false)}>
+                                            ยกเลิก
+                                        </Button>
+                                        <Button onClick={handleParseJson} disabled={!importJson.trim()}>
+                                            ตรวจสอบ JSON
+                                        </Button>
+                                    </div>
                                 </div>
                             </div>
-
-                            <div className="relative">
-                                <div className="absolute inset-0 flex items-center">
-                                    <span className="w-full border-t" />
-                                </div>
-                                <div className="relative flex justify-center text-xs uppercase">
-                                    <span className="bg-white px-2 text-gray-500">หรือ</span>
-                                </div>
-                            </div>
-
-                            <div className="bg-yellow-50 p-4 rounded-md border border-yellow-200">
-                                <h3 className="text-sm font-semibold text-yellow-800 mb-2">2. วางข้อมูล JSON โดยตรง</h3>
-                                <pre className="text-xs bg-white p-2 rounded border border-yellow-200 overflow-auto mb-2">
-                                    {`[{"ชื่อ": "นาย สมชาย", "เลขบัตร...": "1234...", "รูปแบบการโกง": "ขโมยรถ"}, ...]`}
-                                </pre>
-                                <Textarea
-                                    placeholder="วาง JSON ที่นี่..."
-                                    value={importJson}
-                                    onChange={(e) => setImportJson(e.target.value)}
-                                    className="min-h-[150px] font-mono text-sm"
-                                />
-                                <div className="flex justify-end gap-2 mt-2">
-                                    <Button variant="outline" onClick={() => setShowImportModal(false)}>
-                                        ยกเลิก
-                                    </Button>
-                                    <Button onClick={handleParseJson} disabled={!importJson.trim()}>
-                                        ตรวจสอบ JSON
+                        ) : (
+                            <div className="space-y-4 h-full flex flex-col">
+                                <div className="flex items-center justify-between shrink-0">
+                                    <h3 className="font-semibold text-gray-900">
+                                        ตรวจสอบข้อมูล ({previewData.length} รายการ)
+                                    </h3>
+                                    <Button variant="outline" size="sm" onClick={() => setImportStep(1)}>
+                                        ย้อนกลับ
                                     </Button>
                                 </div>
-                            </div>
-                        </div>
-                    ) : (
-                        <div className="space-y-4">
-                            <div className="flex items-center justify-between">
-                                <h3 className="font-semibold text-gray-900">
-                                    ตรวจสอบข้อมูล ({previewData.length} รายการ)
-                                </h3>
-                                <Button variant="outline" size="sm" onClick={() => setImportStep(1)}>
-                                    ย้อนกลับ
-                                </Button>
-                            </div>
 
-                            <div className="border rounded-md overflow-hidden">
-                                <div className="max-h-[400px] overflow-y-auto">
-                                    <table className="w-full text-sm text-left">
-                                        <thead className="text-xs text-gray-700 uppercase bg-gray-50 border-b sticky top-0">
-                                            <tr>
-                                                <th className="px-4 py-3">ชื่อ-นามสกุล</th>
-                                                <th className="px-4 py-3">เลขบัตร (Last 4)</th>
-                                                <th className="px-4 py-3">สาเหตุ</th>
-                                                <th className="px-4 py-3">ประเภท</th>
-                                                <th className="px-4 py-3">วันที่ (ถ้ามี)</th>
-                                            </tr>
-                                        </thead>
-                                        <tbody>
-                                            {previewData.map((item, idx) => (
-                                                <tr key={idx} className="bg-white border-b hover:bg-gray-50">
-                                                    <td className="px-4 py-3 font-medium">
-                                                        {item.first_name} {item.last_name}
-                                                    </td>
-                                                    <td className="px-4 py-3 font-mono">
-                                                        ****{item.id_card.slice(-4)}
-                                                    </td>
-                                                    <td className="px-4 py-3 truncate max-w-[200px]" title={item.reason_detail}>
-                                                        {item.reason_detail}
-                                                    </td>
-                                                    <td className="px-4 py-3">
-                                                        <Badge variant="outline">
-                                                            {REASON_TYPES[item.reason_type] || item.reason_type}
-                                                        </Badge>
-                                                    </td>
-                                                    <td className="px-4 py-3 text-xs text-gray-500">
-                                                        {item.incident_date ? new Date(item.incident_date).toLocaleDateString('th-TH') : '-'}
-                                                    </td>
+                                <div className="border rounded-md overflow-hidden flex-1 min-h-0 relative">
+                                    <div className="absolute inset-0 overflow-auto">
+                                        <table className="w-full text-sm text-left">
+                                            <thead className="text-xs text-gray-700 uppercase bg-gray-50 border-b sticky top-0">
+                                                <tr>
+                                                    <th className="px-4 py-3 bg-gray-50">ชื่อ-นามสกุล</th>
+                                                    <th className="px-4 py-3 bg-gray-50 text-center">เลขบัตร (Last 4)</th>
+                                                    <th className="px-4 py-3 bg-gray-50">สาเหตุ</th>
+                                                    <th className="px-4 py-3 bg-gray-50 text-center">ประเภท</th>
+                                                    <th className="px-4 py-3 bg-gray-50">วันที่</th>
                                                 </tr>
+                                            </thead>
+                                            <tbody>
+                                                {previewData.map((item, idx) => (
+                                                    <tr key={idx} className="bg-white border-b hover:bg-gray-50">
+                                                        <td className="px-4 py-3 font-medium whitespace-nowrap">
+                                                            {item.first_name} {item.last_name}
+                                                        </td>
+                                                        <td className="px-4 py-3 font-mono text-center">
+                                                            {item.id_card.slice(-4)}
+                                                        </td>
+                                                        <td className="px-4 py-3 truncate max-w-[150px] md:max-w-[200px]" title={item.reason_detail}>
+                                                            {item.reason_detail}
+                                                        </td>
+                                                        <td className="px-4 py-3 text-center">
+                                                            <Badge variant="outline" className="whitespace-nowrap">
+                                                                {REASON_TYPES[item.reason_type] || item.reason_type}
+                                                            </Badge>
+                                                        </td>
+                                                        <td className="px-4 py-3 text-xs text-gray-500 whitespace-nowrap">
+                                                            {item.incident_date ? new Date(item.incident_date).toLocaleDateString('th-TH') : '-'}
+                                                        </td>
+                                                    </tr>
+                                                ))}
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                </div>
+
+                                {importProgress && (
+                                    <div className="shrink-0 bg-slate-900 text-white p-3 rounded-md text-xs font-mono max-h-[150px] overflow-y-auto">
+                                        <div className="flex justify-between mb-2 pb-2 border-b border-gray-700 sticky top-0 bg-slate-900">
+                                            <span>Progress: {importProgress.current} / {importProgress.total}</span>
+                                            <span className="text-green-400">Success: {importProgress.success}</span>
+                                            <span className="text-red-400">Failed: {importProgress.failed}</span>
+                                        </div>
+                                        <div className="space-y-1">
+                                            {importProgress.logs.map((log, i) => (
+                                                <div key={i} className={log.startsWith('[ERROR]') ? 'text-red-300' : 'text-green-300 break-words'}>
+                                                    {log}
+                                                </div>
                                             ))}
-                                        </tbody>
-                                    </table>
-                                </div>
+                                        </div>
+                                    </div>
+                                )}
                             </div>
-
-
-
-                            {importProgress && (
-                                <div className="bg-slate-900 text-white p-4 rounded-md mb-4 text-xs font-mono max-h-40 overflow-y-auto mt-4">
-                                    <div className="flex justify-between mb-2 pb-2 border-b border-gray-700">
-                                        <span>Progress: {importProgress.current} / {importProgress.total}</span>
-                                        <span className="text-green-400">Success: {importProgress.success}</span>
-                                        <span className="text-red-400">Failed: {importProgress.failed}</span>
-                                    </div>
-                                    <div className="space-y-1">
-                                        {importProgress.logs.map((log, i) => (
-                                            <div key={i} className={log.startsWith('[ERROR]') ? 'text-red-300' : 'text-green-300'}>
-                                                {log}
-                                            </div>
-                                        ))}
-                                    </div>
-                                </div>
-                            )}
-
-                            <DialogFooter>
-                                <Button variant="outline" onClick={() => setShowImportModal(false)} disabled={importing}>
-                                    ยกเลิก
-                                </Button>
-                                <Button
-                                    className="bg-green-600 hover:bg-green-700"
-                                    onClick={handleConfirmImport}
-                                    disabled={importing}
-                                >
-                                    {importing ? (
-                                        <>
-                                            <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                                            {`กำลังนำเข้า (${importProgress?.current || 0}/${importProgress?.total || 0})...`}
-                                        </>
-                                    ) : (
-                                        <>
-                                            <CheckCircle className="w-4 h-4 mr-2" />
-                                            ยืนยันการนำเข้า
-                                        </>
-                                    )}
-                                </Button>
-                            </DialogFooter>
-                        </div>
+                        )}
+                    </div>
+                    {importStep === 2 && (
+                        <DialogFooter className="p-4 border-t bg-gray-50 shrink-0">
+                            <Button variant="outline" onClick={() => setShowImportModal(false)} disabled={importing}>
+                                ยกเลิก
+                            </Button>
+                            <Button
+                                className="bg-green-600 hover:bg-green-700 w-full sm:w-auto"
+                                onClick={handleConfirmImport}
+                                disabled={importing}
+                            >
+                                {importing ? (
+                                    <>
+                                        <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                                        {`กำลังนำเข้า (${importProgress?.current || 0}/${importProgress?.total || 0})...`}
+                                    </>
+                                ) : (
+                                    <>
+                                        <CheckCircle className="w-4 h-4 mr-2" />
+                                        ยืนยันการนำเข้า
+                                    </>
+                                )}
+                            </Button>
+                        </DialogFooter>
                     )}
-
-                </DialogContent >
+                </DialogContent> >
             </Dialog >
         </div >
     );

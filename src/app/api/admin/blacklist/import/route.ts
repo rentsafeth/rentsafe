@@ -1,4 +1,4 @@
-import { createClient } from '@/lib/supabase/server';
+import { createClient, createAdminClient } from '@/lib/supabase/server';
 import { NextRequest, NextResponse } from 'next/server';
 import crypto from 'crypto';
 
@@ -9,6 +9,7 @@ function hashIdCard(idCard: string): string {
 
 export async function POST(request: NextRequest) {
     try {
+        // Authenticate user
         const supabase = await createClient();
         const { data: { user } } = await supabase.auth.getUser();
 
@@ -16,8 +17,8 @@ export async function POST(request: NextRequest) {
             return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
         }
 
-        // Verify admin (simplistic check for now, ideally strictly RLS or admin table)
-        // Assuming if they can access this route they are authorized, or add check here.
+        // Use Admin Client for DB operations to bypass RLS
+        const adminClient = createAdminClient();
 
         const body = await request.json();
         const { reports } = body;
@@ -39,7 +40,7 @@ export async function POST(request: NextRequest) {
                 const idLast4 = item.id_card.slice(-4);
 
                 // Check existing
-                const { data: existing } = await supabase
+                const { data: existing } = await adminClient
                     .from('customer_blacklist')
                     .select('id')
                     .eq('id_card_hash', idHash)
@@ -51,7 +52,7 @@ export async function POST(request: NextRequest) {
                 }
 
                 // Insert
-                const { error } = await supabase
+                const { error } = await adminClient
                     .from('customer_blacklist')
                     .insert({
                         id_card_hash: idHash,
