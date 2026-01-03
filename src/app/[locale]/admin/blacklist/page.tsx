@@ -98,7 +98,25 @@ interface ImportPreviewItem {
 export default function AdminBlacklistPage() {
     const [loading, setLoading] = useState(true);
     const [reports, setReports] = useState<BlacklistReport[]>([]);
-    // ... (rest of states) ...
+    const [statusFilter, setStatusFilter] = useState<string>('pending');
+    const [searchQuery, setSearchQuery] = useState('');
+
+    // Detail modal
+    const [selectedReport, setSelectedReport] = useState<BlacklistReport | null>(null);
+    const [showDetailModal, setShowDetailModal] = useState(false);
+
+    // Import modal
+    const [showImportModal, setShowImportModal] = useState(false);
+    const [importJson, setImportJson] = useState('');
+    const [previewData, setPreviewData] = useState<ImportPreviewItem[]>([]);
+    const [importing, setImporting] = useState(false);
+    const [importStep, setImportStep] = useState<1 | 2>(1);
+
+    // Action states
+    const [processing, setProcessing] = useState(false);
+    const [adminNotes, setAdminNotes] = useState('');
+    const [rejectionReason, setRejectionReason] = useState('');
+    const [isEditing, setIsEditing] = useState(false);
     const [editForm, setEditForm] = useState({ first_name: '', last_name: '', id_card_number: '' });
 
     const supabase = createClient();
