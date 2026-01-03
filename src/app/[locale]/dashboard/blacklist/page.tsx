@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { createClient } from '@/lib/supabase/client';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -26,6 +26,7 @@ import {
     FileText,
     Upload,
     X,
+    Scan,
 } from 'lucide-react';
 import {
     Dialog,
@@ -109,6 +110,89 @@ export default function BlacklistDashboard() {
     // Evidence upload state
     const [evidenceUrls, setEvidenceUrls] = useState<string[]>([]);
     const [uploadingEvidence, setUploadingEvidence] = useState(false);
+
+    // OCR State
+    const [isScanning, setIsScanning] = useState(false);
+    const fileInputRef = useRef<HTMLInputElement>(null);
+
+    const handleScanIdCard = async (e: React.ChangeEvent<HTMLInputElement>) => {
+        const file = e.target.files?.[0];
+        if (!file) return;
+
+        if (file.size > 5 * 1024 * 1024) {
+            setAlertState({
+                isOpen: true,
+                type: 'warning',
+                title: 'ไฟล์ขนาดใหญ่เกินไป',
+                message: 'ไฟล์มีขนาดใหญ่เกิน 5MB',
+            });
+            return;
+        }
+
+        setIsScanning(true);
+        const formData = new FormData();
+        formData.append('file', file);
+
+        try {
+            const res = await fetch('/api/ocr/id-card', {
+                method: 'POST',
+                body: formData,
+            });
+
+            const data = await res.json();
+
+            if (!res.ok) {
+                throw new Error(data.details || data.error || 'Failed to scan ID card');
+            }
+
+            // Auto-fill form
+            setReportForm(prev => {
+                const newState = { ...prev };
+
+                if (data.id_number) {
+                    newState.id_card_number = formatIdCard(data.id_number);
+                }
+
+                if (data.th_first_name) newState.first_name = data.th_first_name;
+                if (data.th_last_name) newState.last_name = data.th_last_name;
+
+                // Fallback for name if split fields are missing
+                if (!newState.first_name && data.th_name) {
+                    const parts = data.th_name.split(' ');
+                    if (parts.length > 0) newState.first_name = parts[0];
+                    if (parts.length > 1) newState.last_name = parts.slice(1).join(' ');
+                } else if (!newState.first_name && data.en_name) {
+                    // Fallback to EN name
+                    const parts = data.en_name.split(' ');
+                    if (parts.length > 0) newState.first_name = parts[0];
+                    if (parts.length > 1) newState.last_name = parts.slice(1).join(' ');
+                }
+
+                return newState;
+            });
+
+            setAlertState({
+                isOpen: true,
+                type: 'success',
+                title: 'สแกนสำเร็จ',
+                message: 'ดึงข้อมูลจากบัตรเรียบร้อยแล้ว',
+            });
+
+        } catch (error: any) {
+            console.error('OCR Error:', error);
+            setAlertState({
+                isOpen: true,
+                type: 'error',
+                title: 'สแกนไม่สำเร็จ',
+                message: 'ไม่สามารถอ่านข้อมูลจากบัตรได้ กรุณากรอกเอง',
+            });
+        } finally {
+            setIsScanning(false);
+            if (fileInputRef.current) {
+                fileInputRef.current.value = '';
+            }
+        }
+    };
 
     // My reports state
     const [myReports, setMyReports] = useState<BlacklistReport[]>([]);
@@ -552,9 +636,35 @@ export default function BlacklistDashboard() {
 
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                 <div>
-                                    <label className="block text-sm font-medium text-gray-700 mb-1">
-                                        เลขบัตรประชาชน <span className="text-red-500">*</span>
-                                    </label>
+                                    <div className="flex items-center justify-between mb-1">
+                                        <label className="block text-sm font-medium text-gray-700">
+                                            เลขบัตรประชาชน <span className="text-red-500">*</span>
+                                        </label>
+                                        <div className="flex items-center">
+                                            <input
+                                                type="file"
+                                                accept="image/*"
+                                                className="hidden"
+                                                ref={fileInputRef}
+                                                onChange={handleScanIdCard}
+                                            />
+                                            <Button
+                                                type="button"
+                                                variant="outline"
+                                                size="sm"
+                                                className="h-6 text-xs flex items-center gap-1.5 text-blue-600 bg-blue-50 border-blue-200 hover:bg-blue-100 hover:text-blue-700 transition-colors px-2"
+                                                onClick={() => fileInputRef.current?.click()}
+                                                disabled={isScanning}
+                                            >
+                                                {isScanning ? (
+                                                    <Loader2 className="w-3 h-3 animate-spin" />
+                                                ) : (
+                                                    <Scan className="w-3 h-3" />
+                                                )}
+                                                {isScanning ? 'กำลังสแกน...' : 'สแกนบัตร'}
+                                            </Button>
+                                        </div>
+                                    </div>
                                     <Input
                                         placeholder="1-2345-67890-12-3"
                                         value={reportForm.id_card_number}

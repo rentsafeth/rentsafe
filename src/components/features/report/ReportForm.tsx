@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
@@ -14,7 +14,7 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { Form, FormControl, FormDescription, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { Loader2, Upload, AlertTriangle, Info, MapPin, ExternalLink } from 'lucide-react';
+import { Loader2, Upload, AlertTriangle, Info, MapPin, ExternalLink, Scan } from 'lucide-react';
 import { toast } from 'sonner';
 import MultiSelect from '@/components/ui/multi-select';
 import FacebookUrlGuideModal from './FacebookUrlGuideModal';
@@ -51,6 +51,63 @@ export default function ReportForm({ userId }: { userId: string }) {
     const prefilledBank = searchParams.get('bank');
     const [loading, setLoading] = useState(false);
     const [uploading, setUploading] = useState(false);
+    const [isScanning, setIsScanning] = useState(false);
+    const fileInputRef = useRef<HTMLInputElement>(null);
+
+    const handleScanIdCard = async (e: React.ChangeEvent<HTMLInputElement>) => {
+        const file = e.target.files?.[0];
+        if (!file) return;
+
+        if (file.size > 5 * 1024 * 1024) {
+            toast.error('ไฟล์มีขนาดใหญ่เกิน 5MB');
+            return;
+        }
+
+        setIsScanning(true);
+        const formData = new FormData();
+        formData.append('file', file);
+
+        try {
+            const res = await fetch('/api/ocr/id-card', {
+                method: 'POST',
+                body: formData,
+            });
+
+            const data = await res.json();
+
+            if (!res.ok) {
+                throw new Error(data.details || data.error || 'Failed to scan ID card');
+            }
+
+            // Map data to form fields
+            if (data.id_number) {
+                form.setValue('id_card', data.id_number);
+                toast.success('ดึงข้อมูลเลขบัตรประชาชนสำเร็จ');
+            }
+
+            // Try to set name to bank_account_name if empty
+            const fullName = data.th_name || data.en_name || `${data.th_first_name || ''} ${data.th_last_name || ''}`.trim();
+
+            if (fullName && !form.getValues('bank_account_name')) {
+                form.setValue('bank_account_name', fullName);
+                toast.success('ดึงข้อมูลชื่อ-นามสกุลสำเร็จ');
+            } else if (fullName) {
+                toast.info(`พบชื่อ: ${fullName} (ไม่ได้แทนที่ข้อมูลเดิม)`);
+            }
+
+        } catch (error: any) {
+            console.error('OCR Error:', error);
+            toast.error('ไม่สามารถสแกนบัตรได้', {
+                description: 'กรุณากรอกข้อมูลด้วยตัวเอง หรือลองรูปภาพที่ชัดเจนกว่านี้'
+            });
+        } finally {
+            setIsScanning(false);
+            if (fileInputRef.current) {
+                fileInputRef.current.value = ''; // Reset input
+            }
+        }
+    };
+
     const [blacklistInfo, setBlacklistInfo] = useState<any>(null);
     const [shopInfo, setShopInfo] = useState<any>(null);
     const [selectedFiles, setSelectedFiles] = useState<File[]>([]);
@@ -150,7 +207,7 @@ export default function ReportForm({ userId }: { userId: string }) {
     async function onSubmit(values: z.infer<typeof formSchema>) {
         setLoading(true);
         try {
-            // 1. Upload Images (Mocking implementation for now, assuming bucket exists)
+            // 1. Upload Images
             const evidenceUrls: string[] = [];
             if (selectedFiles.length === 0) {
                 throw new Error('กรุณาแนบหลักฐาน (รูปภาพ/สลิป/แชท)');
@@ -158,8 +215,6 @@ export default function ReportForm({ userId }: { userId: string }) {
 
             setUploading(true);
             for (const file of selectedFiles) {
-
-
                 // Check file size (5MB limit)
                 if (file.size > 5 * 1024 * 1024) {
                     throw new Error(`ไฟล์ ${file.name} มีขนาดใหญ่เกิน 5MB`);
@@ -186,7 +241,7 @@ export default function ReportForm({ userId }: { userId: string }) {
             // 2. Insert Report
             const { error } = await supabase.from('reports').insert({
                 reporter_id: userId,
-                shop_id: prefilledShopId || null, // If reporting a registered shop
+                shop_id: prefilledShopId || null,
                 manual_shop_name: values.shop_name,
                 manual_shop_contact: [
                     values.facebook_url ? `FB: ${values.facebook_url}` : null,
@@ -213,7 +268,6 @@ export default function ReportForm({ userId }: { userId: string }) {
                 description: t('successDescription'),
             });
 
-            // Redirect to blacklist page if came from there, otherwise dashboard
             if (prefilledBlacklistId) {
                 router.push(`/blacklist/${prefilledBlacklistId}`);
             } else {
@@ -342,7 +396,7 @@ export default function ReportForm({ userId }: { userId: string }) {
                                 )}
                             />
 
-                            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                 <FormField
                                     control={form.control}
                                     name="facebook_url"
@@ -363,9 +417,7 @@ export default function ReportForm({ userId }: { userId: string }) {
                                                             field.onBlur();
                                                             let val = field.value || '';
                                                             val = val.trim();
-                                                            // Auto-prefix logic: if not empty and doesn't look like a URL
                                                             if (val && !val.startsWith('http') && !val.includes('facebook.com')) {
-                                                                // Handle cases like "@username"
                                                                 const cleanVal = val.replace(/^@/, '');
                                                                 const newVal = `https://www.facebook.com/${cleanVal}`;
                                                                 field.onChange(newVal);
@@ -409,19 +461,63 @@ export default function ReportForm({ userId }: { userId: string }) {
                                         </FormItem>
                                     )}
                                 />
+                                {/* Phone Number Moved to new Grid */}
+                            </div>
+
+                            {/* ID Card & Phone Number Grid */}
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                <FormField
+                                    control={form.control}
+                                    name="id_card"
+                                    render={({ field }) => (
+                                        <FormItem>
+                                            <div className="flex items-center justify-between mb-2">
+                                                <FormLabel className="shrink-0 font-semibold">เลขบัตรประชาชน (ถ้ามี) <span className="text-red-500">*</span></FormLabel>
+                                                <div className="flex items-center">
+                                                    <input
+                                                        type="file"
+                                                        accept="image/*"
+                                                        className="hidden"
+                                                        ref={fileInputRef}
+                                                        onChange={handleScanIdCard}
+                                                    />
+                                                    <Button
+                                                        type="button"
+                                                        variant="outline"
+                                                        size="sm"
+                                                        className="h-7 text-xs flex items-center gap-1.5 text-blue-600 bg-blue-50 border-blue-200 hover:bg-blue-100 hover:text-blue-700 transition-colors"
+                                                        onClick={() => fileInputRef.current?.click()}
+                                                        disabled={isScanning || !!shopInfo}
+                                                    >
+                                                        {isScanning ? (
+                                                            <Loader2 className="w-3 h-3 animate-spin" />
+                                                        ) : (
+                                                            <Scan className="w-3 h-3" />
+                                                        )}
+                                                        {isScanning ? 'กำลังสแกน...' : 'สแกนบัตร (Auto-fill)'}
+                                                    </Button>
+                                                </div>
+                                            </div>
+                                            <FormControl>
+                                                <Input placeholder="x-xxxx-xxxxx-xx-x" {...field} disabled={!!shopInfo} className={shopInfo ? 'bg-slate-100' : ''} />
+                                            </FormControl>
+                                            <FormMessage />
+                                        </FormItem>
+                                    )}
+                                />
+
                                 <FormField
                                     control={form.control}
                                     name="phone_number"
                                     render={({ field }) => (
                                         <FormItem>
-                                            <FormLabel>เบอร์โทรศัพท์</FormLabel>
+                                            <FormLabel className="font-semibold">เบอร์โทรศัพท์</FormLabel>
                                             <FormControl>
                                                 <Input
                                                     placeholder="08x-xxx-xxxx"
                                                     {...field}
                                                     onBlur={(e) => {
-                                                        field.onBlur(); // Handover to react-hook-form
-                                                        // Auto-format: remove non-digits
+                                                        field.onBlur();
                                                         if (field.value) {
                                                             const cleaned = field.value.replace(/[^0-9]/g, '');
                                                             if (cleaned !== field.value) {
@@ -439,6 +535,7 @@ export default function ReportForm({ userId }: { userId: string }) {
                                 />
                             </div>
 
+                            {/* Bank Details */}
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                 <FormField
                                     control={form.control}
@@ -458,29 +555,15 @@ export default function ReportForm({ userId }: { userId: string }) {
                                     name="bank_account_name"
                                     render={({ field }) => (
                                         <FormItem>
-                                            <FormLabel>ชื่อบัญชี</FormLabel>
+                                            <FormLabel>ชื่อ-นามสกุล (เจ้าของบัญชี)</FormLabel>
                                             <FormControl>
-                                                <Input placeholder="ระบุชื่อเจ้าของบัญชี..." {...field} disabled={!!shopInfo} className={shopInfo ? 'bg-slate-100' : ''} />
+                                                <Input placeholder="ระบุชื่อจริง นามสกุล..." {...field} disabled={!!shopInfo} className={shopInfo ? 'bg-slate-100' : ''} />
                                             </FormControl>
                                             <FormMessage />
                                         </FormItem>
                                     )}
                                 />
                             </div>
-
-                            <FormField
-                                control={form.control}
-                                name="id_card"
-                                render={({ field }) => (
-                                    <FormItem>
-                                        <FormLabel>เลขบัตรประชาชน (ถ้ามี)</FormLabel>
-                                        <FormControl>
-                                            <Input placeholder="ระบุเลขบัตรประชาชน..." {...field} disabled={!!shopInfo} className={shopInfo ? 'bg-slate-100' : ''} />
-                                        </FormControl>
-                                        <FormMessage />
-                                    </FormItem>
-                                )}
-                            />
 
                             {/* Multi-select for provinces */}
                             <FormField
