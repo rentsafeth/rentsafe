@@ -532,11 +532,17 @@ export default function AdsPage() {
         : 0;
 
     const getScheduleStatus = (schedule: Schedule) => {
-        const today = new Date().toISOString().split('T')[0];
+        // Trust DB status explicitly
         if (schedule.status === 'cancelled') return 'cancelled';
         if (schedule.status === 'completed') return 'completed';
+        if (schedule.status === 'active') return 'active';
+
+        // Fallback: Check dates using Thai timezone
+        const today = new Date().toLocaleDateString('en-CA', { timeZone: 'Asia/Bangkok' });
+
         if (schedule.start_date <= today && schedule.end_date >= today) return 'active';
         if (schedule.start_date > today) return 'pending';
+
         return 'completed';
     };
 
