@@ -247,7 +247,14 @@ export default function BlacklistDashboard() {
     }, [activeTab]);
 
     const checkSubscription = async () => {
-        // ... (existing code)
+        try {
+            const response = await fetch('/api/subscription');
+            const data = await response.json();
+            setIsPro(data.is_pro || false);
+            setRemainingSearches(data.remaining_blacklist_searches ?? 3);
+        } catch (error) {
+            console.error('Error checking subscription:', error);
+        }
     };
 
     const handleSearch = async (overrideQuery?: string) => {
