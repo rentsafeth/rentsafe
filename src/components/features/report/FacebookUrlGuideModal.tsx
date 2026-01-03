@@ -1,4 +1,4 @@
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogDescription } from '@/components/ui/dialog';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Button } from '@/components/ui/button';
 import { Lightbulb, Copy, MessageCircle, Facebook, MoreHorizontal, Share2 } from 'lucide-react';
@@ -18,6 +18,9 @@ export default function FacebookUrlGuideModal() {
                         <Lightbulb className="w-5 h-5 fill-yellow-400 text-yellow-500" />
                         วิธีดูลิงก์ Facebook Page ของมิจฉาชีพ
                     </DialogTitle>
+                    <DialogDescription className="text-slate-500 text-sm">
+                        เลือกวิธีดูจากแชท Messenger หรือหน้าเพจโดยตรง เพื่อให้ได้ลิงก์ที่ถูกต้องสำหรับการรายงาน
+                    </DialogDescription>
                 </DialogHeader>
 
                 <Tabs defaultValue="messenger" className="w-full">
