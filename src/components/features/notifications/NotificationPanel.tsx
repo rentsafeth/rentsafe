@@ -80,7 +80,14 @@ const severityColors = {
 };
 
 function formatTimeAgo(dateString: string) {
+    // Validate dateString
+    if (!dateString) return 'ไม่ทราบเวลา';
+
     const date = new Date(dateString);
+
+    // Check if date is valid
+    if (isNaN(date.getTime())) return 'ไม่ทราบเวลา';
+
     const now = new Date();
     const diffInSeconds = Math.floor((now.getTime() - date.getTime()) / 1000);
 
