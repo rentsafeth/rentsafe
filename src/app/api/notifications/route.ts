@@ -79,7 +79,7 @@ export async function GET(request: NextRequest) {
             message: an.message,
             data: null,
             is_read: false, // Admin notifications are always shown as unread for now
-            created_at: an.sent_at,
+            created_at: an.created_at,
         }));
 
         // Merge notifications
