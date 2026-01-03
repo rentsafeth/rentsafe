@@ -150,6 +150,21 @@ export default function BlacklistDashboard() {
                 throw new Error(data.details || data.error || 'Failed to scan ID card');
             }
 
+            // Helper to clean titles
+            const removeTitle = (text: string) => {
+                let cleanText = text.trim();
+                const titles = ['นาย', 'นางสาว', 'นาง', 'ด.ช.', 'ด.ญ.', 'เด็กชาย', 'เด็กหญิง', 'น.ส.', 'น.ส ', 'Ms.', 'Mr.', 'Mrs.', 'Miss.'];
+                // Sort by length desc
+                const sortedTitles = titles.sort((a, b) => b.length - a.length);
+
+                for (const title of sortedTitles) {
+                    if (cleanText.startsWith(title)) {
+                        return cleanText.substring(title.length).trim();
+                    }
+                }
+                return cleanText;
+            };
+
             // Auto-fill form
             setReportForm(prev => {
                 const newState = { ...prev };
@@ -158,29 +173,34 @@ export default function BlacklistDashboard() {
                     newState.id_card_number = formatIdCard(data.id_number);
                 }
 
+                // Priority 1: Check th_first_name / th_last_name
                 if (data.th_first_name && data.th_last_name) {
-                    newState.first_name = data.th_first_name;
-                    newState.last_name = data.th_last_name;
-                } else if (data.th_name) {
-                    // Fallback: Parse th_name and remove titles
-                    let cleanName = data.th_name.trim();
-                    const titles = ['นาย', 'นางสาว', 'นาง', 'ด.ช.', 'ด.ญ.', 'เด็กชาย', 'เด็กหญิง', 'Ms.', 'Mr.', 'Mrs.'];
+                    let fName = removeTitle(data.th_first_name);
+                    let lName = removeTitle(data.th_last_name);
 
-                    // Sort by length desc to handle 'นางสาว' before 'นาง'
-                    const sortedTitles = titles.sort((a, b) => b.length - a.length);
-
-                    for (const title of sortedTitles) {
-                        if (cleanName.startsWith(title)) {
-                            cleanName = cleanName.substring(title.length).trim();
-                            break;
+                    // Sometimes last name includes the first name (OCR error)
+                    // or first name is just title
+                    if (data.th_first_name.includes('น.ส.') || data.th_first_name.includes('นาย') || data.th_first_name.length < 3) {
+                        // Likely title is in first name, real name in last name
+                        const parts = lName.split(' ').filter((p: string) => p);
+                        if (parts.length > 1) {
+                            fName = parts[0];
+                            lName = parts.slice(1).join(' ');
                         }
                     }
 
+                    newState.first_name = fName;
+                    newState.last_name = lName;
+                }
+                // Priority 2: Check th_name (combined)
+                else if (data.th_name) {
+                    let cleanName = removeTitle(data.th_name);
                     const parts = cleanName.split(' ').filter((p: string) => p);
                     if (parts.length > 0) newState.first_name = parts[0];
                     if (parts.length > 1) newState.last_name = parts.slice(1).join(' ');
-                } else if (data.en_name) {
-                    // Fallback to EN name
+                }
+                // Priority 3: English Name
+                else if (data.en_name) {
                     const parts = data.en_name.split(' ');
                     if (parts.length > 0) newState.first_name = parts[0];
                     if (parts.length > 1) newState.last_name = parts.slice(1).join(' ');
