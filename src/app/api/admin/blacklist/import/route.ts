@@ -35,7 +35,34 @@ export async function POST(request: NextRequest) {
 
         for (const item of reports) {
             try {
-                // Hash ID Card
+                // UPDATE MODE: If 'id' is provided, update existing record
+                if (item.id) {
+                    const updateData: any = {};
+
+                    // Update ID Card info if provided
+                    if (item.id_card && item.id_card.length === 13) {
+                        updateData.id_card_number = item.id_card;
+                        updateData.id_card_hash = hashIdCard(item.id_card);
+                        updateData.id_card_last4 = item.id_card.slice(-4);
+                    }
+
+                    // Update Names if provided
+                    if (item.first_name) updateData.first_name = item.first_name;
+                    if (item.last_name) updateData.last_name = item.last_name;
+
+                    if (Object.keys(updateData).length > 0) {
+                        const { error } = await adminClient
+                            .from('customer_blacklist')
+                            .update(updateData)
+                            .eq('id', item.id);
+
+                        if (error) throw error;
+                        successCount++;
+                    }
+                    continue; // Skip the insert logic
+                }
+
+                // INSERT MODE: Create new record (Existing Logic)
                 const idHash = hashIdCard(item.id_card);
                 const idLast4 = item.id_card.slice(-4);
 
@@ -44,7 +71,7 @@ export async function POST(request: NextRequest) {
                     .from('customer_blacklist')
                     .select('id')
                     .eq('id_card_hash', idHash)
-                    .eq('status', 'approved') // Check if already approved/blacklisted
+                    .eq('status', 'approved')
                     .single();
 
                 if (existing) {
@@ -57,27 +84,24 @@ export async function POST(request: NextRequest) {
                     .insert({
                         id_card_hash: idHash,
                         id_card_last4: idLast4,
+                        id_card_number: item.id_card.length === 13 ? item.id_card : null, // Store full ID if new import has it
                         first_name: item.first_name,
                         last_name: item.last_name,
                         reason_type: item.reason_type,
                         reason_detail: item.reason_detail,
                         incident_date: item.incident_date || null,
-                        severity: 'moderate', // Default severity for imported
+                        severity: 'moderate',
                         status: 'approved',
-                        reported_by_shop_id: null, // Assuming DB allows null for imports
+                        reported_by_shop_id: null,
                         created_at: new Date().toISOString(),
                         admin_notes: 'Imported via JSON',
                     });
 
-                if (error) {
-                    console.error('Import insert error:', error);
-                    errors.push({ name: `${item.first_name} ${item.last_name}`, error: error.message });
-                } else {
-                    successCount++;
-                }
+                if (error) throw error;
+                successCount++;
 
             } catch (err: any) {
-                console.error('Import processing error:', err);
+                console.error('Processing error:', err);
                 errors.push({ name: `${item.first_name} ${item.last_name}`, error: err.message });
             }
         }

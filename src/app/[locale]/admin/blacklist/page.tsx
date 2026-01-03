@@ -86,6 +86,7 @@ interface BlacklistReport {
 }
 
 interface ImportPreviewItem {
+    id?: string;
     first_name: string;
     last_name: string;
     id_card: string;
@@ -97,25 +98,7 @@ interface ImportPreviewItem {
 export default function AdminBlacklistPage() {
     const [loading, setLoading] = useState(true);
     const [reports, setReports] = useState<BlacklistReport[]>([]);
-    const [statusFilter, setStatusFilter] = useState<string>('pending');
-    const [searchQuery, setSearchQuery] = useState('');
-
-    // Detail modal
-    const [selectedReport, setSelectedReport] = useState<BlacklistReport | null>(null);
-    const [showDetailModal, setShowDetailModal] = useState(false);
-
-    // Import modal
-    const [showImportModal, setShowImportModal] = useState(false);
-    const [importJson, setImportJson] = useState('');
-    const [previewData, setPreviewData] = useState<ImportPreviewItem[]>([]);
-    const [importing, setImporting] = useState(false);
-    const [importStep, setImportStep] = useState<1 | 2>(1);
-
-    // Action states
-    const [processing, setProcessing] = useState(false);
-    const [adminNotes, setAdminNotes] = useState('');
-    const [rejectionReason, setRejectionReason] = useState('');
-    const [isEditing, setIsEditing] = useState(false);
+    // ... (rest of states) ...
     const [editForm, setEditForm] = useState({ first_name: '', last_name: '', id_card_number: '' });
 
     const supabase = createClient();
@@ -123,6 +106,48 @@ export default function AdminBlacklistPage() {
     useEffect(() => {
         loadReports();
     }, [statusFilter]);
+
+    // NEW: Function to Export Data for Update
+    const handleExportForUpdate = () => {
+        if (reports.length === 0) {
+            alert('ไม่มีข้อมูลที่จะ Export');
+            return;
+        }
+
+        // Prepare data for Excel
+        const exportData = reports.map(r => ({
+            'id': r.id, // Critical for update
+            'ชื่อ': r.first_name,
+            'นามสกุล': r.last_name,
+            'เลขบัตรประจำตัวประชาชน': r.id_card_last4 ? `****-****-${r.id_card_last4}` : '',
+            'id_card_number_new': '', // Empty column for user to fill
+            'สถานะ': STATUS_CONFIG[r.status]?.label || r.status,
+            'รูปแบบ': REASON_TYPES[r.reason_type] || r.reason_type,
+            'รายละเอียด': r.reason_detail
+        }));
+
+        // Create Workbook
+        const wb = XLSX.utils.book_new();
+        const ws = XLSX.utils.json_to_sheet(exportData);
+
+        // Adjust column widths
+        const wscols = [
+            { wch: 40 }, // id
+            { wch: 20 }, // first_name
+            { wch: 20 }, // last_name
+            { wch: 20 }, // existing id (masked)
+            { wch: 25 }, // NEW ID CARD (Target)
+            { wch: 15 }, // status
+            { wch: 20 }, // reason type
+            { wch: 40 }, // detail
+        ];
+        ws['!cols'] = wscols;
+
+        XLSX.utils.book_append_sheet(wb, ws, "Balcklist_Update");
+
+        // Save file
+        XLSX.writeFile(wb, `Blacklist_Update_${new Date().toISOString().slice(0, 10)}.xlsx`);
+    };
 
     const processImportData = (rawData: any[]) => {
         return rawData.map((item: any) => {
@@ -149,6 +174,9 @@ export default function AdminBlacklistPage() {
             // Determine ID Card
             const idCard = (item['เลขบัตรประจำตัวประชาชน'] || item['id_card'] || item['id_number'] || '').toString().replace(/\D/g, '');
 
+            // ID for Update
+            const id = item['id'] || item['ID'] || '';
+
             // Determine Reason
             const reasonDetail = item['รูปแบบการโกง'] || item['reason'] || item['reason_detail'] || '';
 
@@ -157,7 +185,7 @@ export default function AdminBlacklistPage() {
             const lowerReason = reasonDetail.toLowerCase();
 
             if (lowerReason.includes('ไม่คืน') || lowerReason.includes('ขโมย') || lowerReason.includes('ขายต่อ') || lowerReason.includes('เชิด')) reasonType = 'no_return';
-            else if (lowerReason.includes('จำนำ')) reasonType = 'no_return'; // Severe: Pawning = Theft in this context usually
+            else if (lowerReason.includes('จำนำ') || lowerReason.includes('pledge')) reasonType = 'pledge';
             else if (lowerReason.includes('ชน') || lowerReason.includes('เสียหาย') || lowerReason.includes('รอย')) reasonType = 'damage';
             else if (lowerReason.includes('ไม่จ่าย') || lowerReason.includes('ค้าง')) reasonType = 'no_pay';
             else if (lowerReason.includes('ปลอม') || lowerReason.includes('เอกสารเท็จ')) reasonType = 'fake_docs';
@@ -166,6 +194,7 @@ export default function AdminBlacklistPage() {
             const incidentDate = new Date().toISOString();
 
             return {
+                id, // Include ID
                 first_name: firstName,
                 last_name: lastName,
                 id_card: idCard,
@@ -173,7 +202,7 @@ export default function AdminBlacklistPage() {
                 reason_type: reasonType,
                 incident_date: incidentDate
             };
-        }).filter(item => item.first_name && item.id_card);
+        }).filter(item => (item.first_name && item.id_card) || (item.id && item.id_card)); // Allow if name+id_card OR id+id_card (for update)
     };
 
     const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
