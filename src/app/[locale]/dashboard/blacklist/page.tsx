@@ -567,7 +567,7 @@ export default function BlacklistDashboard() {
                                     className="flex-1"
                                 />
                                 <Button
-                                    onClick={handleSearch}
+                                    onClick={() => handleSearch()}
                                     disabled={loading || (!isPro && remainingSearches === 0)}
                                     className="bg-blue-600 hover:bg-blue-700"
                                 >
