@@ -44,12 +44,13 @@ export async function GET(request: NextRequest) {
             console.error('[Cron] Error processing boosts:', boostError);
             results.errors.push(`Boost process: ${boostError.message}`);
         } else {
-            // boostResults will be { activated: number, expired: number, ... }
-            if (boostResults && (boostResults.activated > 0 || boostResults.expired > 0)) {
-                results.boosts_expired = true; // Keep flag name for compatibility or rename if prefer
-                console.log(`[Cron] Boosts processed: Activated ${boostResults.activated}, Expired ${boostResults.expired}`);
+            // New structure: { boost_activated, boost_expired, ppc_activated, ppc_expired }
+            const res = boostResults as any;
+            if (res && (res.boost_activated > 0 || res.boost_expired > 0 || res.ppc_activated > 0 || res.ppc_expired > 0)) {
+                results.boosts_expired = true;
+                console.log(`[Cron] Processed results: Boost(+${res.boost_activated}/-${res.boost_expired}), PPC(+${res.ppc_activated}/-${res.ppc_expired})`);
             } else {
-                console.log('[Cron] No boosts needing update');
+                console.log('[Cron] No Boosts or PPC needing update');
             }
         }
 
