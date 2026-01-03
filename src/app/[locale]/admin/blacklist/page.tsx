@@ -158,51 +158,8 @@ export default function AdminBlacklistPage() {
             else if (lowerReason.includes('ไม่จ่าย') || lowerReason.includes('ค้าง')) reasonType = 'no_pay';
             else if (lowerReason.includes('ปลอม') || lowerReason.includes('เอกสารเท็จ')) reasonType = 'fake_docs';
 
-            // Date Parsing
-            let incidentDate = null;
-            if (item['วันที่บันทึก']) {
-                // Try to parse excel date or string date
-                // Excel might return a number (serial date) or string
-                const dateVal = item['วันที่บันทึก'];
-                if (typeof dateVal === 'number') {
-                    // Excel serial date to JS Date
-                    // Excel base date is 1900-01-01 roughly. 
-                    // JS Date = (ExcelSerial - 25569) * 86400 * 1000
-                    incidentDate = new Date((dateVal - 25569) * 86400 * 1000).toISOString();
-                } else if (typeof dateVal === 'string') {
-                    // Try parsing Thai format e.g., "4 เมษายน 2566"
-                    const thaiMonths = ['มกราคม', 'กุมภาพันธ์', 'มีนาคม', 'เมษายน', 'พฤษภาคม', 'มิถุนายน', 'กรกฎาคม', 'สิงหาคม', 'กันยายน', 'ตุลาคม', 'พฤศจิกายน', 'ธันวาคม'];
-                    const shortThaiMonths = ['ม.ค.', 'ก.พ.', 'มี.ค.', 'เม.ย.', 'พ.ค.', 'มิ.ย.', 'ก.ค.', 'ส.ค.', 'ก.ย.', 'ต.ค.', 'พ.ย.', 'ธ.ค.'];
-
-                    let dateStr = dateVal;
-                    let isThai = false;
-
-                    // Replace month names
-                    thaiMonths.forEach((m, i) => {
-                        if (dateStr.includes(m)) {
-                            dateStr = dateStr.replace(m, `${i + 1}`);
-                            isThai = true;
-                        }
-                    });
-
-                    if (!isThai) {
-                        shortThaiMonths.forEach((m, i) => {
-                            if (dateStr.includes(m)) {
-                                dateStr = dateStr.replace(m, `${i + 1}`);
-                                isThai = true;
-                            }
-                        });
-                    }
-
-                    // Helper assuming "Day Month Year" e.g., "4 4 2566"
-                    const dParts = dateStr.trim().split(' ');
-                    if (dParts.length === 3) {
-                        let year = parseInt(dParts[2]);
-                        if (year > 2400) year -= 543; // Convert BE to AD
-                        incidentDate = new Date(`${year}-${dParts[1]}-${dParts[0]}`).toISOString();
-                    }
-                }
-            }
+            // Date Parsing - Force current date as requested
+            const incidentDate = new Date().toISOString();
 
             return {
                 first_name: firstName,
