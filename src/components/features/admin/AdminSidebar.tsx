@@ -20,6 +20,7 @@ const menuItems = [
     { href: '/admin/ads', label: 'จัดการโฆษณา', icon: Megaphone },
     { href: '/admin/notifications', label: 'แจ้งเตือน', icon: Bell },
     { href: '/admin/contact', label: 'รายการติดต่อ', icon: MessageSquare },
+    { href: '/admin/blacklist', label: 'จัดการ Blacklist', icon: ShieldAlert },
     { href: '/admin/users', label: 'จัดการผู้ใช้', icon: Users },
     { href: '/admin/blacklist-merge', label: 'Merge Blacklist', icon: GitMerge },
 ];
@@ -37,7 +38,8 @@ export default function AdminSidebar() {
         pendingDeletions: 0,
         pendingReviews: 0,
         pendingCredits: 0,
-        pendingTickets: 0
+        pendingTickets: 0,
+        pendingBlacklists: 0
     });
 
     useEffect(() => {
@@ -105,6 +107,7 @@ export default function AdminSidebar() {
                                 else if (item.href === '/admin/reviews') count = stats.pendingReviews;
                                 else if (item.href === '/admin/credits') count = stats.pendingCredits;
                                 else if (item.href === '/admin/contact') count = stats.pendingTickets;
+                                else if (item.href === '/admin/blacklist') count = stats.pendingBlacklists;
 
                                 return count > 0 ? (
                                     <span className="bg-red-500 text-white text-xs font-bold px-2 py-0.5 rounded-full min-w-[20px] text-center">

@@ -20,14 +20,16 @@ export async function GET(request: NextRequest) {
             { count: pendingDeletions },
             { count: pendingReviews },
             { count: pendingCredits },
-            { count: pendingTickets }
+            { count: pendingTickets },
+            { count: pendingBlacklists }
         ] = await Promise.all([
             adminClient.from('shops').select('*', { count: 'exact', head: true }).eq('verification_status', 'pending'),
             adminClient.from('reports').select('*', { count: 'exact', head: true }).eq('status', 'pending'),
             adminClient.from('report_deletion_requests').select('*', { count: 'exact', head: true }).eq('status', 'pending'),
             adminClient.from('reviews').select('*', { count: 'exact', head: true }).eq('status', 'pending'),
             adminClient.from('credit_orders').select('*', { count: 'exact', head: true }).eq('status', 'pending'),
-            adminClient.from('contact_tickets').select('*', { count: 'exact', head: true }).eq('status', 'pending')
+            adminClient.from('contact_tickets').select('*', { count: 'exact', head: true }).eq('status', 'pending'),
+            adminClient.from('customer_blacklist').select('*', { count: 'exact', head: true }).eq('status', 'pending')
         ]);
 
         return NextResponse.json({
@@ -36,7 +38,8 @@ export async function GET(request: NextRequest) {
             pendingDeletions: pendingDeletions || 0,
             pendingReviews: pendingReviews || 0,
             pendingCredits: pendingCredits || 0,
-            pendingTickets: pendingTickets || 0
+            pendingTickets: pendingTickets || 0,
+            pendingBlacklists: pendingBlacklists || 0
         });
     } catch (error) {
         console.error('Error fetching admin stats:', error);

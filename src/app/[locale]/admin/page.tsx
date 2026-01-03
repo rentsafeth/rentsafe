@@ -44,6 +44,11 @@ export default async function AdminDashboardPage() {
         .select('*', { count: 'exact', head: true })
         .eq('status', 'pending');
 
+    const { count: pendingBlacklists } = await supabase
+        .from('customer_blacklist')
+        .select('*', { count: 'exact', head: true })
+        .eq('status', 'pending');
+
     const { count: totalShops } = await supabase
         .from('shops')
         .select('*', { count: 'exact', head: true });
@@ -159,6 +164,19 @@ export default async function AdminDashboardPage() {
                         <CardContent>
                             <div className="text-2xl font-bold">{pendingTickets || 0}</div>
                             <p className="text-xs text-muted-foreground">รายการติดต่อที่รอตรวจสอบ</p>
+                        </CardContent>
+                    </Card>
+                </Link>
+
+                <Link href="/admin/blacklist">
+                    <Card className="hover:shadow-lg transition-shadow cursor-pointer h-full">
+                        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                            <CardTitle className="text-sm font-medium">รออนุมัติ Blacklist</CardTitle>
+                            <ShieldAlert className="h-4 w-4 text-red-600" />
+                        </CardHeader>
+                        <CardContent>
+                            <div className="text-2xl font-bold">{pendingBlacklists || 0}</div>
+                            <p className="text-xs text-muted-foreground">รายงาน Blacklist ที่รออนุมัติ</p>
                         </CardContent>
                     </Card>
                 </Link>
