@@ -831,32 +831,59 @@ export default function AdminBlacklistPage() {
                                 </div>
                             </div>
 
-                            <DialogFooter>
-                                <Button variant="outline" onClick={() => setShowImportModal(false)}>
-                                    ยกเลิก
-                                </Button>
-                                <Button
-                                    className="bg-green-600 hover:bg-green-700"
-                                    onClick={handleConfirmImport}
-                                    disabled={importing}
-                                >
-                                    {importing ? (
-                                        <>
-                                            <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                                            กำลังนำเข้า...
-                                        </>
-                                    ) : (
-                                        <>
-                                            <CheckCircle className="w-4 h-4 mr-2" />
-                                            ยืนยันการนำเข้า ({previewData.length})
-                                        </>
-                                    )}
-                                </Button>
-                            </DialogFooter>
+                        </div>
+
+                            {importProgress && (
+                        <div className="bg-slate-900 text-white p-4 rounded-md mb-4 text-xs font-mono max-h-40 overflow-y-auto mt-4">
+                            <div className="flex justify-between mb-2 pb-2 border-b border-gray-700">
+                                <span>Progress: {importProgress.current} / {importProgress.total}</span>
+                                <span className="text-green-400">Success: {importProgress.success}</span>
+                                <span className="text-red-400">Failed: {importProgress.failed}</span>
+                            </div>
+                            <div className="space-y-1">
+                                {importProgress.logs.map((log, i) => (
+                                    <div key={i} className={log.startsWith('[ERROR]') ? 'text-red-300' : 'text-green-300'}>
+                                        {log}
+                                    </div>
+                                ))}
+                            </div>
                         </div>
                     )}
-                </DialogContent>
-            </Dialog>
-        </div>
+
+                    <DialogFooter>
+                        <Button variant="outline" onClick={() => setShowImportModal(false)} disabled={importing}>
+                            ยกเลิก
+                        </Button>
+                        <Button
+                            className="bg-green-600 hover:bg-green-700"
+                            onClick={handleConfirmImport}
+                            disabled={importing}
+                        >
+                            {importing ? (
+                                <>
+                                    <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                                    {`กำลังนำเข้า (${importProgress?.current || 0}/${importProgress?.total || 0})...`}
+                                </>
+                            ) : (
+                                <>
+                                    <CheckCircle className="w-4 h-4 mr-2" />
+                                    ยืนยันการนำเข้า
+                                </>
+                            )}
+                        </Button>
+                    </DialogFooter>
+                </div>
+                    )}
+                ยืนยันการนำเข้า ({previewData.length})
+            </>
+                                    )}
+        </Button>
+                            </DialogFooter >
+                        </div >
+                    )
+}
+                </DialogContent >
+            </Dialog >
+        </div >
     );
 }
