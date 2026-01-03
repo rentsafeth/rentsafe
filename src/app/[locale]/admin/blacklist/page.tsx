@@ -227,12 +227,17 @@ export default function AdminBlacklistPage() {
                 throw new Error(result.error || 'Import failed');
             }
 
-            alert(`นำเข้าสำเร็จ ${result.count} รายการ`);
-            setShowImportModal(false);
-            setImportJson('');
-            setPreviewData([]);
-            setImportStep(1);
-            loadReports(); // Refresh list
+            if (result.count === 0 && result.errors && result.errors.length > 0) {
+                console.error(result.errors);
+                alert(`นำเข้าไม่สำเร็จ: ${result.errors[0].error || 'Unknown error'}`);
+            } else {
+                alert(`นำเข้าสำเร็จ ${result.count} รายการ ${result.errors?.length > 0 ? `(มีข้อผิดพลาด ${result.errors.length} รายการ)` : ''}`);
+                setShowImportModal(false);
+                setImportJson('');
+                setPreviewData([]);
+                setImportStep(1);
+                loadReports(); // Refresh list
+            }
         } catch (error: any) {
             console.error('Import error:', error);
             alert(`เกิดข้อผิดพลาด: ${error.message}`);
