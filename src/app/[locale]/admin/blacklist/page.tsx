@@ -838,12 +838,24 @@ export default function AdminBlacklistPage() {
                             )}
 
                             {/* Show decision for processed reports */}
-                            {selectedReport.status !== 'pending' && (
+                            {!isEditing && selectedReport.status !== 'pending' && (
                                 <div className={`p-4 rounded-lg ${selectedReport.status === 'approved' ? 'bg-green-50' : 'bg-red-50'
                                     }`}>
-                                    <h3 className="font-semibold mb-2">
-                                        {selectedReport.status === 'approved' ? 'อนุมัติแล้ว' : 'ไม่อนุมัติ'}
-                                    </h3>
+                                    <div className="flex justify-between items-start mb-2">
+                                        <h3 className="font-semibold">
+                                            {selectedReport.status === 'approved' ? 'อนุมัติแล้ว' : 'ไม่อนุมัติ'}
+                                        </h3>
+                                        <Button
+                                            variant="ghost"
+                                            size="sm"
+                                            onClick={() => setIsEditing(true)}
+                                            className="h-6 text-gray-500 hover:text-blue-600"
+                                        >
+                                            <Edit className="w-3 h-3 mr-1" />
+                                            แก้ไข
+                                        </Button>
+                                    </div>
+
                                     {selectedReport.admin_notes && (
                                         <p className="text-sm text-gray-600">
                                             <span className="font-medium">หมายเหตุ:</span> {selectedReport.admin_notes}
