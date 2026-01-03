@@ -236,6 +236,13 @@ export default function BlacklistDashboard() {
         }
     }, [searchParams]); // Dependent on searchParams
 
+    // Load reports when tab changes
+    useEffect(() => {
+        if (activeTab === 'my-reports') {
+            loadMyReports();
+        }
+    }, [activeTab]);
+
     const checkSubscription = async () => {
         try {
             const response = await fetch('/api/subscription');
