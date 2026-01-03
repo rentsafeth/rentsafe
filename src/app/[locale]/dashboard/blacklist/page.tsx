@@ -37,6 +37,7 @@ import {
 } from '@/components/ui/dialog';
 import { useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
+import Image from 'next/image';
 
 const REASON_TYPES = [
     { value: 'no_return', label: 'ไม่คืนรถตามกำหนด', severity: 'severe' },
