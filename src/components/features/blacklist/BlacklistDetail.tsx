@@ -449,7 +449,7 @@ ${entry.bank_account_no ? `💳 เลขบัญชี: ${entry.bank_account_n
     return (
         <div className="space-y-6">
             {/* Header Card */}
-            <Card className="border-red-200 bg-gradient-to-br from-red-50 to-orange-50 overflow-hidden">
+            <Card className="border-red-200 bg-gradient-to-br from-red-50 to-orange-50">
                 <CardHeader className="pb-4">
                     <div className="flex items-start justify-between">
                         <div className="flex items-center gap-3">
