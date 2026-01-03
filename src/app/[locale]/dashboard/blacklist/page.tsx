@@ -230,11 +230,14 @@ export default function BlacklistDashboard() {
 
         // Auto search from URL
         const q = searchParams.get('q');
+        console.log('Search Params q:', q); // DEBUG log
+
         if (q) {
+            console.log('Auto searching for:', q); // DEBUG log
             setSearchQuery(q);
             handleSearch(q);
         }
-    }, [searchParams]); // Dependent on searchParams
+    }, [searchParams]);
 
     // Load reports when tab changes
     useEffect(() => {
@@ -244,18 +247,12 @@ export default function BlacklistDashboard() {
     }, [activeTab]);
 
     const checkSubscription = async () => {
-        try {
-            const response = await fetch('/api/subscription');
-            const data = await response.json();
-            setIsPro(data.is_pro || false);
-            setRemainingSearches(data.remaining_blacklist_searches ?? 3);
-        } catch (error) {
-            console.error('Error checking subscription:', error);
-        }
+        // ... (existing code)
     };
 
     const handleSearch = async (overrideQuery?: string) => {
         const queryToUse = overrideQuery || searchQuery;
+        console.log('handleSearch calling API with:', queryToUse); // DEBUG log
 
         if (!queryToUse.trim()) {
             setAlertState({
