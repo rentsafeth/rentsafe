@@ -67,9 +67,10 @@ export async function GET(request: NextRequest) {
             const { data, error } = await supabase
                 .from('customer_blacklist')
                 .select(`
-                    id, id_card_last4, first_name, last_name, phone_number,
-                    reason_type, reason_detail, severity, report_count, created_at
-                `)
+                .select(`
+                    id, id_card_last4, id_card_number, first_name, last_name, phone_number,
+                    reason_type, reason_detail, severity, report_count, created_at, evidence_urls
+                    `)
                 .eq('status', 'approved')
                 .eq('id', query.trim()); // Use original query
             results = data || [];
@@ -80,9 +81,9 @@ export async function GET(request: NextRequest) {
             const { data, error } = await supabase
                 .from('customer_blacklist')
                 .select(`
-                    id, id_card_last4, first_name, last_name, phone_number,
-                    reason_type, reason_detail, severity, report_count, created_at
-                `)
+                    id, id_card_last4, id_card_number, first_name, last_name, phone_number,
+                    reason_type, reason_detail, severity, report_count, created_at, evidence_urls
+                    `)
                 .eq('status', 'approved')
                 .eq('id_card_hash', hash);
             results = data || [];
@@ -92,9 +93,9 @@ export async function GET(request: NextRequest) {
             const { data, error } = await supabase
                 .from('customer_blacklist')
                 .select(`
-                    id, id_card_last4, first_name, last_name, phone_number,
-                    reason_type, reason_detail, severity, report_count, created_at
-                `)
+                    id, id_card_last4, id_card_number, first_name, last_name, phone_number,
+                    reason_type, reason_detail, severity, report_count, created_at, evidence_urls
+                    `)
                 .eq('status', 'approved')
                 .eq('phone_number', cleanQuery);
             results = data || [];
@@ -109,22 +110,22 @@ export async function GET(request: NextRequest) {
                 nameQuery = supabase
                     .from('customer_blacklist')
                     .select(`
-                        id, id_card_last4, first_name, last_name, phone_number,
-                        reason_type, reason_detail, severity, report_count, created_at
-                    `)
+                        id, id_card_last4, id_card_number, first_name, last_name, phone_number,
+                    reason_type, reason_detail, severity, report_count, created_at, evidence_urls
+                        `)
                     .eq('status', 'approved')
-                    .ilike('first_name', `%${nameParts[0]}%`)
-                    .ilike('last_name', `%${nameParts.slice(1).join(' ')}%`);
+                    .ilike('first_name', `% ${ nameParts[0]} % `)
+                    .ilike('last_name', `% ${ nameParts.slice(1).join(' ') } % `);
             } else {
                 // Search by either first name OR last name
                 nameQuery = supabase
                     .from('customer_blacklist')
                     .select(`
-                        id, id_card_last4, first_name, last_name, phone_number,
-                        reason_type, reason_detail, severity, report_count, created_at
+                        id, id_card_last4, id_card_number, first_name, last_name, phone_number,
+                    reason_type, reason_detail, severity, report_count, created_at, evidence_urls
                     `)
                     .eq('status', 'approved')
-                    .or(`first_name.ilike.%${nameParts[0]}%,last_name.ilike.%${nameParts[0]}%`);
+                    .or(`first_name.ilike.% ${ nameParts[0]} %, last_name.ilike.% ${ nameParts[0]} % `);
             }
 
             const { data, error } = await nameQuery;
@@ -137,33 +138,25 @@ export async function GET(request: NextRequest) {
             return NextResponse.json({ error: 'Search failed' }, { status: 500 });
         }
 
-        // Determine search type for logging
-        const detectedSearchType = isIdCard ? 'id_card' : isPhone ? 'phone' : 'name';
-
         // Log the search
         await supabase
             .from('blacklist_search_logs')
             .insert({
                 shop_id: shop.id,
                 search_query: query,
-                search_type: detectedSearchType,
+                search_type: isIdCard ? 'id_card' : isPhone ? 'phone' : 'name',
                 result_found: results && results.length > 0,
             });
 
-        // For non-pro shops, mask some data
+        // Return full data (No masking as requested)
         const isPro = shop.is_verified_shop;
-        const maskedResults = results?.map(r => ({
-            ...r,
-            phone_number: isPro ? r.phone_number : r.phone_number?.replace(/(\d{3})\d{4}(\d{3})/, '$1****$2'),
-            reason_detail: isPro ? r.reason_detail : r.reason_detail?.substring(0, 50) + '...',
-        }));
-
+        
         // Get new remaining count
         const { data: newRemainingSearches } = await supabase
             .rpc('get_remaining_blacklist_searches', { p_shop_id: shop.id });
 
         return NextResponse.json({
-            results: maskedResults || [],
+            results: results || [],
             found: results && results.length > 0,
             remaining_searches: newRemainingSearches,
             is_pro: isPro,
@@ -257,6 +250,7 @@ export async function POST(request: NextRequest) {
             .insert({
                 id_card_hash: idCardHash,
                 id_card_last4: idCardLast4,
+                id_card_number: cleanIdCard, // Save full number
                 first_name,
                 last_name,
                 phone_number: phone_number?.replace(/-/g, '') || null,

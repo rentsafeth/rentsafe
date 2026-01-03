@@ -639,7 +639,7 @@ export default function BlacklistDashboard() {
                                                                 {result.first_name} {result.last_name.charAt(0)}***
                                                             </p>
                                                             <p className="text-sm text-gray-500">
-                                                                บัตร ปชช.: ****-****-{result.id_card_last4}
+                                                                บัตร ปชช.: {result.id_card_number ? formatIdCard(result.id_card_number) : `****-****-${result.id_card_last4}`}
                                                             </p>
                                                             {result.phone_number && (
                                                                 <p className="text-sm text-gray-500">
@@ -647,9 +647,7 @@ export default function BlacklistDashboard() {
                                                                 </p>
                                                             )}
                                                         </div>
-                                                        <Badge className={SEVERITY_CONFIG[result.severity as keyof typeof SEVERITY_CONFIG]?.color || ''}>
-                                                            ความเสี่ยง: {SEVERITY_CONFIG[result.severity as keyof typeof SEVERITY_CONFIG]?.label || result.severity}
-                                                        </Badge>
+                                                        {/* Badge Removed */}
                                                     </div>
                                                     <div className="mt-2 pt-2 border-t border-red-200">
                                                         <p className="text-sm">
@@ -659,6 +657,33 @@ export default function BlacklistDashboard() {
                                                         <p className="text-sm text-gray-600 mt-1">
                                                             {result.reason_detail}
                                                         </p>
+
+                                                        {/* Evidence Images */}
+                                                        {result.evidence_urls && result.evidence_urls.length > 0 && (
+                                                            <div className="mt-3">
+                                                                <p className="text-xs font-medium text-gray-500 mb-2">หลักฐาน ({result.evidence_urls.length})</p>
+                                                                <div className="flex flex-wrap gap-2">
+                                                                    {result.evidence_urls.map((url: string, idx: number) => (
+                                                                        <a
+                                                                            key={idx}
+                                                                            href={url}
+                                                                            target="_blank"
+                                                                            rel="noopener noreferrer"
+                                                                            className="relative w-16 h-16 rounded overflow-hidden border border-gray-200 hover:opacity-80 transition block"
+                                                                        >
+                                                                            <Image
+                                                                                src={url}
+                                                                                alt={`Evidence ${idx + 1}`}
+                                                                                fill
+                                                                                className="object-cover"
+                                                                                unoptimized
+                                                                            />
+                                                                        </a>
+                                                                    ))}
+                                                                </div>
+                                                            </div>
+                                                        )}
+
                                                         {result.report_count > 1 && (
                                                             <p className="text-sm text-red-600 mt-2 font-medium">
                                                                 ⚠️ ถูกรายงาน {result.report_count} ครั้ง
