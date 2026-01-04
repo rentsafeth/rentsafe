@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { createAdminClient } from '@/lib/supabase/server';
 
 export async function POST(request: NextRequest) {
+    console.log(`OCR API Request received at ${new Date().toISOString()}`);
     const startTime = Date.now();
     let status = 'error';
     let errorMessage = '';
