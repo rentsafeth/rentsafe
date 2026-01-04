@@ -96,6 +96,7 @@ interface ImportPreviewItem {
     reason_detail: string;
     reason_type: string;
     incident_date?: string | null;
+    isDuplicate?: boolean;
 }
 
 export default function AdminBlacklistPage() {
@@ -309,17 +310,49 @@ export default function AdminBlacklistPage() {
                 const data = XLSX.utils.sheet_to_json(ws);
 
                 const parsed = processImportData(data);
-                setPreviewData(parsed);
-                setImportStep(2);
+
+                // Async check inside sync reader callback
+                setLoading(true);
+                checkDuplicates(parsed).then(checkedData => {
+                    setPreviewData(checkedData);
+                    setLoading(false);
+                    setImportStep(2);
+                });
             } catch (error) {
                 console.error('Excel Error:', error);
                 alert('ไม่สามารถอ่านไฟล์ Excel ได้');
+                setLoading(false); // Ensure loading is reset on error
             }
         };
         reader.readAsBinaryString(file);
     };
 
-    const handleParseJson = () => {
+    const checkDuplicates = async (items: ImportPreviewItem[]) => {
+        const idCards = items.map(i => i.id_card).filter(id => id && id.length === 13);
+        if (idCards.length === 0) return items;
+
+        try {
+            const res = await fetch('/api/admin/blacklist/check-duplicates', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ id_cards: idCards }),
+            });
+            if (!res.ok) return items;
+
+            const { duplicates } = await res.json();
+            const duplicateSet = new Set(duplicates);
+
+            return items.map(item => ({
+                ...item,
+                isDuplicate: duplicateSet.has(item.id_card)
+            }));
+        } catch (error) {
+            console.error('Failed to check duplicates:', error);
+            return items;
+        }
+    };
+
+    const handleParseJson = async () => {
         try {
             const rawData = JSON.parse(importJson);
             if (!Array.isArray(rawData)) {
@@ -328,14 +361,19 @@ export default function AdminBlacklistPage() {
             }
 
             const parsed = processImportData(rawData);
-            setPreviewData(parsed);
+            setLoading(true); // Show loading briefly
+            const checkedData = await checkDuplicates(parsed);
+            setLoading(false);
+
+            setPreviewData(checkedData);
             setImportStep(2);
         } catch (error) {
             alert('JSON Parse Error: กรุณาตรวจสอบรูปแบบ JSON');
+            setLoading(false);
         }
     };
 
-    const handleParseRawText = () => {
+    const handleParseRawText = async () => {
         if (!importJson.trim()) return;
 
         const lines = importJson.split('\n');
@@ -397,7 +435,11 @@ export default function AdminBlacklistPage() {
         }
 
         const parsed = processImportData(Array.from(uniqueMap.values()));
-        setPreviewData(parsed);
+        setLoading(true);
+        const checkedData = await checkDuplicates(parsed);
+        setLoading(false);
+
+        setPreviewData(checkedData);
         setImportStep(2);
     };
 
@@ -1436,6 +1478,11 @@ export default function AdminBlacklistPage() {
                                                     <tr key={idx} className="bg-white border-b hover:bg-gray-50">
                                                         <td className="px-4 py-3 font-medium whitespace-nowrap">
                                                             {item.first_name} {item.last_name}
+                                                            {item.isDuplicate && (
+                                                                <span className="ml-2 px-2 py-0.5 text-[10px] bg-yellow-100 text-yellow-800 rounded-full border border-yellow-200">
+                                                                    มีแล้ว
+                                                                </span>
+                                                            )}
                                                         </td>
                                                         <td className="px-4 py-3 font-mono text-center">
                                                             {item.id_card.slice(-4)}
