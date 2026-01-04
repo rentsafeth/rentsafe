@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import { createAdminClient } from '@/lib/supabase/server';
 
 export async function GET() {
+    console.log('Test Gemini Models API called');
     try {
         // 1. Get API Key
         let API_KEY = 'AIzaSyAwSHugjU7ch3LXIoAyfKfIKImLXOgLr3s'; // Default
