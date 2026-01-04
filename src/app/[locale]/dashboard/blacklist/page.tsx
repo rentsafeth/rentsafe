@@ -156,7 +156,11 @@ export default function BlacklistDashboard() {
                 const data = await res.json();
 
                 if (!res.ok) {
-                    throw new Error(data.details || data.error || 'Failed to scan ID card');
+                    const errDetail = data.details || data.error;
+                    const errorMsg = typeof errDetail === 'object'
+                        ? JSON.stringify(errDetail, null, 2)
+                        : (errDetail || 'Failed to scan ID card');
+                    throw new Error(errorMsg);
                 }
 
                 // Helper to clean titles
