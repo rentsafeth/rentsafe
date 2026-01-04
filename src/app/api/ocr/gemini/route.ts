@@ -34,9 +34,8 @@ export async function POST(request: NextRequest) {
         // Clean base64 string
         const base64Data = imageBase64.replace(/^data:image\/(png|jpeg|jpg|webp);base64,/, '');
 
-        // Critical Fix: Use 'gemini-pro-vision' as it is the stable model for image inputs
-        // Note: gemini-1.5-flash requires specific region or payment tier sometimes
-        const URL = `https://generativelanguage.googleapis.com/v1beta/models/gemini-pro-vision:generateContent?key=${API_KEY}`;
+        // Fix: Use 'gemini-1.5-flash-001' which is the specific stable version
+        const URL = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash-001:generateContent?key=${API_KEY}`;
 
         const payload = {
             contents: [{
