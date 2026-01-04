@@ -808,7 +808,6 @@ export default function BlacklistDashboard() {
                                                 </Tooltip>
                                             </TooltipProvider>
                                         </div>
-                                        )}
                                     </div>
                                     <Input
                                         id="field-id-card"
