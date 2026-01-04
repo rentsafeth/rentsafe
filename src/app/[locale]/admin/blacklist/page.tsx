@@ -975,7 +975,9 @@ export default function AdminBlacklistPage() {
                                     </div>
                                     <div>
                                         <p className="text-gray-500">เลขบัตร ปชช.</p>
-                                        <p className="font-medium font-mono">****-****-{selectedReport.id_card_last4}</p>
+                                        <p className="font-medium font-mono">
+                                            {selectedReport.id_card_number ? formatIdCard(selectedReport.id_card_number) : `****-****-${selectedReport.id_card_last4}`}
+                                        </p>
                                     </div>
                                     <div>
                                         <p className="text-gray-500">เบอร์โทร</p>
