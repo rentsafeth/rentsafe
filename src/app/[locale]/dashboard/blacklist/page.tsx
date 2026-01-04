@@ -705,7 +705,7 @@ export default function BlacklistDashboard() {
 
                                                         <div className="mt-3 pt-2 border-t border-red-100">
                                                             <p className="text-[10px] text-gray-400 italic">
-                                                                * ข้อความนี้สำหรับตรวจสอบภายในเท่านั้น ผู้เปิดเผยต่อสาธารณะต้องรับผิดชอบแต่เพียงผู้เดียว
+                                                                * ข้อมูลนี้สำหรับตรวจสอบภายในเท่านั้น ผู้เปิดเผยต่อสาธารณะต้องรับผิดชอบแต่เพียงผู้เดียว
                                                             </p>
                                                         </div>
                                                     </div>
