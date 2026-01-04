@@ -37,11 +37,16 @@ export async function POST(request: NextRequest) {
         const data = await response.json();
 
         if (!response.ok) {
-            console.error('Gemini API Error:', data);
-            return NextResponse.json({ error: 'Gemini API failed' }, { status: 500 });
+            console.error('Gemini API Error Details:', JSON.stringify(data, null, 2));
+            return NextResponse.json({
+                error: 'Gemini API failed',
+                details: data
+            }, { status: 500 });
         }
 
         const text = data.candidates?.[0]?.content?.parts?.[0]?.text;
+        console.log("Gemini Raw AI Response:", text);
+
         if (!text) {
             return NextResponse.json({ error: 'No text extracted' }, { status: 500 });
         }
@@ -51,10 +56,11 @@ export async function POST(request: NextRequest) {
 
         try {
             const parsed = JSON.parse(cleanJson);
+            console.log("Parsed AI Data:", parsed);
             return NextResponse.json(parsed);
         } catch (e) {
             console.error('JSON Parse Error:', text);
-            return NextResponse.json({ error: 'Failed to parse AI response' }, { status: 500 });
+            return NextResponse.json({ error: 'Failed to parse AI response', raw: text }, { status: 500 });
         }
 
     } catch (error) {
