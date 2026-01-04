@@ -723,31 +723,31 @@ export default function BlacklistDashboard() {
                                 </p>
                             </div>
 
+                            <div className="flex items-center gap-4 mb-4">
+                                <label className="flex items-center gap-2 cursor-pointer">
+                                    <input
+                                        type="radio"
+                                        name="docType"
+                                        checked={reportForm.document_type === 'id_card'}
+                                        onChange={() => setReportForm(prev => ({ ...prev, document_type: 'id_card', id_card_number: '' }))}
+                                        className="w-4 h-4 text-blue-600"
+                                    />
+                                    <span className="text-sm text-gray-700">บัตรประชาชน</span>
+                                </label>
+                                <label className="flex items-center gap-2 cursor-pointer">
+                                    <input
+                                        type="radio"
+                                        name="docType"
+                                        checked={reportForm.document_type === 'passport'}
+                                        onChange={() => setReportForm(prev => ({ ...prev, document_type: 'passport', id_card_number: '' }))}
+                                        className="w-4 h-4 text-blue-600"
+                                    />
+                                    <span className="text-sm text-gray-700">Passport</span>
+                                </label>
+                            </div>
+
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                 <div>
-                                    <div className="flex items-center gap-4 mb-2">
-                                        <label className="flex items-center gap-2 cursor-pointer">
-                                            <input
-                                                type="radio"
-                                                name="docType"
-                                                checked={reportForm.document_type === 'id_card'}
-                                                onChange={() => setReportForm(prev => ({ ...prev, document_type: 'id_card', id_card_number: '' }))}
-                                                className="w-4 h-4 text-blue-600"
-                                            />
-                                            <span className="text-sm text-gray-700">บัตรประชาชน</span>
-                                        </label>
-                                        <label className="flex items-center gap-2 cursor-pointer">
-                                            <input
-                                                type="radio"
-                                                name="docType"
-                                                checked={reportForm.document_type === 'passport'}
-                                                onChange={() => setReportForm(prev => ({ ...prev, document_type: 'passport', id_card_number: '' }))}
-                                                className="w-4 h-4 text-blue-600"
-                                            />
-                                            <span className="text-sm text-gray-700">Passport</span>
-                                        </label>
-                                    </div>
-
                                     <div className="flex items-center justify-between mb-1">
                                         <label className="block text-sm font-medium text-gray-700">
                                             {reportForm.document_type === 'passport' ? 'เลข Passport' : 'เลขบัตรประชาชน'} <span className="text-red-500">*</span>
