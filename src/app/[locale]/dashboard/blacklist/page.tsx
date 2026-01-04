@@ -702,6 +702,12 @@ export default function BlacklistDashboard() {
                                                                 ⚠️ ถูกรายงาน {result.report_count} ครั้ง
                                                             </p>
                                                         )}
+
+                                                        <div className="mt-3 pt-2 border-t border-red-100">
+                                                            <p className="text-[10px] text-gray-400 italic">
+                                                                * ข้อมูลนี้สำหรับการตรวจสอบภายในกลุ่มผู้ประกอบการ RentSafe เท่านั้น ห้ามคัดลอกหรือเผยแพร่ต่อสาธารณะ ผู้ฝ่าฝืนต้องรับผิดชอบทางกฎหมายแต่เพียงผู้เดียว
+                                                            </p>
+                                                        </div>
                                                     </div>
                                                 </div>
                                             ))}
