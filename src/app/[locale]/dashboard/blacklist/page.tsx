@@ -385,7 +385,7 @@ export default function BlacklistDashboard() {
     const handleSubmitReport = async () => {
         // Validate with Auto-Scroll
         const requiredFields: { key: keyof typeof reportForm; id: string; label: string }[] = [
-            { key: 'id_card_number', id: 'field-id-card', label: reportForm.document_type === 'passport' ? 'เลข Passport' : 'เลขบัตรประชาชน' },
+            { key: 'id_card_number', id: 'field-id-card', label: reportForm.document_type === 'passport' ? 'เลข Passport' : (reportForm.document_type === 'driving_license' ? 'เลขใบขับขี่' : 'เลขบัตรประชาชน') },
             { key: 'first_name', id: 'field-first-name', label: 'ชื่อ' },
             { key: 'last_name', id: 'field-last-name', label: 'นามสกุล' },
             { key: 'reason_type', id: 'field-reason-type', label: 'ประเภทปัญหา' },
@@ -757,13 +757,23 @@ export default function BlacklistDashboard() {
                                     />
                                     <span className="text-sm text-gray-700">Passport</span>
                                 </label>
+                                <label className="flex items-center gap-2 cursor-pointer">
+                                    <input
+                                        type="radio"
+                                        name="docType"
+                                        checked={reportForm.document_type === 'driving_license'}
+                                        onChange={() => setReportForm(prev => ({ ...prev, document_type: 'driving_license', id_card_number: '' }))}
+                                        className="w-4 h-4 text-blue-600"
+                                    />
+                                    <span className="text-sm text-gray-700">ใบขับขี่</span>
+                                </label>
                             </div>
 
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                 <div>
                                     <div className="flex items-center justify-between mb-1">
                                         <label className="block text-sm font-medium text-gray-700">
-                                            {reportForm.document_type === 'passport' ? 'เลข Passport' : 'เลขบัตรประชาชน'} <span className="text-red-500">*</span>
+                                            {reportForm.document_type === 'passport' ? 'เลข Passport' : (reportForm.document_type === 'driving_license' ? 'เลขใบขับขี่' : 'เลขบัตรประชาชน')} <span className="text-red-500">*</span>
                                         </label>
                                         {reportForm.document_type === 'id_card' && (
                                             <div className="flex items-center">
@@ -803,8 +813,8 @@ export default function BlacklistDashboard() {
                                     </div>
                                     <Input
                                         id="field-id-card"
-                                        placeholder={reportForm.document_type === 'passport' ? 'A12345678' : '1234567890123'}
-                                        maxLength={reportForm.document_type === 'passport' ? 20 : 13}
+                                        placeholder={reportForm.document_type === 'passport' ? 'A12345678' : (reportForm.document_type === 'driving_license' ? '12345678' : '1234567890123')}
+                                        maxLength={reportForm.document_type === 'passport' ? 20 : (reportForm.document_type === 'driving_license' ? 8 : 13)}
                                         value={reportForm.id_card_number}
                                         onChange={(e) => {
                                             let val = e.target.value;

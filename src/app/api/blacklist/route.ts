@@ -212,6 +212,7 @@ export async function POST(request: NextRequest) {
             reason_detail,
             incident_date,
             evidence_urls,
+            document_type = 'id_card', // Default value
         } = body;
 
         // Validate required fields
@@ -222,25 +223,30 @@ export async function POST(request: NextRequest) {
             );
         }
 
-        // Validate ID card format (13 digits)
-        // Validate ID card format
-        // If it looks like a Thai ID (numeric), enforce 13 digits.
-        // If it looks like a Passport (alphanumeric), allow variable length.
         const cleanIdCard = id_card_number.trim();
-        const isThaiId = /^\d+$/.test(cleanIdCard);
+        const isNumeric = /^\d+$/.test(cleanIdCard);
 
-        if (isThaiId) {
-            if (cleanIdCard.length !== 13) {
+        if (document_type === 'driving_license') {
+            // Driving License: Must be 8 digits
+            if (!/^\d{8}$/.test(cleanIdCard)) {
                 return NextResponse.json(
-                    { error: 'Invalid ID card format (Must be 13 digits)' },
+                    { error: 'เลขใบขับขี่ต้องเป็นตัวเลข 8 หลัก' },
+                    { status: 400 }
+                );
+            }
+        } else if (document_type === 'passport') {
+            // Passport validation: at least 6 chars
+            if (cleanIdCard.length < 6) {
+                return NextResponse.json(
+                    { error: 'เลข Passport ต้องมีอย่างน้อย 6 ตัวอักษร' },
                     { status: 400 }
                 );
             }
         } else {
-            // Passport validation: at least 6 chars, alphanumeric
-            if (cleanIdCard.length < 6) {
+            // Thai ID Card (Default): Must be 13 digits numeric
+            if (!/^\d{13}$/.test(cleanIdCard)) {
                 return NextResponse.json(
-                    { error: 'Invalid document number' },
+                    { error: 'เลขบัตรประชาชนต้องเป็นตัวเลข 13 หลัก' },
                     { status: 400 }
                 );
             }
