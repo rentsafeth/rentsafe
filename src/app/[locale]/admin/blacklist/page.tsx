@@ -512,11 +512,228 @@ export default function AdminBlacklistPage() {
         });
     };
 
+    // Smart Match states
+    const [showSmartMatchModal, setShowSmartMatchModal] = useState(false);
+    const [smartMatchStats, setSmartMatchStats] = useState<{ count: number, matches: any[], total: number } | null>(null);
+
+    const handleSmartMatchUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+        const file = e.target.files?.[0];
+        if (!file) return;
+
+        const reader = new FileReader();
+        reader.onload = async (evt) => {
+            try {
+                const bstr = evt.target?.result;
+                const wb = XLSX.read(bstr, { type: 'binary' });
+                // Try to find sheet named 'id' or use first sheet
+                const wsname = wb.SheetNames.find(n => n.toLowerCase() === 'id') || wb.SheetNames[0];
+                const ws = wb.Sheets[wsname];
+
+                // Get all data as array of arrays
+                const data = XLSX.utils.sheet_to_json(ws, { header: 1 }) as any[][];
+
+                // Extract Column A (index 0)
+                const idList = data.map(row => row[0]).filter(val => val && String(val).replace(/\D/g, '').length === 13);
+
+                if (idList.length === 0) {
+                    alert('ไม่พบเลขบัตร 13 หลักในคอลัมน์ A (หรือชีตชื่อ id)');
+                    return;
+                }
+
+                setImporting(true);
+                // 1. Preview Match
+                const res = await fetch('/api/admin/blacklist/match-update', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ id_cards: idList, confirm: false })
+                });
+
+                const result = await res.json();
+                setSmartMatchStats({
+                    count: result.matchCount,
+                    matches: result.matches,
+                    total: idList.length
+                });
+
+                setImporting(false);
+            } catch (error) {
+                console.error('Smart Match Error:', error);
+                alert('เกิดข้อผิดพลาดในการอ่านไฟล์');
+                setImporting(false);
+            }
+        };
+        reader.readAsBinaryString(file);
+    };
+
+    const confirmSmartMatch = async () => {
+        if (!smartMatchStats) return;
+        setImporting(true);
+        try {
+            // Re-send (optimistic, realistically we should cache the IDs but re-reading or passing them back is safer usually, 
+            // but here I'll need to store the IDs. Simpler: Parsing again or storing in state? Storing in state for this flow is fine.)
+            // Wait, I didn't store the IDs in state. Let's just assume we need to re-upload or keep them? 
+            // To keep it simple for now, I'll store the IDs in the stats object temporarily in the previous step?
+            // Actually, let's just make the user re-confirm efficiently. 
+            // Better: Store the IDs in a ref or state.
+            alert("กรุณาอัปโหลดไฟล์เดิมอีกครั้งเพื่อยืนยันการเขียนทับ (เพื่อความปลอดภัย)");
+            // This is a bit clunky. Let's improve.
+            // I'll modify handleSmartMatchUpload to store IDs in a state.
+        } catch (e) {
+            // Placeholder
+        }
+        setImporting(false);
+    };
+
+    // Better implementation right here:
+    const [pendingMatchIds, setPendingMatchIds] = useState<string[]>([]);
+
+    const handleSmartMatchUploadReal = (e: React.ChangeEvent<HTMLInputElement>) => {
+        const file = e.target.files?.[0];
+        if (!file) return;
+
+        const reader = new FileReader();
+        reader.onload = async (evt) => {
+            try {
+                const bstr = evt.target?.result;
+                const wb = XLSX.read(bstr, { type: 'binary' });
+                const wsname = wb.SheetNames.find(n => n.toLowerCase() === 'id') || wb.SheetNames[0];
+                const ws = wb.Sheets[wsname];
+                const data = XLSX.utils.sheet_to_json(ws, { header: 1 }) as any[][];
+                const idList = data.map(row => row[0]).filter(val => val && String(val).replace(/\D/g, '').length === 13);
+
+                if (idList.length === 0) {
+                    alert('ไม่พบเลขบัตร 13 หลักในคอลัมน์ A');
+                    return;
+                }
+
+                setPendingMatchIds(idList); // Save for confirm step
+                setImporting(true);
+
+                const res = await fetch('/api/admin/blacklist/match-update', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ id_cards: idList, confirm: false })
+                });
+
+                const result = await res.json();
+                setSmartMatchStats({
+                    count: result.matchCount,
+                    matches: result.matches,
+                    total: idList.length
+                });
+
+                setImporting(false);
+            } catch (error) {
+                console.error(error);
+                setImporting(false);
+            }
+        };
+        reader.readAsBinaryString(file);
+    };
+
+    const executeSmartMatch = async () => {
+        if (pendingMatchIds.length === 0) return;
+        setImporting(true);
+        try {
+            const res = await fetch('/api/admin/blacklist/match-update', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ id_cards: pendingMatchIds, confirm: true })
+            });
+            const result = await res.json();
+            alert(`อัปเดตสำเร็จ ${result.updatedCount} รายการ!`);
+            setShowSmartMatchModal(false);
+            loadReports(); // Refresh UI
+        } catch (error) {
+            console.error(error);
+            alert('เกิดข้อผิดพลาดในการอัปเดต');
+        } finally {
+            setImporting(false);
+            setPendingMatchIds([]);
+            setSmartMatchStats(null);
+        }
+    };
+
     return (
         <div className="min-h-screen bg-gray-50 py-8">
             <div className="max-w-6xl mx-auto px-4">
+
+                {/* Smart Match Modal */}
+                <Dialog open={showSmartMatchModal} onOpenChange={setShowSmartMatchModal}>
+                    <DialogContent className="sm:max-w-md">
+                        <DialogHeader>
+                            <DialogTitle className="flex items-center gap-2">
+                                <Scan className="w-5 h-5 text-blue-600" />
+                                กู้คืนเลขบัตร (Smart Match)
+                            </DialogTitle>
+                            <DialogDescription>
+                                ระบบจะค้นหาเลขบัตรในไฟล์ Excel ของคุณ (คอลัมน์ A) เทียบกับฐานข้อมูลทาง Hash<br />
+                                หากพบข้อมูลที่ตรงกัน จะทำการกู้คืนเลขบัตร 13 หลักให้ทันที
+                            </DialogDescription>
+                        </DialogHeader>
+
+                        {!smartMatchStats ? (
+                            <div className="space-y-4 py-4">
+                                <label className="flex flex-col items-center justify-center w-full h-32 border-2 border-blue-300 border-dashed rounded-lg cursor-pointer bg-blue-50 hover:bg-blue-100">
+                                    <div className="flex flex-col items-center justify-center pt-5 pb-6">
+                                        {importing ? (
+                                            <Loader2 className="w-8 h-8 text-blue-500 animate-spin" />
+                                        ) : (
+                                            <Upload className="w-8 h-8 text-blue-500 mb-2" />
+                                        )}
+                                        <p className="text-sm text-gray-500">
+                                            {importing ? 'กำลังวิเคราะห์...' : 'คลิกเพื่อเลือกไฟล์ Excel'}
+                                        </p>
+                                        <p className="text-xs text-gray-400 mt-1">ชีต "id" / คอลัมน์ A</p>
+                                    </div>
+                                    <input type="file" className="hidden" accept=".xlsx, .xls" onChange={handleSmartMatchUploadReal} disabled={importing} />
+                                </label>
+                            </div>
+                        ) : (
+                            <div className="space-y-4 py-4">
+                                <div className="bg-green-50 p-4 rounded-lg border border-green-200 text-center">
+                                    <h3 className="text-lg font-bold text-green-700 mb-1">
+                                        พบข้อมูลที่ตรงกัน {smartMatchStats.count} รายการ
+                                    </h3>
+                                    <p className="text-sm text-green-600">
+                                        จากข้อมูลในไฟล์ทั้งหมด {smartMatchStats.total} รายการ
+                                    </p>
+                                </div>
+
+                                {smartMatchStats.matches.length > 0 && (
+                                    <div className="text-xs text-gray-500 bg-gray-50 p-2 rounded max-h-32 overflow-y-auto">
+                                        <p className="font-semibold mb-1">ตัวอย่างรายการที่พบ:</p>
+                                        {smartMatchStats.matches.map((m, i) => (
+                                            <div key={i}>
+                                                ✅ พบ: {m.first_name} {m.last_name} (****-{m.current_last4})
+                                            </div>
+                                        ))}
+                                    </div>
+                                )}
+
+                                <Button
+                                    onClick={executeSmartMatch}
+                                    className="w-full bg-blue-600 hover:bg-blue-700"
+                                    disabled={importing || smartMatchStats.count === 0}
+                                >
+                                    {importing ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : <CheckCircle className="w-4 h-4 mr-2" />}
+                                    ยืนยันการเขียนทับ ({smartMatchStats.count} รายการ)
+                                </Button>
+                                <Button
+                                    variant="ghost"
+                                    onClick={() => setSmartMatchStats(null)}
+                                    className="w-full text-gray-500"
+                                >
+                                    ยกเลิก / เลือกไฟล์ใหม่
+                                </Button>
+                            </div>
+                        )}
+                    </DialogContent>
+                </Dialog>
+
                 {/* Header */}
                 <div className="mb-8">
+
                     <div className="flex items-center gap-3 mb-2">
                         <ShieldAlert className="w-8 h-8 text-red-600" />
                         <h1 className="text-2xl font-bold text-gray-900">จัดการ Blacklist</h1>
@@ -563,6 +780,14 @@ export default function AdminBlacklistPage() {
                         />
                     </div>
                     <div className="flex gap-2 w-full md:w-auto">
+                        <Button
+                            variant="outline"
+                            onClick={() => setShowSmartMatchModal(true)}
+                            className="flex-1 md:flex-none text-blue-700 border-blue-200 bg-blue-50 hover:bg-blue-100"
+                        >
+                            <Scan className="w-4 h-4 mr-2" />
+                            Smart Match
+                        </Button>
                         {statusFilter === 'approved' && (
                             <Button
                                 variant="outline"
