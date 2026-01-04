@@ -380,35 +380,60 @@ export default function AdminBlacklistPage() {
         const rawItems: any[] = [];
         let currentItem: any = {};
 
+        // Regex patterns for flexible matching
+        const patterns = {
+            idCard: /^(?:บัตรประชาชนเลขที่|เลขบัตร|เลขบัตรประชาชน|ID Card)\s*[:]\s*(.+)$/i,
+            phone: /^(?:เบอร์โทร|โทร|Tel|Phone|เบอร์)\s*[:]\s*(.+)$/i,
+            name: /^(?:ชื่อ-นามสกุล|ชื่อ|Name|Full Name)\s*[:]\s*(.+)$/i,
+            province: /^(?:เป็นคนจังหวัด|จังหวัด|ที่อยู่|Province)\s*[:]\s*(.+)$/i,
+            reason: /^(?:สาเหตุ|เหตุผล|Reason|รายละเอียด)\s*[:]\s*(.+)$/i,
+            date: /^(?:ข้อมูลล่าสุดเมื่อ|วันที่|Date|Created At)\s*[:]\s*(.+)$/i
+        };
+
         lines.forEach(line => {
             const cleanLine = line.trim();
             if (!cleanLine) return;
 
-            // Check for new record indicator
-            if (cleanLine.includes('บัตรประชาชนเลขที่ :')) {
-                if (Object.keys(currentItem).length > 0) {
+            // Check patterns
+            let match;
+
+            if ((match = cleanLine.match(patterns.idCard))) {
+                // If ID Card found, it *might* be a start of new record if specifically formatted so,
+                // OR we just assume it's part of current unless name is already there?
+                // Safer approach: If we already have an ID card in currentItem, push and start new.
+                if (currentItem['เลขบัตรประชาชน']) {
                     rawItems.push(currentItem);
+                    currentItem = {};
                 }
-                currentItem = {}; // Start new
-                const val = cleanLine.split('บัตรประชาชนเลขที่ :')[1]?.trim();
+                const val = match[1].trim();
                 if (val) currentItem['เลขบัตรประชาชน'] = val;
-            } else if (cleanLine.includes('เบอร์โทร :')) {
-                const val = cleanLine.split('เบอร์โทร :')[1]?.trim();
+
+            } else if ((match = cleanLine.match(patterns.phone))) {
+                const val = match[1].trim();
                 if (val && val !== 'ไม่มีเบอร์โทร') currentItem['เบอร์โทร'] = val;
-            } else if (cleanLine.includes('ชื่อ-นามสกุล :')) {
-                const val = cleanLine.split('ชื่อ-นามสกุล :')[1]?.trim();
+
+            } else if ((match = cleanLine.match(patterns.name))) {
+                // Name also often starts a block. Check if we should push?
+                // Let's stick to ID card as primary delimiter, but if name comes and we have a 'full' object (id+name+reason), maybe push?
+                // For now, simple logic: accumlate.
+                const val = match[1].trim();
                 if (val) currentItem['ชื่อ'] = val;
-            } else if (cleanLine.includes('เป็นคนจังหวัด :')) {
-                const val = cleanLine.split('เป็นคนจังหวัด :')[1]?.trim();
+
+            } else if ((match = cleanLine.match(patterns.province))) {
+                const val = match[1].trim();
                 if (val) currentItem['จังหวัด'] = val;
-            } else if (cleanLine.includes('สาเหตุ :')) {
-                const val = cleanLine.split('สาเหตุ :')[1]?.trim();
+
+            } else if ((match = cleanLine.match(patterns.reason))) {
+                const val = match[1].trim();
                 if (val) currentItem['reason_detail'] = val;
-            } else if (cleanLine.includes('ข้อมูลล่าสุดเมื่อ:')) {
+
+            } else if ((match = cleanLine.match(patterns.date))) {
                 // Try to parse date "23 วันที่แล้ว ~ 12/12/2025 #1358"
-                const datePart = cleanLine.split('~')[1]?.trim();
+                const val = match[1].trim();
+                const datePart = val.includes('~') ? val.split('~')[1]?.trim() : val;
+
                 if (datePart) {
-                    const dateOnly = datePart.split(' ')[0]; // "12/12/2025"
+                    const dateOnly = datePart.split(' ')[0]; // "12/12/2025" or just "12/12/2025"
                     if (dateOnly) currentItem['วันที่'] = dateOnly.trim();
                 }
             }
@@ -430,7 +455,15 @@ export default function AdminBlacklistPage() {
         });
 
         if (uniqueMap.size === 0) {
-            alert('ไม่พบข้อมูลที่ถูกต้อง หรือไม่มีเลขบัตรประชาชน');
+            // Fallback: If no ID detected but have names? (Might happen if ID line doesn't match format)
+            // But system requires ID.
+            // Try to see if rawItems has anything?
+            if (rawItems.length > 0 && rawItems.some(i => i['ชื่อ'])) {
+                // Maybe ID pattern failed?
+                alert('ไม่สามารถอ่าน "เลขบัตรประชาชน" ได้ กรุณาตรวจสอบรูปแบบ (ต้องมีคำว่า "บัตรประชาชนเลขที่ :" หรือ "ID Card :")');
+            } else {
+                alert('ไม่พบข้อมูลที่ถูกต้อง');
+            }
             return;
         }
 
