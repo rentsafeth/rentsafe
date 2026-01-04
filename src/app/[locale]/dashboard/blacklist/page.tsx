@@ -442,6 +442,7 @@ export default function BlacklistDashboard() {
                 reason_type: '',
                 reason_detail: '',
                 incident_date: '',
+                document_type: 'id_card',
             });
             setEvidenceUrls([]);
 
