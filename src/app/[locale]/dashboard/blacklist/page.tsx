@@ -173,7 +173,8 @@ export default function BlacklistDashboard() {
                 const newState = { ...prev };
 
                 if (data.id_number) {
-                    newState.id_card_number = formatIdCard(data.id_number);
+                    // Store only digits (13 chars)
+                    newState.id_card_number = data.id_number.replace(/\D/g, '').slice(0, 13);
                 }
 
                 // Priority 1: Check th_first_name / th_last_name
@@ -752,12 +753,24 @@ export default function BlacklistDashboard() {
                                         </div>
                                     </div>
                                     <Input
-                                        placeholder="1-2345-67890-12-3"
+                                        placeholder="1234567890123"
+                                        maxLength={13}
                                         value={reportForm.id_card_number}
-                                        onChange={(e) => setReportForm(prev => ({
-                                            ...prev,
-                                            id_card_number: formatIdCard(e.target.value)
-                                        }))}
+                                        onChange={(e) => {
+                                            const val = e.target.value.replace(/\D/g, '').slice(0, 13);
+                                            setReportForm(prev => ({
+                                                ...prev,
+                                                id_card_number: val
+                                            }));
+                                        }}
+                                        onBlur={(e) => {
+                                            // Ensure only digits are kept (redundant if onChange is strict, but safe)
+                                            const val = e.target.value.replace(/\D/g, '');
+                                            setReportForm(prev => ({
+                                                ...prev,
+                                                id_card_number: val
+                                            }));
+                                        }}
                                     />
                                 </div>
                                 <div>

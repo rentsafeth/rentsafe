@@ -197,7 +197,8 @@ export async function POST(request: NextRequest) {
         }
 
         // Validate ID card format (13 digits)
-        const cleanIdCard = id_card_number.replace(/-/g, '');
+        // Validate ID card format (13 digits)
+        const cleanIdCard = id_card_number.replace(/\D/g, '');
         if (!/^\d{13}$/.test(cleanIdCard)) {
             return NextResponse.json(
                 { error: 'Invalid ID card format' },
