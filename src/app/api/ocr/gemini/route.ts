@@ -29,13 +29,14 @@ export async function POST(request: NextRequest) {
             }
         } catch (dbError) {
             console.error('Failed to fetch API key from DB, using default:', dbError);
-            // Ignore DB error and proceed with default key
         }
 
         // Clean base64 string
         const base64Data = imageBase64.replace(/^data:image\/(png|jpeg|jpg|webp);base64,/, '');
-        // Use gemini-1.5-flash-latest which is usually an alias to the current active version, or fallback to specific version
-        const URL = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash-latest:generateContent?key=${API_KEY}`;
+
+        // Critical Fix: Use 'gemini-pro-vision' as it is the stable model for image inputs
+        // Note: gemini-1.5-flash requires specific region or payment tier sometimes
+        const URL = `https://generativelanguage.googleapis.com/v1beta/models/gemini-pro-vision:generateContent?key=${API_KEY}`;
 
         const payload = {
             contents: [{
@@ -97,7 +98,6 @@ Return ONLY the JSON.` },
         try {
             const supabase = createAdminClient();
             const latency = Date.now() - startTime;
-            // Use .then to not block response
             supabase.from('ocr_logs').insert({
                 status: 'success',
                 latency_ms: latency,
@@ -134,7 +134,6 @@ Return ONLY the JSON.` },
             console.error('Logging setup failed (Error path):', logError);
         }
 
-        // Return clear JSON error
         return NextResponse.json({
             error: 'Scan Failed',
             details: finalErrorMsg
