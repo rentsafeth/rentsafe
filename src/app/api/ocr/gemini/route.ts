@@ -54,6 +54,20 @@ Extract these fields into a pure JSON object:
 - 'document_type': Return 'passport'.
 
 Return ONLY the JSON.`;
+        } else if (documentType === 'driving_license') {
+            promptText = `Analyze this image as a Thai Driving License.
+Rules:
+1. Extract 'License Number' (เลขที่ใบอนุญาต) (usually 8 digits) -> Use this as 'id_card_number'.
+2. Extract 'Name' and 'Surname' in Thai.
+3. If Thai name is unclear, use English.
+
+Extract these fields into a pure JSON object:
+- 'id_card_number': The License Number.
+- 'first_name': The First Name.
+- 'last_name': The Last Name.
+- 'document_type': Return 'driving_license'.
+
+Return ONLY the JSON.`;
         } else {
             // Default: Thai ID Card
             promptText = `Analyze this image as a Thai National ID Card.

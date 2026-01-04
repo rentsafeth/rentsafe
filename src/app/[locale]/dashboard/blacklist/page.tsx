@@ -775,40 +775,39 @@ export default function BlacklistDashboard() {
                                         <label className="block text-sm font-medium text-gray-700">
                                             {reportForm.document_type === 'passport' ? 'เลข Passport' : (reportForm.document_type === 'driving_license' ? 'เลขใบขับขี่' : 'เลขบัตรประชาชน')} <span className="text-red-500">*</span>
                                         </label>
-                                        {reportForm.document_type === 'id_card' && (
-                                            <div className="flex items-center">
-                                                <input
-                                                    type="file"
-                                                    accept="image/*"
-                                                    className="hidden"
-                                                    ref={fileInputRef}
-                                                    onChange={handleScanIdCard}
-                                                />
-                                                <TooltipProvider>
-                                                    <Tooltip delayDuration={100}>
-                                                        <TooltipTrigger asChild>
-                                                            <Button
-                                                                type="button"
-                                                                variant="outline"
-                                                                size="sm"
-                                                                className="h-6 text-xs flex items-center gap-1.5 text-blue-600 bg-blue-50 border-blue-200 hover:bg-blue-100 hover:text-blue-700 transition-colors px-2"
-                                                                onClick={() => fileInputRef.current?.click()}
-                                                                disabled={isScanning}
-                                                            >
-                                                                {isScanning ? (
-                                                                    <Loader2 className="w-3 h-3 animate-spin" />
-                                                                ) : (
-                                                                    <Scan className="w-3 h-3" />
-                                                                )}
-                                                                {isScanning ? 'กำลังสแกน...' : 'สแกนบัตร'}
-                                                            </Button>
-                                                        </TooltipTrigger>
-                                                        <TooltipContent>
-                                                            <p>ดึงข้อมูลจากรูปบัตรด้วย Ai</p>
-                                                        </TooltipContent>
-                                                    </Tooltip>
-                                                </TooltipProvider>
-                                            </div>
+                                        <div className="flex items-center">
+                                            <input
+                                                type="file"
+                                                accept="image/*"
+                                                className="hidden"
+                                                ref={fileInputRef}
+                                                onChange={handleScanIdCard}
+                                            />
+                                            <TooltipProvider>
+                                                <Tooltip delayDuration={100}>
+                                                    <TooltipTrigger asChild>
+                                                        <Button
+                                                            type="button"
+                                                            variant="outline"
+                                                            size="sm"
+                                                            className="h-6 text-xs flex items-center gap-1.5 text-blue-600 bg-blue-50 border-blue-200 hover:bg-blue-100 hover:text-blue-700 transition-colors px-2"
+                                                            onClick={() => fileInputRef.current?.click()}
+                                                            disabled={isScanning}
+                                                        >
+                                                            {isScanning ? (
+                                                                <Loader2 className="w-3 h-3 animate-spin" />
+                                                            ) : (
+                                                                <Scan className="w-3 h-3" />
+                                                            )}
+                                                            {isScanning ? 'กำลังสแกน...' : 'สแกนบัตร'}
+                                                        </Button>
+                                                    </TooltipTrigger>
+                                                    <TooltipContent>
+                                                        <p>ดึงข้อมูลจากรูปบัตรด้วย Ai</p>
+                                                    </TooltipContent>
+                                                </Tooltip>
+                                            </TooltipProvider>
+                                        </div>
                                         )}
                                     </div>
                                     <Input
