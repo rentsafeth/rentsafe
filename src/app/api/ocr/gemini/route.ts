@@ -42,17 +42,24 @@ export async function POST(request: NextRequest) {
             contents: [{
                 parts: [
                     {
-                        text: `Analyze this image. It may contain a Thai National ID Card, a Driving License, or both.
+                        text: `Analyze this image. It may contain a Thai National ID Card, a Driving License, or an International Passport.
+
 Rules:
-1. PRIORITY: Look for the 'Thai National ID Card' (has Garuda emblem, chip). If found, extract data ONLY from the ID Card.
-2. If NO ID Card is found, but a 'Driving License' is found, extract data from the Driving License.
-3. If multiple documents exist, DO NOT mix data. Use the ID Card as the source of truth if available.
+1. PRIORITY 1: Thai National ID Card. If found, extract Thai data.
+2. PRIORITY 2: Driving License.
+3. PRIORITY 3: International Passport. If found, extract English data.
 
 Extract these fields into a pure JSON object:
-- 'id_card_number': The 13-digit identification number (remove spaces/dashes).
-- 'first_name': Thai first name ONLY (Remove titles like นาย, นาง, น.ส., Mr., Mrs. immediately).
-- 'last_name': Thai last name ONLY.
-- 'document_type': Return 'id_card' if extracted from National ID, otherwise 'driving_license'.
+- 'id_card_number': 
+   - For Thai ID: The 13-digit number.
+   - For Passport: The Passport Number (e.g., G3865246).
+- 'first_name': 
+   - For Thai ID: Thai first name ONLY (Remove titles like นาย, นาง, น.ส.).
+   - For Passport: The 'Given Names' field (English).
+- 'last_name': 
+   - For Thai ID: Thai last name ONLY.
+   - For Passport: The 'Surname' field (English).
+- 'document_type': Return 'id_card' (for Thai ID), 'passport' (for Passports), or 'driving_license'.
 
 Return ONLY the JSON.` },
                     { inline_data: { mime_type: "image/jpeg", data: base64Data } }
