@@ -4,7 +4,7 @@
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { LayoutDashboard, ShieldAlert, LogOut, Settings, CheckCircle, MessageSquare, GitMerge, Trash2, Coins, CreditCard, Megaphone, Bell, Users } from 'lucide-react';
+import { LayoutDashboard, ShieldAlert, LogOut, Settings, CheckCircle, MessageSquare, GitMerge, Trash2, Coins, CreditCard, Megaphone, Bell, Users, Scan } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { createClient } from '@/lib/supabase/client';
 import { useRouter } from 'next/navigation';
@@ -23,6 +23,7 @@ const menuItems = [
     { href: '/admin/blacklist', label: 'จัดการ Blacklist', icon: ShieldAlert },
     { href: '/admin/users', label: 'จัดการผู้ใช้', icon: Users },
     { href: '/admin/blacklist-merge', label: 'Merge Blacklist', icon: GitMerge },
+    { href: '/admin/settings/ocr', label: 'ตั้งค่า OCR AI', icon: Scan },
 ];
 
 import { useAlert } from '@/components/ui/alert-modal';
