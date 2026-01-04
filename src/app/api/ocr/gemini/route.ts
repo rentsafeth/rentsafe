@@ -9,7 +9,7 @@ export async function POST(request: NextRequest) {
     let extractedData = null;
 
     try {
-        const { imageBase64 } = await request.json();
+        const { imageBase64, documentType } = await request.json(); // Clean base64 string
 
         if (!imageBase64) {
             return NextResponse.json({ error: 'No image provided' }, { status: 400 });
@@ -32,36 +32,49 @@ export async function POST(request: NextRequest) {
             console.error('Failed to fetch API key from DB, using default:', dbError);
         }
 
-        // Clean base64 string
         const base64Data = imageBase64.replace(/^data:image\/(png|jpeg|jpg|webp);base64,/, '');
 
         // Use gemini-2.5-flash (2026 Model)
         const URL = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${API_KEY}`;
 
+        // Create Dynamic Prompt based on User Selection
+        let promptText = "";
+        if (documentType === 'passport') {
+            promptText = `Analyze this image as an International Passport.
+Rules:
+1. Extract details in ENGLISH ONLY.
+2. Look for 'Passport Number' (e.g., G3865246).
+3. Look for 'Surname' and 'Given Names'.
+4. STRICTLY IGNORE Thai characters if present.
+
+Extract these fields into a pure JSON object:
+- 'id_card_number': The Passport Number.
+- 'first_name': The Given Names (English).
+- 'last_name': The Surname (English).
+- 'document_type': Return 'passport'.
+
+Return ONLY the JSON.`;
+        } else {
+            // Default: Thai ID Card
+            promptText = `Analyze this image as a Thai National ID Card.
+Rules:
+1. Extract details in THAI (Prioritize Thai script for names).
+2. Look for the 13-digit ID number.
+3. Remove titles (นาย, นาง, etc.) from names.
+
+Extract these fields into a pure JSON object:
+- 'id_card_number': The 13-digit identification number.
+- 'first_name': Thai first name.
+- 'last_name': Thai last name.
+- 'document_type': Return 'id_card'.
+
+Return ONLY the JSON.`;
+        }
+
         const payload = {
             contents: [{
                 parts: [
-                    {
-                        text: `Analyze this image. It may contain a Thai National ID Card, a Driving License, or an International Passport.
-
-Rules:
-1. PRIORITY 1: Thai National ID Card. If found, extract Thai data.
-2. PRIORITY 2: Driving License.
-3. PRIORITY 3: International Passport. If found, extract English data.
-
-Extract these fields into a pure JSON object:
-- 'id_card_number': 
-   - For Thai ID: The 13-digit number.
-   - For Passport: The Passport Number (e.g., G3865246).
-- 'first_name': 
-   - For Thai ID: Thai first name ONLY (Remove titles like นาย, นาง, น.ส.).
-   - For Passport: The 'Given Names' field (English).
-- 'last_name': 
-   - For Thai ID: Thai last name ONLY.
-   - For Passport: The 'Surname' field (English).
-- 'document_type': Return 'id_card' (for Thai ID), 'passport' (for Passports), or 'driving_license'.
-
-Return ONLY the JSON.` },
+                    { text: promptText },
                     { inline_data: { mime_type: "image/jpeg", data: base64Data } }
                 ]
             }]
