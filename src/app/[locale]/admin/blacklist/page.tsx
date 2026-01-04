@@ -526,7 +526,9 @@ export default function AdminBlacklistPage() {
             report.first_name.toLowerCase().includes(q) ||
             report.last_name.toLowerCase().includes(q) ||
             report.id_card_last4.includes(q) ||
-            report.phone_number?.includes(q)
+            report.id_card_number?.includes(q) || // Search by full ID
+            report.phone_number?.includes(q) ||
+            report.reason_detail?.toLowerCase().includes(q) // Search by reason
         );
     });
 
