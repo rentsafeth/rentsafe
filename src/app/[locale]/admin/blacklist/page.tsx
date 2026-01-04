@@ -27,6 +27,8 @@ import {
     ChevronUp,
     FileJson,
     Edit,
+    Scan,
+    Upload,
 } from 'lucide-react';
 import {
     Dialog,
@@ -42,6 +44,44 @@ const REASON_TYPES: Record<string, string> = {
     no_return: 'ไม่คืนรถตามกำหนด',
     damage: 'ทำรถเสียหาย ไม่ยอมชดใช้',
     no_pay: 'หนีไม่จ่ายค่าเช่า',
+    // ...
+    // ... existing code ...
+
+    // NEW: Function to Export Missing ID Card Data
+    const handleExportMissingId = () => {
+        // Filter approved reports that don't have a 13-digit ID card number
+        const missingReports = reports.filter(r =>
+            r.status === 'approved' &&
+            (!r.id_card_number || r.id_card_number.replace(/\D/g, '').length !== 13)
+        );
+
+        if (missingReports.length === 0) {
+            alert('ไม่พบรายการที่ขาดเลขบัตรประชาชน');
+            return;
+        }
+
+        // Prepare data for Excel (Oldest First)
+        const exportData = [...missingReports]
+            .sort((a, b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime())
+            .map(r => ({
+                'id': r.id,
+                'ชื่อ': r.first_name,
+                'นามสกุล': r.last_name,
+                'เลขบัตรเดิม (Last 4)': `****-****-${r.id_card_last4}`,
+                'id_card_number_new': '', // Empty for filling
+                'สถานะ': STATUS_CONFIG[r.status]?.label || r.status,
+                'รายละเอียด': r.reason_detail,
+                'วันที่สร้าง': new Date(r.created_at).toLocaleDateString('th-TH')
+            }));
+
+        const wb = XLSX.utils.book_new();
+        const ws = XLSX.utils.json_to_sheet(exportData);
+        ws['!cols'] = [{ wch: 40 }, { wch: 20 }, { wch: 20 }, { wch: 20 }, { wch: 25 }, { wch: 15 }, { wch: 40 }];
+        XLSX.utils.book_append_sheet(wb, ws, "Missing_ID");
+        XLSX.writeFile(wb, `Blacklist_Missing_ID_${new Date().toISOString().slice(0, 10)}.xlsx`);
+    };
+
+    // NEW: Function to Export Data for Update
     fake_docs: 'ใช้เอกสารปลอม',
     other: 'อื่นๆ',
     imported: 'นำเข้าจากระบบ',
@@ -789,14 +829,24 @@ export default function AdminBlacklistPage() {
                             Smart Match
                         </Button>
                         {statusFilter === 'approved' && (
-                            <Button
-                                variant="outline"
-                                onClick={handleExportForUpdate}
-                                className="flex-1 md:flex-none text-green-700 border-green-200 bg-green-50 hover:bg-green-100"
-                            >
-                                <FileJson className="w-4 h-4 mr-2" />
-                                Export แก้ไข
-                            </Button>
+                            <>
+                                <Button
+                                    variant="outline"
+                                    onClick={handleExportMissingId}
+                                    className="flex-1 md:flex-none text-orange-700 border-orange-200 bg-orange-50 hover:bg-orange-100"
+                                >
+                                    <AlertTriangle className="w-4 h-4 mr-2" />
+                                    Export ขาดเลขบัตร
+                                </Button>
+                                <Button
+                                    variant="outline"
+                                    onClick={handleExportForUpdate}
+                                    className="flex-1 md:flex-none text-green-700 border-green-200 bg-green-50 hover:bg-green-100"
+                                >
+                                    <FileJson className="w-4 h-4 mr-2" />
+                                    Export แก้ไข
+                                </Button>
+                            </>
                         )}
                         <Button
                             onClick={() => setShowImportModal(true)}
