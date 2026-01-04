@@ -231,7 +231,14 @@ export default function AdminBlacklistPage() {
             if (parts.length > 1) lastName = parts.slice(1).join(' ');
 
             // Determine ID Card
-            const idCard = (item['id_card_number_new'] || item['เลขบัตรประจำตัวประชาชน'] || item['id_card'] || item['id_number'] || '').toString().replace(/[^a-zA-Z0-9]/g, '');
+            const idCard = (
+                item['id_card_number_new'] ||
+                item['เลขบัตรประจำตัวประชาชน'] ||
+                item['เลขบัตรประชาชน'] || // Support shorter Thai header
+                item['id_card'] ||
+                item['id_number'] ||
+                ''
+            ).toString().replace(/[^a-zA-Z0-9]/g, '');
 
             // ID for Update
             const id = item['id'] || item['ID'] || '';
@@ -239,25 +246,48 @@ export default function AdminBlacklistPage() {
             // Determine Reason
             const reasonDetail = item['รูปแบบการโกง'] || item['reason'] || item['reason_detail'] || '';
 
+            // Determine Phone Number
+            const phoneNumber = (
+                item['เบอร์โทร'] ||
+                item['phone'] ||
+                item['Start Phone'] ||
+                item['phone_number'] ||
+                ''
+            ).toString().replace(/[^0-9]/g, '');
+
+            // Determine Address/Province (Optional, append to reason?)
+            const province = item['จังหวัด'] || item['province'] || '';
+            const finalReasonDetail = province ? `${reasonDetail} (จังหวัด: ${province})` : reasonDetail;
+
             // Map reason type from keywords
             let reasonType = 'other'; // Default to other instead of imported for clearer logic if unknown
-            const lowerReason = reasonDetail.toLowerCase();
+            const lowerReason = finalReasonDetail.toLowerCase();
 
             if (lowerReason.includes('ไม่คืน') || lowerReason.includes('ขโมย') || lowerReason.includes('ขายต่อ') || lowerReason.includes('เชิด')) reasonType = 'no_return';
             else if (lowerReason.includes('จำนำ') || lowerReason.includes('pledge')) reasonType = 'pledge';
             else if (lowerReason.includes('ชน') || lowerReason.includes('เสียหาย') || lowerReason.includes('รอย')) reasonType = 'damage';
             else if (lowerReason.includes('ไม่จ่าย') || lowerReason.includes('ค้าง')) reasonType = 'no_pay';
-            else if (lowerReason.includes('ปลอม') || lowerReason.includes('เอกสารเท็จ')) reasonType = 'fake_docs';
+            else if (lowerReason.includes('ปลอม') || lowerReason.includes('เอกสารเท็จ') || lowerReason.includes('สวมป้าย')) reasonType = 'fake_docs';
 
             // Date Parsing - Force current date as requested
-            const incidentDate = new Date().toISOString();
+            // Or try to parse 'วันที่' from JSON? "12/12/2025"
+            let incidentDate = new Date().toISOString();
+            if (item['วันที่']) {
+                const parts = item['วันที่'].split('/');
+                if (parts.length === 3) {
+                    // dd/mm/yyyy -> yyyy-mm-dd
+                    // Assuming BE (2568) or AD (2025)? User JSON has 2025.
+                    incidentDate = new Date(`${parts[2]}-${parts[1]}-${parts[0]}`).toISOString();
+                }
+            }
 
             return {
                 id, // Include ID
                 first_name: firstName,
                 last_name: lastName,
                 id_card: idCard,
-                reason_detail: reasonDetail,
+                phone_number: phoneNumber, // ADDED
+                reason_detail: finalReasonDetail, // Includes province
                 reason_type: reasonType,
                 incident_date: incidentDate
             };

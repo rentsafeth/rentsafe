@@ -49,6 +49,7 @@ export async function POST(request: NextRequest) {
                     // Update Names if provided
                     if (item.first_name) updateData.first_name = item.first_name;
                     if (item.last_name) updateData.last_name = item.last_name;
+                    if (item.phone_number) updateData.phone_number = item.phone_number;
 
                     if (Object.keys(updateData).length > 0) {
                         const { error } = await adminClient
@@ -87,6 +88,7 @@ export async function POST(request: NextRequest) {
                         id_card_number: item.id_card.length === 13 ? item.id_card : null, // Store full ID if new import has it
                         first_name: item.first_name,
                         last_name: item.last_name,
+                        phone_number: item.phone_number || null,
                         reason_type: item.reason_type,
                         reason_detail: item.reason_detail,
                         incident_date: item.incident_date || null,
