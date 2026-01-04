@@ -34,7 +34,8 @@ export async function POST(request: NextRequest) {
 
         // Clean base64 string
         const base64Data = imageBase64.replace(/^data:image\/(png|jpeg|jpg|webp);base64,/, '');
-        const URL = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${API_KEY}`;
+        // Use gemini-1.5-flash-latest which is usually an alias to the current active version, or fallback to specific version
+        const URL = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash-latest:generateContent?key=${API_KEY}`;
 
         const payload = {
             contents: [{
