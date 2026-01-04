@@ -37,8 +37,9 @@ export async function middleware(request: NextRequest) {
         return NextResponse.redirect(url)
     }
 
-    // 2. Redirect authenticated users away from auth pages
-    if (isAuthRoute && user) {
+    // 2. Redirect authenticated users away from auth pages (login/user registration)
+    // Exception: Allow authenticated users to access shop registration
+    if (isAuthRoute && user && !pathWithoutLocale.startsWith('/register/shop')) {
         const locale = path.match(/^\/(th|en)/)?.[1] || 'th'
         url.pathname = `/${locale}/dashboard`
         return NextResponse.redirect(url)
