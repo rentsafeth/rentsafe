@@ -114,6 +114,7 @@ export default function AdminBlacklistPage() {
     const [previewData, setPreviewData] = useState<ImportPreviewItem[]>([]);
     const [importing, setImporting] = useState(false);
     const [importStep, setImportStep] = useState<1 | 2>(1);
+    const [importMode, setImportMode] = useState<'json' | 'text'>('json');
 
     // Action states
     const [processing, setProcessing] = useState(false);
@@ -332,6 +333,72 @@ export default function AdminBlacklistPage() {
         } catch (error) {
             alert('JSON Parse Error: กรุณาตรวจสอบรูปแบบ JSON');
         }
+    };
+
+    const handleParseRawText = () => {
+        if (!importJson.trim()) return;
+
+        const lines = importJson.split('\n');
+        const rawItems: any[] = [];
+        let currentItem: any = {};
+
+        lines.forEach(line => {
+            const cleanLine = line.trim();
+            if (!cleanLine) return;
+
+            // Check for new record indicator
+            if (cleanLine.includes('บัตรประชาชนเลขที่ :')) {
+                if (Object.keys(currentItem).length > 0) {
+                    rawItems.push(currentItem);
+                }
+                currentItem = {}; // Start new
+                const val = cleanLine.split('บัตรประชาชนเลขที่ :')[1]?.trim();
+                if (val) currentItem['เลขบัตรประชาชน'] = val;
+            } else if (cleanLine.includes('เบอร์โทร :')) {
+                const val = cleanLine.split('เบอร์โทร :')[1]?.trim();
+                if (val && val !== 'ไม่มีเบอร์โทร') currentItem['เบอร์โทร'] = val;
+            } else if (cleanLine.includes('ชื่อ-นามสกุล :')) {
+                const val = cleanLine.split('ชื่อ-นามสกุล :')[1]?.trim();
+                if (val) currentItem['ชื่อ'] = val;
+            } else if (cleanLine.includes('เป็นคนจังหวัด :')) {
+                const val = cleanLine.split('เป็นคนจังหวัด :')[1]?.trim();
+                if (val) currentItem['จังหวัด'] = val;
+            } else if (cleanLine.includes('สาเหตุ :')) {
+                const val = cleanLine.split('สาเหตุ :')[1]?.trim();
+                if (val) currentItem['reason_detail'] = val;
+            } else if (cleanLine.includes('ข้อมูลล่าสุดเมื่อ:')) {
+                // Try to parse date "23 วันที่แล้ว ~ 12/12/2025 #1358"
+                const datePart = cleanLine.split('~')[1]?.trim();
+                if (datePart) {
+                    const dateOnly = datePart.split(' ')[0]; // "12/12/2025"
+                    if (dateOnly) currentItem['วันที่'] = dateOnly.trim();
+                }
+            }
+        });
+
+        // Push last item
+        if (Object.keys(currentItem).length > 0) {
+            rawItems.push(currentItem);
+        }
+
+        // Deduplicate by ID Card (Last entry wins)
+        const uniqueMap = new Map();
+        rawItems.forEach(item => {
+            // Clean ID for key matching (remove spaces/dashes)
+            const key = item['เลขบัตรประชาชน']?.replace(/[^0-9a-zA-Z]/g, '');
+            if (key) {
+                uniqueMap.set(key, item);
+            }
+        });
+
+        if (uniqueMap.size === 0) {
+            alert('ไม่พบข้อมูลที่ถูกต้อง หรือไม่มีเลขบัตรประชาชน');
+            return;
+        }
+
+        const parsed = processImportData(Array.from(uniqueMap.values()));
+        setPreviewData(parsed);
+        setImportStep(2);
     };
 
     const [importProgress, setImportProgress] = useState<{ current: number, total: number, success: number, failed: number, logs: string[] } | null>(null);
@@ -1271,48 +1338,75 @@ export default function AdminBlacklistPage() {
                     <div className="p-6 pt-2 overflow-y-auto flex-1">
                         {importStep === 1 ? (
                             <div className="space-y-4">
-                                <div className="bg-blue-50 p-4 rounded-md border border-blue-200">
-                                    <h3 className="text-sm font-semibold text-blue-800 mb-2">1. อัปโหลดไฟล์ Excel (.xlsx)</h3>
-                                    <div className="flex flex-col md:flex-row items-start md:items-center gap-3">
-                                        <Input
-                                            type="file"
-                                            accept=".xlsx, .xls"
-                                            onChange={handleFileUpload}
-                                            className="bg-white"
+                                <div className="flex border-b mb-4">
+                                    <button
+                                        className={`px-4 py-2 text-sm font-medium ${importMode === 'json' ? 'border-b-2 border-blue-600 text-blue-600' : 'text-gray-500 hover:text-gray-700'}`}
+                                        onClick={() => setImportMode('json')}
+                                    >
+                                        JSON / Excel
+                                    </button>
+                                    <button
+                                        className={`px-4 py-2 text-sm font-medium ${importMode === 'text' ? 'border-b-2 border-blue-600 text-blue-600' : 'text-gray-500 hover:text-gray-700'}`}
+                                        onClick={() => setImportMode('text')}
+                                    >
+                                        วางข้อความ (Raw Text)
+                                    </button>
+                                </div>
+
+                                {importMode === 'json' ? (
+                                    <>
+                                        <div className="bg-blue-50 p-4 rounded-md border border-blue-200">
+                                            <h3 className="text-sm font-semibold text-blue-800 mb-2">1. อัปโหลดไฟล์ Excel (.xlsx)</h3>
+                                            <div className="flex flex-col md:flex-row items-start md:items-center gap-3">
+                                                <Input
+                                                    type="file"
+                                                    accept=".xlsx, .xls"
+                                                    onChange={handleFileUpload}
+                                                    className="bg-white"
+                                                />
+                                                <span className="text-xs text-blue-600 mt-1 md:mt-0">*รองรับคอลัมน์: ชื่อ, เลขบัตร..., รูปแบบการโกง</span>
+                                            </div>
+                                        </div>
+
+                                        <div className="relative py-2">
+                                            <div className="absolute inset-0 flex items-center">
+                                                <span className="w-full border-t" />
+                                            </div>
+                                            <div className="relative flex justify-center text-xs uppercase">
+                                                <span className="bg-white px-2 text-gray-500">หรือ</span>
+                                            </div>
+                                        </div>
+
+                                        <div className="bg-yellow-50 p-4 rounded-md border border-yellow-200">
+                                            <h3 className="text-sm font-semibold text-yellow-800 mb-2">2. วางข้อมูล JSON โดยตรง</h3>
+                                            <Textarea
+                                                placeholder={`[{"ชื่อ": "...", "เลขบัตร...": "..."}]`}
+                                                value={importJson}
+                                                onChange={(e) => setImportJson(e.target.value)}
+                                                className="min-h-[120px] font-mono text-sm mb-2"
+                                            />
+                                            <div className="flex justify-end gap-2">
+                                                <Button variant="outline" onClick={() => setShowImportModal(false)}>ยกเลิก</Button>
+                                                <Button onClick={handleParseJson} disabled={!importJson.trim()}>ตรวจสอบ JSON</Button>
+                                            </div>
+                                        </div>
+                                    </>
+                                ) : (
+                                    <div className="bg-gray-50 p-4 rounded-md border border-gray-200">
+                                        <h3 className="text-sm font-semibold text-gray-800 mb-2">วางข้อความดิบ (Format: บัตร... ชื่อ... สาเหตุ...)</h3>
+                                        <p className="text-xs text-gray-500 mb-2">ระบบจะตัดรายการที่เลขบัตรประชาชนซ้ำกันออกให้โดยอัตโนมัติ</p>
+                                        <Textarea
+                                            placeholder={`บัตรประชาชนเลขที่ : 1234...\nเบอร์โทร : 081...\nชื่อ-นามสกุล : ...`}
+                                            value={importJson}
+                                            onChange={(e) => setImportJson(e.target.value)}
+                                            className="min-h-[200px] font-mono text-sm mb-2"
                                         />
-                                        <span className="text-xs text-blue-600 mt-1 md:mt-0">*รองรับคอลัมน์: ชื่อ, เลขบัตร..., รูปแบบการโกง</span>
+                                        <div className="flex justify-end gap-2">
+                                            <Button variant="outline" onClick={() => setShowImportModal(false)}>ยกเลิก</Button>
+                                            <Button onClick={handleParseRawText} disabled={!importJson.trim()}>แปลงเป็นข้อมูล</Button>
+                                        </div>
                                     </div>
-                                </div>
-
-                                <div className="relative py-2">
-                                    <div className="absolute inset-0 flex items-center">
-                                        <span className="w-full border-t" />
-                                    </div>
-                                    <div className="relative flex justify-center text-xs uppercase">
-                                        <span className="bg-white px-2 text-gray-500">หรือ</span>
-                                    </div>
-                                </div>
-
-                                <div className="bg-yellow-50 p-4 rounded-md border border-yellow-200">
-                                    <h3 className="text-sm font-semibold text-yellow-800 mb-2">2. วางข้อมูล JSON โดยตรง</h3>
-                                    <pre className="hidden md:block text-xs bg-white p-2 rounded border border-yellow-200 overflow-auto mb-2 font-mono whitespace-pre-wrap">
-                                        {`[{"ชื่อ": "นาย สมชาย", "เลขบัตร...": "1234...", "รูปแบบการโกง": "ขโมยรถ"}, ...]`}
-                                    </pre>
-                                    <Textarea
-                                        placeholder="วาง JSON ที่นี่..."
-                                        value={importJson}
-                                        onChange={(e) => setImportJson(e.target.value)}
-                                        className="min-h-[120px] font-mono text-sm"
-                                    />
-                                    <div className="flex justify-end gap-2 mt-2">
-                                        <Button variant="outline" onClick={() => setShowImportModal(false)}>
-                                            ยกเลิก
-                                        </Button>
-                                        <Button onClick={handleParseJson} disabled={!importJson.trim()}>
-                                            ตรวจสอบ JSON
-                                        </Button>
-                                    </div>
-                                </div>
+                                )}
                             </div>
                         ) : (
                             <div className="space-y-4">
