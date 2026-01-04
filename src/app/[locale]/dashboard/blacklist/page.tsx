@@ -141,102 +141,80 @@ export default function BlacklistDashboard() {
         }
 
         setIsScanning(true);
-        const formData = new FormData();
-        formData.append('file', file);
 
-        try {
-            const res = await fetch('/api/ocr/id-card', {
-                method: 'POST',
-                body: formData,
-            });
+        const reader = new FileReader();
+        reader.onload = async (evt) => {
+            const base64Data = evt.target?.result as string;
 
-            const data = await res.json();
+            try {
+                const res = await fetch('/api/ocr/gemini', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ imageBase64: base64Data }),
+                });
 
-            if (!res.ok) {
-                throw new Error(data.details || data.error || 'Failed to scan ID card');
-            }
+                const data = await res.json();
 
-            // Helper to clean titles
-            const removeTitle = (text: string) => {
-                let cleanText = text.trim();
-                const titles = ['นาย', 'นางสาว', 'นาง', 'ด.ช.', 'ด.ญ.', 'เด็กชาย', 'เด็กหญิง', 'น.ส.', 'น.ส ', 'Ms.', 'Mr.', 'Mrs.', 'Miss.'];
-                // Sort by length desc
-                const sortedTitles = titles.sort((a, b) => b.length - a.length);
+                if (!res.ok) {
+                    throw new Error(data.details || data.error || 'Failed to scan ID card');
+                }
 
-                for (const title of sortedTitles) {
-                    if (cleanText.startsWith(title)) {
-                        return cleanText.substring(title.length).trim();
+                // Helper to clean titles
+                const removeTitle = (text: string) => {
+                    let cleanText = text.trim();
+                    const titles = ['นาย', 'นางสาว', 'นาง', 'ด.ช.', 'ด.ญ.', 'เด็กชาย', 'เด็กหญิง', 'น.ส.', 'น.ส ', 'Ms.', 'Mr.', 'Mrs.', 'Miss.'];
+                    const sortedTitles = titles.sort((a, b) => b.length - a.length);
+
+                    for (const title of sortedTitles) {
+                        if (cleanText.startsWith(title)) {
+                            return cleanText.substring(title.length).trim();
+                        }
                     }
-                }
-                return cleanText;
-            };
+                    return cleanText;
+                };
 
-            // Auto-fill form
-            setReportForm(prev => {
-                const newState = { ...prev };
+                // Auto-fill form
+                setReportForm(prev => {
+                    const newState = { ...prev };
 
-                if (data.id_number) {
-                    // Store only digits (13 chars)
-                    newState.id_card_number = data.id_number.replace(/\D/g, '').slice(0, 13);
-                }
-
-                // Priority 1: Check th_first_name / th_last_name
-                if (data.th_first_name && data.th_last_name) {
-                    let fName = removeTitle(data.th_first_name);
-                    let lName = removeTitle(data.th_last_name);
-
-                    // Sometimes last name includes the first name (OCR error)
-                    // or first name is just title
-                    if (data.th_first_name.includes('น.ส.') || data.th_first_name.includes('นาย') || data.th_first_name.length < 3) {
-                        // Likely title is in first name, real name in last name
-                        const parts = lName.split(' ').filter((p: string) => p);
-                        if (parts.length > 1) {
-                            fName = parts[0];
-                            lName = parts.slice(1).join(' ');
+                    if (data.id_card_number) {
+                        const cleanId = data.id_card_number.replace(/[^a-zA-Z0-9]/g, '');
+                        // Auto-detect document type
+                        if (cleanId.length === 13 && /^\d+$/.test(cleanId)) {
+                            newState.document_type = 'id_card';
+                            newState.id_card_number = cleanId;
+                        } else {
+                            // Likely passport or foreign ID if not 13 digits
+                            if (/[a-zA-Z]/.test(cleanId)) {
+                                newState.document_type = 'passport';
+                            }
+                            newState.id_card_number = cleanId;
                         }
                     }
 
-                    newState.first_name = fName;
-                    newState.last_name = lName;
-                }
-                // Priority 2: Check th_name (combined)
-                else if (data.th_name) {
-                    let cleanName = removeTitle(data.th_name);
-                    const parts = cleanName.split(' ').filter((p: string) => p);
-                    if (parts.length > 0) newState.first_name = parts[0];
-                    if (parts.length > 1) newState.last_name = parts.slice(1).join(' ');
-                }
-                // Priority 3: English Name
-                else if (data.en_name) {
-                    const parts = data.en_name.split(' ');
-                    if (parts.length > 0) newState.first_name = parts[0];
-                    if (parts.length > 1) newState.last_name = parts.slice(1).join(' ');
-                }
+                    if (data.first_name) newState.first_name = removeTitle(data.first_name);
+                    if (data.last_name) newState.last_name = removeTitle(data.last_name);
 
-                return newState;
-            });
+                    return newState;
+                });
 
-            setAlertState({
-                isOpen: true,
-                type: 'success',
-                title: 'สแกนสำเร็จ',
-                message: 'ดึงข้อมูลจากบัตรเรียบร้อยแล้ว',
-            });
+                toast.success('สแกนบัตรและดึงข้อมูลสำเร็จ');
 
-        } catch (error: any) {
-            console.error('OCR Error:', error);
-            setAlertState({
-                isOpen: true,
-                type: 'error',
-                title: 'สแกนไม่สำเร็จ',
-                message: 'ไม่สามารถอ่านข้อมูลจากบัตรได้ กรุณากรอกเอง',
-            });
-        } finally {
-            setIsScanning(false);
-            if (fileInputRef.current) {
-                fileInputRef.current.value = '';
+            } catch (error: any) {
+                console.error('Scan Error:', error);
+                setAlertState({
+                    isOpen: true,
+                    type: 'error',
+                    title: 'การสแกนล้มเหลว',
+                    message: error.message || 'ไม่สามารถอ่านข้อมูลจากบัตรได้',
+                });
+            } finally {
+                setIsScanning(false);
+                if (fileInputRef.current) fileInputRef.current.value = '';
             }
-        }
+        };
+
+        reader.readAsDataURL(file);
     };
 
     // My reports state
