@@ -132,17 +132,21 @@ export default function AdminBlacklistPage() {
             return;
         }
 
-        // Prepare data for Excel
-        const exportData = reports.map(r => ({
-            'id': r.id, // Critical for update
-            'ชื่อ': r.first_name,
-            'นามสกุล': r.last_name,
-            'เลขบัตรประจำตัวประชาชน': r.id_card_last4 ? `****-****-${r.id_card_last4}` : '',
-            'id_card_number_new': '', // Empty column for user to fill
-            'สถานะ': STATUS_CONFIG[r.status]?.label || r.status,
-            'รูปแบบ': REASON_TYPES[r.reason_type] || r.reason_type,
-            'รายละเอียด': r.reason_detail
-        }));
+        // Prepare data for Excel (Sorted by Created At ASC - Oldest First)
+        // Clone array first because sort mutates
+        const exportData = [...reports]
+            .sort((a, b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime())
+            .map(r => ({
+                'id': r.id, // Critical for update
+                'ชื่อ': r.first_name,
+                'นามสกุล': r.last_name,
+                'เลขบัตรประจำตัวประชาชน': r.id_card_last4 ? `****-****-${r.id_card_last4}` : '',
+                'id_card_number_new': '', // Empty column for user to fill
+                'สถานะ': STATUS_CONFIG[r.status]?.label || r.status,
+                'รูปแบบ': REASON_TYPES[r.reason_type] || r.reason_type,
+                'รายละเอียด': r.reason_detail,
+                'วันที่สร้าง': new Date(r.created_at).toLocaleDateString('th-TH')
+            }));
 
         // Create Workbook
         const wb = XLSX.utils.book_new();
