@@ -479,15 +479,29 @@ export default function AdminBlacklistPage() {
     const [importProgress, setImportProgress] = useState<{ current: number, total: number, success: number, failed: number, logs: string[] } | null>(null);
 
     const handleConfirmImport = async () => {
+        // Filter duplicates
+        const nonDuplicates = previewData.filter(i => !i.isDuplicate);
+        const duplicatesCount = previewData.length - nonDuplicates.length;
+
+        if (duplicatesCount > 0) {
+            const confirmSkip = window.confirm(`พบข้อมูลซ้ำ ${duplicatesCount} รายการ ระบบจะข้ามและนำเข้าเฉพาะข้อมูลใหม่ ${nonDuplicates.length} รายการ\nยืนยันหรือไม่?`);
+            if (!confirmSkip) return;
+        }
+
+        if (nonDuplicates.length === 0) {
+            alert('ไม่พบข้อมูลใหม่สำหรับนำเข้า');
+            return;
+        }
+
         setImporting(true);
-        setImportProgress({ current: 0, total: previewData.length, success: 0, failed: 0, logs: [] });
+        setImportProgress({ current: 0, total: nonDuplicates.length, success: 0, failed: 0, logs: [] });
 
         const results = { success: 0, failed: 0, errors: [] as any[] };
 
         try {
             // Process one by one to show progress
-            for (let i = 0; i < previewData.length; i++) {
-                const item = previewData[i];
+            for (let i = 0; i < nonDuplicates.length; i++) {
+                const item = nonDuplicates[i];
                 try {
                     const response = await fetch('/api/admin/blacklist/import', {
                         method: 'POST',
@@ -512,7 +526,7 @@ export default function AdminBlacklistPage() {
 
             // Finished
             await new Promise(resolve => setTimeout(resolve, 500)); // Short delay to see 100%
-            alert(`นำเข้าเสร็จสิ้น\nสำเร็จ: ${results.success}\nล้มเหลว: ${results.failed}`);
+            alert(`นำเข้าเสร็จสิ้น\nสำเร็จ: ${results.success}\nล้มเหลว: ${results.failed}${duplicatesCount > 0 ? `\n(ข้ามรายการซ้ำ: ${duplicatesCount})` : ''}`);
 
             setShowImportModal(false);
             setImportJson('');
