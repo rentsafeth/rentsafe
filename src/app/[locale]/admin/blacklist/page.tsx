@@ -231,7 +231,7 @@ export default function AdminBlacklistPage() {
             if (parts.length > 1) lastName = parts.slice(1).join(' ');
 
             // Determine ID Card
-            const idCard = (item['เลขบัตรประจำตัวประชาชน'] || item['id_card'] || item['id_number'] || '').toString().replace(/\D/g, '');
+            const idCard = (item['id_card_number_new'] || item['เลขบัตรประจำตัวประชาชน'] || item['id_card'] || item['id_number'] || '').toString().replace(/[^a-zA-Z0-9]/g, '');
 
             // ID for Update
             const id = item['id'] || item['ID'] || '';
