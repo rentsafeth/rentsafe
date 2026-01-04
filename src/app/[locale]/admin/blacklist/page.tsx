@@ -549,6 +549,12 @@ export default function AdminBlacklistPage() {
         });
     };
 
+    const formatIdCard = (id: string) => {
+        if (!id) return '';
+        if (id.length !== 13) return id;
+        return `${id.slice(0, 1)}-${id.slice(1, 5)}-${id.slice(5, 10)}-${id.slice(10, 12)}-${id.slice(12)}`;
+    };
+
     // Smart Match states
     const [showSmartMatchModal, setShowSmartMatchModal] = useState(false);
     const [smartMatchStats, setSmartMatchStats] = useState<{ count: number, matches: any[], total: number } | null>(null);
@@ -913,7 +919,7 @@ export default function AdminBlacklistPage() {
                                                         </Badge>
                                                     </div>
                                                     <p className="text-sm text-gray-500">
-                                                        บัตร: ****-****-{report.id_card_last4}
+                                                        บัตร: {report.id_card_number ? formatIdCard(report.id_card_number) : `****-****-${report.id_card_last4}`}
                                                         {report.phone_number && ` | โทร: ${report.phone_number}`}
                                                     </p>
                                                     <p className="text-sm text-gray-600 mt-1">

@@ -640,7 +640,7 @@ export default function BlacklistDashboard() {
                                                     <div className="flex items-start justify-between mb-2">
                                                         <div>
                                                             <p className="font-semibold text-gray-900">
-                                                                {result.first_name} {result.last_name.charAt(0)}***
+                                                                {result.first_name} {result.last_name}
                                                             </p>
                                                             <p className="text-sm text-gray-500">
                                                                 บัตร ปชช.: {result.id_card_number ? formatIdCard(result.id_card_number) : `****-****-${result.id_card_last4}`}
