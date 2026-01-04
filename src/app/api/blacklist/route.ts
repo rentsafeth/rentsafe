@@ -101,7 +101,8 @@ export async function GET(request: NextRequest) {
             searchError = error;
         } else {
             // Search by name (first name or last name)
-            const nameParts = query.trim().split(' ');
+            const cleanQuery = query.trim();
+            const nameParts = cleanQuery.split(' ');
             let nameQuery;
 
             if (nameParts.length >= 2) {
@@ -127,9 +128,34 @@ export async function GET(request: NextRequest) {
                     .or(`first_name.ilike.%${nameParts[0]}%,last_name.ilike.%${nameParts[0]}%`);
             }
 
-            const { data, error } = await nameQuery;
-            results = data || [];
-            searchError = error;
+            const { data: nameResults, error: nameError } = await nameQuery;
+
+            if (nameError) {
+                // If name search fails, throw immediately
+                throw nameError;
+            }
+
+            results = nameResults || [];
+
+            // NEW: Search in 'reason_detail' if query is long enough
+            if (cleanQuery.length >= 4) {
+                const { data: reasonResults, error: reasonError } = await supabase
+                    .from('customer_blacklist')
+                    .select(`
+                        id, id_card_last4, id_card_number, first_name, last_name, phone_number,
+                    reason_type, reason_detail, severity, report_count, created_at, evidence_urls
+                    `)
+                    .eq('status', 'approved')
+                    .ilike('reason_detail', `%${cleanQuery}%`);
+
+                if (!reasonError && reasonResults && reasonResults.length > 0) {
+                    // Merge and Deduplicate results
+                    const resultMap = new Map();
+                    results.forEach(r => resultMap.set(r.id, r));
+                    reasonResults.forEach(r => resultMap.set(r.id, r));
+                    results = Array.from(resultMap.values());
+                }
+            }
         }
 
         if (searchError) {
