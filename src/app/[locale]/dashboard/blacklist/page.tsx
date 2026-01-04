@@ -112,6 +112,7 @@ export default function BlacklistDashboard() {
         reason_type: '',
         reason_detail: '',
         incident_date: '',
+        document_type: 'id_card',
     });
     const [submitting, setSubmitting] = useState(false);
 
@@ -723,53 +724,82 @@ export default function BlacklistDashboard() {
 
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                 <div>
+                                    <div className="flex items-center gap-4 mb-2">
+                                        <label className="flex items-center gap-2 cursor-pointer">
+                                            <input
+                                                type="radio"
+                                                name="docType"
+                                                checked={reportForm.document_type === 'id_card'}
+                                                onChange={() => setReportForm(prev => ({ ...prev, document_type: 'id_card', id_card_number: '' }))}
+                                                className="w-4 h-4 text-blue-600"
+                                            />
+                                            <span className="text-sm text-gray-700">บัตรประชาชน</span>
+                                        </label>
+                                        <label className="flex items-center gap-2 cursor-pointer">
+                                            <input
+                                                type="radio"
+                                                name="docType"
+                                                checked={reportForm.document_type === 'passport'}
+                                                onChange={() => setReportForm(prev => ({ ...prev, document_type: 'passport', id_card_number: '' }))}
+                                                className="w-4 h-4 text-blue-600"
+                                            />
+                                            <span className="text-sm text-gray-700">Passport</span>
+                                        </label>
+                                    </div>
+
                                     <div className="flex items-center justify-between mb-1">
                                         <label className="block text-sm font-medium text-gray-700">
-                                            เลขบัตรประชาชน <span className="text-red-500">*</span>
+                                            {reportForm.document_type === 'passport' ? 'เลข Passport' : 'เลขบัตรประชาชน'} <span className="text-red-500">*</span>
                                         </label>
-                                        <div className="flex items-center">
-                                            <input
-                                                type="file"
-                                                accept="image/*"
-                                                className="hidden"
-                                                ref={fileInputRef}
-                                                onChange={handleScanIdCard}
-                                            />
-                                            <Button
-                                                type="button"
-                                                variant="outline"
-                                                size="sm"
-                                                className="h-6 text-xs flex items-center gap-1.5 text-blue-600 bg-blue-50 border-blue-200 hover:bg-blue-100 hover:text-blue-700 transition-colors px-2"
-                                                onClick={() => fileInputRef.current?.click()}
-                                                disabled={isScanning}
-                                            >
-                                                {isScanning ? (
-                                                    <Loader2 className="w-3 h-3 animate-spin" />
-                                                ) : (
-                                                    <Scan className="w-3 h-3" />
-                                                )}
-                                                {isScanning ? 'กำลังสแกน...' : 'สแกนบัตร'}
-                                            </Button>
-                                        </div>
+                                        {reportForm.document_type === 'id_card' && (
+                                            <div className="flex items-center">
+                                                <input
+                                                    type="file"
+                                                    accept="image/*"
+                                                    className="hidden"
+                                                    ref={fileInputRef}
+                                                    onChange={handleScanIdCard}
+                                                />
+                                                <Button
+                                                    type="button"
+                                                    variant="outline"
+                                                    size="sm"
+                                                    className="h-6 text-xs flex items-center gap-1.5 text-blue-600 bg-blue-50 border-blue-200 hover:bg-blue-100 hover:text-blue-700 transition-colors px-2"
+                                                    onClick={() => fileInputRef.current?.click()}
+                                                    disabled={isScanning}
+                                                >
+                                                    {isScanning ? (
+                                                        <Loader2 className="w-3 h-3 animate-spin" />
+                                                    ) : (
+                                                        <Scan className="w-3 h-3" />
+                                                    )}
+                                                    {isScanning ? 'กำลังสแกน...' : 'สแกนบัตร'}
+                                                </Button>
+                                            </div>
+                                        )}
                                     </div>
                                     <Input
-                                        placeholder="1234567890123"
-                                        maxLength={13}
+                                        placeholder={reportForm.document_type === 'passport' ? 'A12345678' : '1234567890123'}
+                                        maxLength={reportForm.document_type === 'passport' ? 20 : 13}
                                         value={reportForm.id_card_number}
                                         onChange={(e) => {
-                                            const val = e.target.value.replace(/\D/g, '').slice(0, 13);
+                                            let val = e.target.value;
+                                            if (reportForm.document_type === 'id_card') {
+                                                val = val.replace(/\D/g, '').slice(0, 13);
+                                            } else {
+                                                // Passport: Allow A-Z, 0-9, dash
+                                                val = val.toUpperCase().replace(/[^A-Z0-9-]/g, '');
+                                            }
                                             setReportForm(prev => ({
                                                 ...prev,
                                                 id_card_number: val
                                             }));
                                         }}
                                         onBlur={(e) => {
-                                            // Ensure only digits are kept (redundant if onChange is strict, but safe)
-                                            const val = e.target.value.replace(/\D/g, '');
-                                            setReportForm(prev => ({
-                                                ...prev,
-                                                id_card_number: val
-                                            }));
+                                            if (reportForm.document_type === 'id_card') {
+                                                const val = e.target.value.replace(/\D/g, '');
+                                                setReportForm(prev => ({ ...prev, id_card_number: val }));
+                                            }
                                         }}
                                     />
                                 </div>
@@ -938,6 +968,7 @@ export default function BlacklistDashboard() {
                                         reason_type: '',
                                         reason_detail: '',
                                         incident_date: '',
+                                        document_type: 'id_card'
                                     })}
                                 >
                                     ล้างข้อมูล

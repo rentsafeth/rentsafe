@@ -197,13 +197,27 @@ export async function POST(request: NextRequest) {
         }
 
         // Validate ID card format (13 digits)
-        // Validate ID card format (13 digits)
-        const cleanIdCard = id_card_number.replace(/\D/g, '');
-        if (!/^\d{13}$/.test(cleanIdCard)) {
-            return NextResponse.json(
-                { error: 'Invalid ID card format' },
-                { status: 400 }
-            );
+        // Validate ID card format
+        // If it looks like a Thai ID (numeric), enforce 13 digits.
+        // If it looks like a Passport (alphanumeric), allow variable length.
+        const cleanIdCard = id_card_number.trim();
+        const isThaiId = /^\d+$/.test(cleanIdCard);
+
+        if (isThaiId) {
+            if (cleanIdCard.length !== 13) {
+                return NextResponse.json(
+                    { error: 'Invalid ID card format (Must be 13 digits)' },
+                    { status: 400 }
+                );
+            }
+        } else {
+            // Passport validation: at least 6 chars, alphanumeric
+            if (cleanIdCard.length < 6) {
+                return NextResponse.json(
+                    { error: 'Invalid document number' },
+                    { status: 400 }
+                );
+            }
         }
 
         // Get shop
