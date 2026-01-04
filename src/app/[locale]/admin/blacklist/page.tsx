@@ -66,6 +66,7 @@ interface BlacklistReport {
     id: string;
     id_card_hash: string;
     id_card_last4: string;
+    id_card_number?: string; // Full numbers (newly gathered)
     first_name: string;
     last_name: string;
     phone_number: string | null;
