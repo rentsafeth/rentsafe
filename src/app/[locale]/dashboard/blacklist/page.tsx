@@ -150,7 +150,10 @@ export default function BlacklistDashboard() {
                 const res = await fetch('/api/ocr/gemini', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ imageBase64: base64Data }),
+                    body: JSON.stringify({
+                        imageBase64: base64Data,
+                        documentType: reportForm.document_type // Send current selection
+                    }),
                 });
 
                 const data = await res.json();
