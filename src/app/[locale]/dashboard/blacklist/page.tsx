@@ -383,16 +383,36 @@ export default function BlacklistDashboard() {
     };
 
     const handleSubmitReport = async () => {
-        // Validate
-        if (!reportForm.id_card_number || !reportForm.first_name || !reportForm.last_name ||
-            !reportForm.reason_type || !reportForm.reason_detail) {
-            setAlertState({
-                isOpen: true,
-                type: 'warning',
-                title: 'กรุณากรอกข้อมูลให้ครบ',
-                message: 'กรุณากรอกข้อมูลที่จำเป็นให้ครบถ้วน',
-            });
-            return;
+        // Validate with Auto-Scroll
+        const requiredFields: { key: keyof typeof reportForm; id: string; label: string }[] = [
+            { key: 'id_card_number', id: 'field-id-card', label: reportForm.document_type === 'passport' ? 'เลข Passport' : 'เลขบัตรประชาชน' },
+            { key: 'first_name', id: 'field-first-name', label: 'ชื่อ' },
+            { key: 'last_name', id: 'field-last-name', label: 'นามสกุล' },
+            { key: 'reason_type', id: 'field-reason-type', label: 'ประเภทปัญหา' },
+            { key: 'reason_detail', id: 'field-reason-detail', label: 'รายละเอียดเพิ่มเติม' },
+        ];
+
+        for (const field of requiredFields) {
+            if (!reportForm[field.key]) {
+                setAlertState({
+                    isOpen: true,
+                    type: 'warning',
+                    title: 'ข้อมูลไม่ครบถ้วน',
+                    message: `กรุณากรอกข้อมูล: ${field.label}`,
+                });
+
+                // Scroll to field, focus, and highlight
+                setTimeout(() => {
+                    const el = document.getElementById(field.id);
+                    if (el) {
+                        el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                        el.focus();
+                        el.classList.add('ring-2', 'ring-red-500', 'border-red-500');
+                        setTimeout(() => el.classList.remove('ring-2', 'ring-red-500', 'border-red-500'), 3000);
+                    }
+                }, 100);
+                return;
+            }
         }
 
         setSubmitting(true);
@@ -776,6 +796,7 @@ export default function BlacklistDashboard() {
                                         )}
                                     </div>
                                     <Input
+                                        id="field-id-card"
                                         placeholder={reportForm.document_type === 'passport' ? 'A12345678' : '1234567890123'}
                                         maxLength={reportForm.document_type === 'passport' ? 20 : 13}
                                         value={reportForm.id_card_number}
@@ -821,6 +842,7 @@ export default function BlacklistDashboard() {
                                         ชื่อ <span className="text-red-500">*</span>
                                     </label>
                                     <Input
+                                        id="field-first-name"
                                         placeholder="ชื่อจริง"
                                         value={reportForm.first_name}
                                         onChange={(e) => setReportForm(prev => ({
@@ -834,6 +856,7 @@ export default function BlacklistDashboard() {
                                         นามสกุล <span className="text-red-500">*</span>
                                     </label>
                                     <Input
+                                        id="field-last-name"
                                         placeholder="นามสกุล"
                                         value={reportForm.last_name}
                                         onChange={(e) => setReportForm(prev => ({
@@ -850,6 +873,7 @@ export default function BlacklistDashboard() {
                                         ประเภทปัญหา <span className="text-red-500">*</span>
                                     </label>
                                     <select
+                                        id="field-reason-type"
                                         className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                                         value={reportForm.reason_type}
                                         onChange={(e) => setReportForm(prev => ({
@@ -885,6 +909,7 @@ export default function BlacklistDashboard() {
                                     รายละเอียดเพิ่มเติม <span className="text-red-500">*</span>
                                 </label>
                                 <Textarea
+                                    id="field-reason-detail"
                                     placeholder="อธิบายรายละเอียดของเหตุการณ์ที่เกิดขึ้น..."
                                     rows={4}
                                     value={reportForm.reason_detail}
