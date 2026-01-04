@@ -113,8 +113,8 @@ export async function GET(request: NextRequest) {
                     reason_type, reason_detail, severity, report_count, created_at, evidence_urls
                         `)
                     .eq('status', 'approved')
-                    .ilike('first_name', `% ${nameParts[0]} % `)
-                    .ilike('last_name', `% ${nameParts.slice(1).join(' ')} % `);
+                    .ilike('first_name', `%${nameParts[0]}%`)
+                    .ilike('last_name', `%${nameParts.slice(1).join(' ')}%`);
             } else {
                 // Search by either first name OR last name
                 nameQuery = supabase
@@ -124,7 +124,7 @@ export async function GET(request: NextRequest) {
                     reason_type, reason_detail, severity, report_count, created_at, evidence_urls
                     `)
                     .eq('status', 'approved')
-                    .or(`first_name.ilike.% ${nameParts[0]} %, last_name.ilike.% ${nameParts[0]} % `);
+                    .or(`first_name.ilike.%${nameParts[0]}%,last_name.ilike.%${nameParts[0]}%`);
             }
 
             const { data, error } = await nameQuery;
