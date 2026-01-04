@@ -38,6 +38,8 @@ import {
 import { useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import Image from 'next/image';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
+import { toast } from 'sonner';
 
 const REASON_TYPES = [
     { value: 'no_return', label: 'ไม่คืนรถตามกำหนด', severity: 'severe' },
@@ -761,21 +763,30 @@ export default function BlacklistDashboard() {
                                                     ref={fileInputRef}
                                                     onChange={handleScanIdCard}
                                                 />
-                                                <Button
-                                                    type="button"
-                                                    variant="outline"
-                                                    size="sm"
-                                                    className="h-6 text-xs flex items-center gap-1.5 text-blue-600 bg-blue-50 border-blue-200 hover:bg-blue-100 hover:text-blue-700 transition-colors px-2"
-                                                    onClick={() => fileInputRef.current?.click()}
-                                                    disabled={isScanning}
-                                                >
-                                                    {isScanning ? (
-                                                        <Loader2 className="w-3 h-3 animate-spin" />
-                                                    ) : (
-                                                        <Scan className="w-3 h-3" />
-                                                    )}
-                                                    {isScanning ? 'กำลังสแกน...' : 'สแกนบัตร'}
-                                                </Button>
+                                                <TooltipProvider>
+                                                    <Tooltip delayDuration={100}>
+                                                        <TooltipTrigger asChild>
+                                                            <Button
+                                                                type="button"
+                                                                variant="outline"
+                                                                size="sm"
+                                                                className="h-6 text-xs flex items-center gap-1.5 text-blue-600 bg-blue-50 border-blue-200 hover:bg-blue-100 hover:text-blue-700 transition-colors px-2"
+                                                                onClick={() => fileInputRef.current?.click()}
+                                                                disabled={isScanning}
+                                                            >
+                                                                {isScanning ? (
+                                                                    <Loader2 className="w-3 h-3 animate-spin" />
+                                                                ) : (
+                                                                    <Scan className="w-3 h-3" />
+                                                                )}
+                                                                {isScanning ? 'กำลังสแกน...' : 'สแกนบัตร'}
+                                                            </Button>
+                                                        </TooltipTrigger>
+                                                        <TooltipContent>
+                                                            <p>ดึงข้อมูลจากรูปบัตรด้วย Ai</p>
+                                                        </TooltipContent>
+                                                    </Tooltip>
+                                                </TooltipProvider>
                                             </div>
                                         )}
                                     </div>
