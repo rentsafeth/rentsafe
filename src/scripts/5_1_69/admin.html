@@ -1,0 +1,1041 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin Panel - ระบบจัดการรถเช่า KPCRM</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/alpinejs@3.x.x/dist/cdn.min.js" defer></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Kanit:wght@300;400;500;600;700&display=swap');
+        
+        body {
+            font-family: 'Kanit', sans-serif;
+        }
+        
+        .loader {
+            animation: spin 1s linear infinite;
+        }
+        
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        
+        .gradient-bg {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        }
+        
+        .card-shadow {
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
+        }
+        
+        .hover-transform {
+            transition: transform 0.3s ease;
+        }
+        
+        .hover-transform:hover {
+            transform: translateY(-5px);
+        }
+        
+        .admin-table {
+            border-radius: 12px;
+            overflow: hidden;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        }
+        
+        .status-badge {
+            @apply px-3 py-1 rounded-full text-xs font-medium;
+        }
+        
+        .status-pending {
+            @apply bg-yellow-100 text-yellow-800;
+        }
+        
+        .status-approved {
+            @apply bg-green-100 text-green-800;
+        }
+        
+        .status-expired {
+            @apply bg-red-100 text-red-800;
+        }
+        
+        [x-cloak] {
+            display: none !important;
+        }
+        
+        .pulse-animation {
+            animation: pulse 2s infinite;
+        }
+        
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
+        }
+    </style>
+</head>
+
+<body class="bg-gray-50 min-h-screen" x-data="adminApp()" x-init="init()">
+    
+    <!-- Loading Spinner -->
+    <div x-show="isLoading" x-cloak class="fixed inset-0 bg-black bg-opacity-50 flex justify-center items-center z-50">
+        <div class="bg-white p-8 rounded-lg text-center">
+            <div class="loader ease-linear rounded-full border-4 border-t-4 border-gray-200 h-12 w-12 mx-auto mb-4"></div>
+            <p class="text-gray-600" x-text="loadingMessage"></p>
+        </div>
+    </div>
+
+    <!-- Login Modal -->
+    <div x-show="!isLoggedIn" x-cloak class="fixed inset-0 bg-gray-900 bg-opacity-75 flex items-center justify-center z-50">
+        <div class="bg-white rounded-2xl p-8 max-w-md w-full mx-4 card-shadow">
+            <div class="text-center mb-8">
+                <div class="mx-auto h-20 w-20 bg-gradient-to-br from-blue-500 to-purple-600 rounded-full flex items-center justify-center mb-4">
+                    <i class="fas fa-user-shield text-white text-2xl"></i>
+                </div>
+                <h2 class="text-2xl font-bold text-gray-900">Admin Panel</h2>
+                <p class="text-gray-600 mt-2">ระบบจัดการรถเช่า KPCRM</p>
+            </div>
+            
+            <form @submit.prevent="adminLogin()">
+                <div class="mb-6">
+                    <label class="block text-sm font-medium text-gray-700 mb-2">
+                        <i class="fas fa-user mr-2"></i>ชื่อผู้ใช้
+                    </label>
+                    <input type="text" 
+                           x-model="loginData.username"
+                           class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                           placeholder="กรุณากรอกชื่อผู้ใช้"
+                           required>
+                </div>
+                
+                <div class="mb-6">
+                    <label class="block text-sm font-medium text-gray-700 mb-2">
+                        <i class="fas fa-lock mr-2"></i>รหัสผ่าน
+                    </label>
+                    <input type="password" 
+                           x-model="loginData.password"
+                           class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                           placeholder="กรุณากรอกรหัสผ่าน"
+                           required>
+                </div>
+                
+                <button type="submit" 
+                        :disabled="isLoading"
+                        class="w-full gradient-bg text-white py-3 rounded-lg font-medium hover:opacity-90 transition-opacity disabled:opacity-50">
+                    <span x-show="!isLoading">
+                        <i class="fas fa-sign-in-alt mr-2"></i>เข้าสู่ระบบ
+                    </span>
+                    <span x-show="isLoading" class="flex items-center justify-center">
+                        <div class="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
+                        กำลังเข้าสู่ระบบ...
+                    </span>
+                </button>
+            </form>
+        </div>
+    </div>
+
+    <!-- Admin Dashboard -->
+    <div x-show="isLoggedIn" x-cloak>
+        <!-- Header -->
+        <header class="gradient-bg shadow-lg">
+            <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+                <div class="flex justify-between items-center h-16">
+                    <div class="flex items-center">
+                        <h1 class="text-xl font-bold text-white">
+                            <i class="fas fa-tachometer-alt mr-2"></i>
+                            Admin Panel - KPCRM V.3
+                        </h1>
+                    </div>
+                    <div class="flex items-center space-x-4">
+                        <span class="text-white text-sm">
+                            <i class="fas fa-user-circle mr-1"></i>
+                            แอดมิน
+                        </span>
+                        <button @click="logout()" 
+                                class="bg-white bg-opacity-20 text-white px-4 py-2 rounded-lg hover:bg-opacity-30 transition-all">
+                            <i class="fas fa-sign-out-alt mr-1"></i>ออกจากระบบ
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </header>
+
+        <!-- Navigation Tabs -->
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 mt-6">
+            <div class="border-b border-gray-200">
+                <nav class="-mb-px flex space-x-8">
+                    <button @click="setActiveTab('dashboard')"
+                            :class="activeTab === 'dashboard' ? 'border-blue-500 text-blue-600' : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'"
+                            class="whitespace-nowrap py-2 px-1 border-b-2 font-medium text-sm transition-colors">
+                        <i class="fas fa-chart-bar mr-2"></i>Dashboard
+                    </button>
+                    <button @click="setActiveTab('registrations')"
+                            :class="activeTab === 'registrations' ? 'border-blue-500 text-blue-600' : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'"
+                            class="whitespace-nowrap py-2 px-1 border-b-2 font-medium text-sm transition-colors">
+                        <i class="fas fa-user-plus mr-2"></i>การลงทะเบียน
+                        <span x-show="stats.pendingRegistrations > 0" 
+                              class="ml-1 bg-red-500 text-white text-xs rounded-full px-2 py-0.5" 
+                              x-text="stats.pendingRegistrations"></span>
+                    </button>
+                    <button @click="setActiveTab('licenses')"
+                            :class="activeTab === 'licenses' ? 'border-blue-500 text-blue-600' : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'"
+                            class="whitespace-nowrap py-2 px-1 border-b-2 font-medium text-sm transition-colors">
+                        <i class="fas fa-certificate mr-2"></i>จัดการใบอนุญาต
+                    </button>
+                    <button @click="setActiveTab('createDatabase')"
+                            :class="activeTab === 'createDatabase' ? 'border-blue-500 text-blue-600' : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'"
+                            class="whitespace-nowrap py-2 px-1 border-b-2 font-medium text-sm transition-colors">
+                        <i class="fas fa-database mr-2"></i>สร้างฐานข้อมูล
+                    </button>
+                </nav>
+            </div>
+        </div>
+
+        <!-- Dashboard Tab -->
+        <div x-show="activeTab === 'dashboard'" class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 mt-6">
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+                <!-- Stats Cards -->
+                <div class="bg-white rounded-lg p-6 card-shadow hover-transform">
+                    <div class="flex items-center">
+                        <div class="p-3 rounded-full bg-blue-100">
+                            <i class="fas fa-users text-blue-600 text-xl"></i>
+                        </div>
+                        <div class="ml-4">
+                            <p class="text-sm font-medium text-gray-600">ผู้ลงทะเบียน</p>
+                            <p class="text-2xl font-bold text-gray-900" x-text="stats.totalRegistrations"></p>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="bg-white rounded-lg p-6 card-shadow hover-transform">
+                    <div class="flex items-center">
+                        <div class="p-3 rounded-full bg-green-100">
+                            <i class="fas fa-check-circle text-green-600 text-xl"></i>
+                        </div>
+                        <div class="ml-4">
+                            <p class="text-sm font-medium text-gray-600">เปิดใช้งานแล้ว</p>
+                            <p class="text-2xl font-bold text-gray-900" x-text="stats.approvedRegistrations"></p>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="bg-white rounded-lg p-6 card-shadow hover-transform">
+                    <div class="flex items-center">
+                        <div class="p-3 rounded-full bg-yellow-100">
+                            <i class="fas fa-clock text-yellow-600 text-xl"></i>
+                        </div>
+                        <div class="ml-4">
+                            <p class="text-sm font-medium text-gray-600">รอดำเนินการ</p>
+                            <p class="text-2xl font-bold text-gray-900" x-text="stats.pendingRegistrations"></p>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="bg-white rounded-lg p-6 card-shadow hover-transform">
+                    <div class="flex items-center">
+                        <div class="p-3 rounded-full bg-purple-100">
+                            <i class="fas fa-certificate text-purple-600 text-xl"></i>
+                        </div>
+                        <div class="ml-4">
+                            <p class="text-sm font-medium text-gray-600">ใบอนุญาตทั้งหมด</p>
+                            <p class="text-2xl font-bold text-gray-900" x-text="stats.totalLicenses"></p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Quick Actions -->
+            <div class="bg-white rounded-lg card-shadow p-6 mb-8">
+                <h3 class="text-lg font-medium text-gray-900 mb-4">
+                    <i class="fas fa-bolt mr-2"></i>การดำเนินการด่วน
+                </h3>
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <button @click="setActiveTab('registrations')" 
+                            class="p-4 border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors text-left">
+                        <div class="flex items-center">
+                            <i class="fas fa-user-check text-green-600 text-lg mr-3"></i>
+                            <div>
+                                <p class="font-medium text-gray-900">อนุมัติการลงทะเบียน</p>
+                                <p class="text-sm text-gray-500" x-text="`${stats.pendingRegistrations} รายการรอดำเนินการ`"></p>
+                            </div>
+                        </div>
+                    </button>
+                    
+                    <button @click="setActiveTab('licenses')" 
+                            class="p-4 border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors text-left">
+                        <div class="flex items-center">
+                            <i class="fas fa-calendar-plus text-blue-600 text-lg mr-3"></i>
+                            <div>
+                                <p class="font-medium text-gray-900">ต่ออายุใบอนุญาต</p>
+                                <p class="text-sm text-gray-500">จัดการใบอนุญาตที่หมดอายุ</p>
+                            </div>
+                        </div>
+                    </button>
+                    
+                    <button @click="setActiveTab('createDatabase')" 
+                            class="p-4 border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors text-left">
+                        <div class="flex items-center">
+                            <i class="fas fa-plus-circle text-purple-600 text-lg mr-3"></i>
+                            <div>
+                                <p class="font-medium text-gray-900">สร้างฐานข้อมูลใหม่</p>
+                                <p class="text-sm text-gray-500">เพิ่มร้านค้าใหม่เข้าระบบ</p>
+                            </div>
+                        </div>
+                    </button>
+                </div>
+            </div>
+
+            <!-- Recent Activity -->
+            <div class="bg-white rounded-lg card-shadow p-6">
+                <h3 class="text-lg font-medium text-gray-900 mb-4">
+                    <i class="fas fa-history mr-2"></i>กิจกรรมล่าสุด
+                </h3>
+                <div class="space-y-4">
+                    <template x-for="activity in recentActivities" :key="activity.id">
+                        <div class="flex items-center p-4 bg-gray-50 rounded-lg">
+                            <div class="flex-shrink-0">
+                                <div class="h-10 w-10 rounded-full flex items-center justify-center"
+                                     :class="activity.type === 'registration' ? 'bg-green-100' : activity.type === 'license' ? 'bg-blue-100' : 'bg-purple-100'">
+                                    <i :class="activity.icon" 
+                                       :class="activity.type === 'registration' ? 'text-green-600' : activity.type === 'license' ? 'text-blue-600' : 'text-purple-600'"></i>
+                                </div>
+                            </div>
+                            <div class="ml-4">
+                                <p class="text-sm font-medium text-gray-900" x-text="activity.message"></p>
+                                <p class="text-sm text-gray-500" x-text="activity.time"></p>
+                            </div>
+                        </div>
+                    </template>
+                    
+                    <div x-show="recentActivities.length === 0" class="text-center py-8 text-gray-500">
+                        <i class="fas fa-inbox text-4xl mb-2"></i>
+                        <p>ยังไม่มีกิจกรรมล่าสุด</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Registrations Tab -->
+        <div x-show="activeTab === 'registrations'" class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 mt-6">
+            <div class="bg-white rounded-lg card-shadow">
+                <div class="px-6 py-4 border-b border-gray-200 flex justify-between items-center">
+                    <h3 class="text-lg font-medium text-gray-900">
+                        <i class="fas fa-user-plus mr-2"></i>รายการลงทะเบียน
+                        <span class="text-sm text-gray-500 ml-2">
+                            (ทั้งหมด <span x-text="registrations.length"></span> รายการ)
+                        </span>
+                    </h3>
+                    <button @click="loadRegistrations()" 
+                            :disabled="isLoading"
+                            class="bg-blue-500 text-white px-4 py-2 rounded-lg hover:bg-blue-600 transition-colors disabled:opacity-50">
+                        <i class="fas fa-sync-alt mr-2" :class="{'animate-spin': isLoading}"></i>รีเฟรช
+                    </button>
+                </div>
+                
+                <div class="overflow-x-auto">
+                    <table class="min-w-full divide-y divide-gray-200">
+                        <thead class="bg-gray-50">
+                            <tr>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">วันที่</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">อีเมล</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">เบอร์โทร</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">ชื่อร้าน</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">แพ็คเกจ</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">สถานะ</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">การดำเนินการ</th>
+                            </tr>
+                        </thead>
+                        <tbody class="bg-white divide-y divide-gray-200">
+                            <template x-for="registration in registrations" :key="registration.email">
+                                <tr class="hover:bg-gray-50">
+                                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900" x-text="formatDate(registration.date)"></td>
+                                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900" x-text="registration.email"></td>
+                                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900" x-text="registration.phone"></td>
+                                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900" x-text="registration.storeName"></td>
+                                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                                        <span class="px-2 py-1 text-xs font-medium rounded-full"
+                                              :class="getPackageClass(registration.package)"
+                                              x-text="getPackageText(registration.package)"></span>
+                                    </td>
+                                    <td class="px-6 py-4 whitespace-nowrap">
+                                        <span :class="getStatusClass(registration.status)" class="status-badge" x-text="registration.status"></span>
+                                    </td>
+                                    <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                                        <button x-show="registration.status !== 'เปิดใช้งานแล้ว'"
+                                                @click="approveRegistration(registration)"
+                                                class="text-green-600 hover:text-green-900 mr-3 px-3 py-1 border border-green-300 rounded hover:bg-green-50 transition-colors">
+                                            <i class="fas fa-check mr-1"></i>อนุมัติ
+                                        </button>
+                                        <span x-show="registration.status === 'เปิดใช้งานแล้ว'" 
+                                              class="text-green-600 text-sm">
+                                            <i class="fas fa-check-circle mr-1"></i>เสร็จสิ้น
+                                        </span>
+                                    </td>
+                                </tr>
+                            </template>
+                            
+                            <tr x-show="registrations.length === 0">
+                                <td colspan="7" class="px-6 py-8 text-center text-gray-500">
+                                    <i class="fas fa-inbox text-4xl mb-2"></i>
+                                    <p>ไม่พบข้อมูลการลงทะเบียน</p>
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <!-- Licenses Tab -->
+        <div x-show="activeTab === 'licenses'" class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 mt-6">
+            <div class="bg-white rounded-lg card-shadow">
+                <div class="px-6 py-4 border-b border-gray-200 flex justify-between items-center">
+                    <h3 class="text-lg font-medium text-gray-900">
+                        <i class="fas fa-certificate mr-2"></i>จัดการใบอนุญาต
+                        <span class="text-sm text-gray-500 ml-2">
+                            (ทั้งหมด <span x-text="licenses.length"></span> รายการ)
+                        </span>
+                    </h3>
+                    <button @click="loadLicenses()" 
+                            :disabled="isLoading"
+                            class="bg-blue-500 text-white px-4 py-2 rounded-lg hover:bg-blue-600 transition-colors disabled:opacity-50">
+                        <i class="fas fa-sync-alt mr-2" :class="{'animate-spin': isLoading}"></i>รีเฟรช
+                    </button>
+                </div>
+                
+                <div class="overflow-x-auto">
+                    <table class="min-w-full divide-y divide-gray-200">
+                        <thead class="bg-gray-50">
+                            <tr>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">ชื่อร้าน</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Store ID</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">วันหมดอายุ</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">แพ็คเกจ</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">สถานะ</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">การดำเนินการ</th>
+                            </tr>
+                        </thead>
+                        <tbody class="bg-white divide-y divide-gray-200">
+                            <template x-for="license in licenses" :key="license.storeID">
+                                <tr class="hover:bg-gray-50">
+                                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                                        <div>
+                                            <p class="font-medium text-gray-900" x-text="license.storeName || 'ไม่ระบุชื่อร้าน'"></p>
+                                            <p class="text-xs text-gray-500 font-mono" :title="license.sheetID">
+                                                Sheet: <span x-text="license.sheetID ? license.sheetID.substring(0, 15) + '...' : 'N/A'"></span>
+                                            </p>
+                                        </div>
+                                    </td>
+                                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900 font-mono font-bold" x-text="license.storeID"></td>
+                                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900" x-text="formatDate(license.expireDate)"></td>
+                                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                                        <span class="px-2 py-1 text-xs font-medium rounded-full"
+                                              :class="getPackageClass(license.package)"
+                                              x-text="getPackageText(license.package)"></span>
+                                    </td>
+                                    <td class="px-6 py-4 whitespace-nowrap">
+                                        <span :class="getLicenseStatusClass(license.expireDate)" class="status-badge" x-text="getLicenseStatus(license.expireDate)"></span>
+                                    </td>
+                                    <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                                        <button @click="openExtendModal(license)"
+                                                class="text-blue-600 hover:text-blue-900 px-3 py-1 border border-blue-300 rounded hover:bg-blue-50 transition-colors">
+                                            <i class="fas fa-clock mr-1"></i>ต่ออายุ
+                                        </button>
+                                    </td>
+                                </tr>
+                            </template>
+                            
+                            <tr x-show="licenses.length === 0">
+                                <td colspan="6" class="px-6 py-8 text-center text-gray-500">
+                                    <i class="fas fa-certificate text-4xl mb-2"></i>
+                                    <p>ไม่พบข้อมูลใบอนุญาต</p>
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <!-- Create Database Tab -->
+        <div x-show="activeTab === 'createDatabase'" class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 mt-6">
+            <div class="bg-white rounded-lg card-shadow p-6">
+                <h3 class="text-lg font-medium text-gray-900 mb-6">
+                    <i class="fas fa-database mr-2"></i>สร้างฐานข้อมูลใหม่
+                </h3>
+                
+                <form @submit.prevent="createDatabase()">
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-2">
+                                <i class="fas fa-envelope mr-1"></i>อีเมล
+                            </label>
+                            <input type="email" 
+                                   x-model="newDatabase.email"
+                                   class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                                   placeholder="example@email.com"
+                                   required>
+                        </div>
+                        
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-2">
+                                <i class="fas fa-store mr-1"></i>ชื่อร้าน
+                            </label>
+                            <input type="text" 
+                                   x-model="newDatabase.storeName"
+                                   class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                                   placeholder="ชื่อร้านรถเช่า"
+                                   required>
+                        </div>
+                        
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-2">
+                                <i class="fas fa-box mr-1"></i>แพ็คเกจ
+                            </label>
+                            <select x-model="newDatabase.packageType" 
+                                    class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                                    required>
+                                <option value="">เลือกแพ็คเกจ</option>
+                                <option value="monthly">รายเดือน (32 วัน)</option>
+                                <option value="yearly">รายปี (366 วัน)</option>
+                                <option value="lifetime">ตลอดชีพ (9999 วัน)</option>
+                            </select>
+                        </div>
+                    </div>
+                    
+                    <div class="mt-6">
+                        <button type="submit" 
+                                :disabled="isLoading"
+                                class="bg-green-500 text-white px-6 py-3 rounded-lg hover:bg-green-600 transition-colors disabled:opacity-50">
+                            <span x-show="!isLoading">
+                                <i class="fas fa-plus mr-2"></i>สร้างฐานข้อมูล
+                            </span>
+                            <span x-show="isLoading" class="flex items-center">
+                                <div class="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
+                                กำลังสร้าง...
+                            </span>
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- Extend License Modal -->
+    <div x-show="showExtendModal" x-cloak class="fixed inset-0 bg-gray-900 bg-opacity-75 flex items-center justify-center z-50">
+        <div class="bg-white rounded-2xl p-8 max-w-md w-full mx-4 card-shadow">
+            <div class="text-center mb-6">
+                <div class="mx-auto h-16 w-16 bg-yellow-100 rounded-full flex items-center justify-center mb-4">
+                    <i class="fas fa-clock text-yellow-600 text-2xl"></i>
+                </div>
+                <h3 class="text-xl font-bold text-gray-900">ต่ออายุใบอนุญาต</h3>
+                <p class="text-gray-600 mt-2" x-text="`${selectedLicense?.storeName || 'ไม่ระบุชื่อร้าน'}`"></p>
+                <p class="text-sm text-gray-500 mt-1" x-text="`Store ID: ${selectedLicense?.storeID}`"></p>
+                <p class="text-sm text-gray-500" x-text="`หมดอายุปัจจุบัน: ${selectedLicense ? formatDate(selectedLicense.expireDate) : ''}`"></p>
+            </div>
+            
+            <div class="mb-6">
+                <label class="block text-sm font-medium text-gray-700 mb-2">เลือกแพ็คเกจ</label>
+                <select x-model="extendPackage" 
+                        class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                    <option value="monthly">รายเดือน (+32 วัน)</option>
+                    <option value="yearly">รายปี (+366 วัน)</option>
+                    <option value="lifetime">ตลอดชีพ (+9999 วัน)</option>
+                </select>
+            </div>
+            
+            <div class="flex space-x-4">
+                <button @click="showExtendModal = false" 
+                        class="flex-1 bg-gray-300 text-gray-700 py-3 rounded-lg hover:bg-gray-400 transition-colors">
+                    ยกเลิก
+                </button>
+                <button @click="extendLicense()" 
+                        :disabled="isLoading"
+                        class="flex-1 bg-blue-500 text-white py-3 rounded-lg hover:bg-blue-600 transition-colors disabled:opacity-50">
+                    <span x-show="!isLoading">ต่ออายุ</span>
+                    <span x-show="isLoading">กำลังดำเนินการ...</span>
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        function adminApp() {
+            return {
+                isLoading: false,
+                isLoggedIn: false,
+                activeTab: 'dashboard',
+                loadingMessage: 'กำลังโหลด...',
+                
+                // Login data
+                loginData: {
+                    username: '',
+                    password: ''
+                },
+                
+                // Stats
+                stats: {
+                    totalRegistrations: 0,
+                    approvedRegistrations: 0,
+                    pendingRegistrations: 0,
+                    totalLicenses: 0
+                },
+                
+                // Data arrays
+                registrations: [],
+                licenses: [],
+                recentActivities: [],
+                
+                // Modal states
+                showExtendModal: false,
+                selectedLicense: null,
+                extendPackage: 'monthly',
+                
+                // New database form
+                newDatabase: {
+                    email: '',
+                    storeName: '',
+                    packageType: ''
+                },
+                
+                init() {
+                    // Check if already logged in
+                    const adminSession = localStorage.getItem('adminSession');
+                    if (adminSession) {
+                        this.isLoggedIn = true;
+                        this.loadDashboardData();
+                    }
+                },
+                
+                setActiveTab(tab) {
+                    this.activeTab = tab;
+                    if (tab === 'registrations' && this.registrations.length === 0) {
+                        this.loadRegistrations();
+                    } else if (tab === 'licenses' && this.licenses.length === 0) {
+                        this.loadLicenses();
+                    }
+                },
+                
+                adminLogin() {
+                    this.isLoading = true;
+                    this.loadingMessage = 'กำลังเข้าสู่ระบบ...';
+                    
+                    // เรียกใช้ฟังก์ชัน verifyLogin จาก Google Apps Script
+                    google.script.run
+                        .withSuccessHandler(result => {
+                            this.isLoading = false;
+                            
+                            if (result.success) {
+                                this.isLoggedIn = true;
+                                localStorage.setItem('adminSession', 'true');
+                                this.loadDashboardData();
+                                
+                                Swal.fire({
+                                    icon: 'success',
+                                    title: 'เข้าสู่ระบบสำเร็จ',
+                                    text: 'ยินดีต้อนรับสู่ระบบแอดมิน',
+                                    timer: 2000,
+                                    showConfirmButton: false
+                                });
+                            } else {
+                                Swal.fire({
+                                    icon: 'error',
+                                    title: 'เข้าสู่ระบบไม่สำเร็จ',
+                                    text: result.message || 'ชื่อผู้ใช้หรือรหัสผ่านไม่ถูกต้อง'
+                                });
+                            }
+                        })
+                        .withFailureHandler(error => {
+                            this.isLoading = false;
+                            console.error('Login error:', error);
+                            
+                            Swal.fire({
+                                icon: 'error',
+                                title: 'เกิดข้อผิดพลาด',
+                                text: 'ไม่สามารถเชื่อมต่อกับเซิร์ฟเวอร์ได้'
+                            });
+                        })
+                        .verifyLogin(this.loginData.username, this.loginData.password);
+                },
+                
+                logout() {
+                    this.isLoggedIn = false;
+                    localStorage.removeItem('adminSession');
+                    this.loginData = { username: '', password: '' };
+                    this.activeTab = 'dashboard';
+                    
+                    Swal.fire({
+                        icon: 'success',
+                        title: 'ออกจากระบบแล้ว',
+                        timer: 1500,
+                        showConfirmButton: false
+                    });
+                },
+                
+                loadDashboardData() {
+                    this.loadRegistrations();
+                    this.loadLicenses();
+                },
+                
+                loadRegistrations() {
+                    this.isLoading = true;
+                    this.loadingMessage = 'กำลังโหลดข้อมูลการลงทะเบียน...';
+                    
+                    google.script.run
+                        .withSuccessHandler(result => {
+                            try {
+                                // แปลง JSON string เป็น object
+                                this.registrations = JSON.parse(result);
+                                this.updateStats();
+                                console.log('โหลดข้อมูลการลงทะเบียนสำเร็จ:', this.registrations.length, 'รายการ');
+                            } catch (error) {
+                                console.error('Error parsing registrations:', error);
+                                Swal.fire({
+                                    icon: 'error',
+                                    title: 'เกิดข้อผิดพลาด',
+                                    text: 'ไม่สามารถโหลดข้อมูลการลงทะเบียนได้'
+                                });
+                            }
+                            this.isLoading = false;
+                        })
+                        .withFailureHandler(error => {
+                            console.error('Error loading registrations:', error);
+                            Swal.fire({
+                                icon: 'error',
+                                title: 'เกิดข้อผิดพลาด',
+                                text: 'ไม่สามารถเชื่อมต่อกับเซิร์ฟเวอร์ได้'
+                            });
+                            this.isLoading = false;
+                        })
+                        .getRegistrations();
+                },
+                
+                loadLicenses() {
+                    this.isLoading = true;
+                    this.loadingMessage = 'กำลังโหลดข้อมูลใบอนุญาต...';
+                    
+                    google.script.run
+                        .withSuccessHandler(result => {
+                            try {
+                                // แปลง JSON string เป็น object
+                                this.licenses = JSON.parse(result);
+                                this.updateStats();
+                                console.log('โหลดข้อมูลใบอนุญาตสำเร็จ:', this.licenses.length, 'รายการ');
+                            } catch (error) {
+                                console.error('Error parsing licenses:', error);
+                                Swal.fire({
+                                    icon: 'error',
+                                    title: 'เกิดข้อผิดพลาด',
+                                    text: 'ไม่สามารถโหลดข้อมูลใบอนุญาตได้'
+                                });
+                            }
+                            this.isLoading = false;
+                        })
+                        .withFailureHandler(error => {
+                            console.error('Error loading licenses:', error);
+                            Swal.fire({
+                                icon: 'error',
+                                title: 'เกิดข้อผิดพลาด',
+                                text: 'ไม่สามารถเชื่อมต่อกับเซิร์ฟเวอร์ได้'
+                            });
+                            this.isLoading = false;
+                        })
+                        .getLicenses();
+                },
+                
+                updateStats() {
+                    this.stats.totalRegistrations = this.registrations.length;
+                    this.stats.approvedRegistrations = this.registrations.filter(r => r.status === 'เปิดใช้งานแล้ว').length;
+                    this.stats.pendingRegistrations = this.registrations.filter(r => r.status === 'รอดำเนินการ').length;
+                    this.stats.totalLicenses = this.licenses.length;
+                    
+                    // Update recent activities
+                    this.updateRecentActivities();
+                },
+                
+                updateRecentActivities() {
+                    this.recentActivities = [];
+                    
+                    // Add recent registrations
+                    this.registrations.slice(-3).forEach((reg, index) => {
+                        this.recentActivities.push({
+                            id: `reg_${index}`,
+                            type: 'registration',
+                            icon: 'fas fa-user-plus',
+                            message: `มีการลงทะเบียนใหม่จาก ${reg.storeName}`,
+                            time: this.getRelativeTime(reg.date)
+                        });
+                    });
+                },
+                
+                approveRegistration(registration) {
+                    Swal.fire({
+                        title: 'ยืนยันการอนุมัติ',
+                        text: `ต้องการอนุมัติการลงทะเบียนของ ${registration.email} หรือไม่?`,
+                        icon: 'question',
+                        showCancelButton: true,
+                        confirmButtonText: 'อนุมัติ',
+                        cancelButtonText: 'ยกเลิก',
+                        confirmButtonColor: '#10B981',
+                        cancelButtonColor: '#6B7280'
+                    }).then((result) => {
+                        if (result.isConfirmed) {
+                            this.createDatabase({
+                                email: registration.email,
+                                storeName: registration.storeName,
+                                packageType: registration.package
+                            });
+                        }
+                    });
+                },
+                
+                createDatabase(data = null) {
+                    const dbData = data || this.newDatabase;
+                    
+                    // ตรวจสอบข้อมูล
+                    if (!dbData.email || !dbData.storeName || !dbData.packageType) {
+                        Swal.fire({
+                            icon: 'error',
+                            title: 'ข้อมูลไม่ครบถ้วน',
+                            text: 'กรุณากรอกข้อมูลให้ครบทุกช่อง'
+                        });
+                        return;
+                    }
+                    
+                    this.isLoading = true;
+                    this.loadingMessage = 'กำลังสร้างฐานข้อมูล...';
+                    
+                    Swal.fire({
+                        title: 'กำลังสร้างฐานข้อมูล...',
+                        text: 'กรุณารอสักครู่ ระบบกำลังดำเนินการ',
+                        allowOutsideClick: false,
+                        didOpen: () => {
+                            Swal.showLoading();
+                        }
+                    });
+                    
+                    google.script.run
+                        .withSuccessHandler(result => {
+                            this.isLoading = false;
+                            
+                            if (result.status === 'success') {
+                                Swal.fire({
+                                    icon: 'success',
+                                    title: 'สร้างฐานข้อมูลสำเร็จ!',
+                                    html: `
+                                        <div class="text-left">
+                                            <p><strong>Sheet ID:</strong> ${result.data.sheetID}</p>
+                                            <p><strong>Store ID:</strong> ${result.data.storeID}</p>
+                                            <p><strong>วันหมดอายุ:</strong> ${result.data.expireDate}</p>
+                                            <p><strong>อีเมล:</strong> ${dbData.email}</p>
+                                            <p><strong>ชื่อร้าน:</strong> ${dbData.storeName}</p>
+                                        </div>
+                                    `,
+                                    confirmButtonText: 'ตกลง'
+                                });
+                                
+                                // รีเซ็ตฟอร์มถ้าเป็นการสร้างด้วยตนเอง
+                                if (!data) {
+                                    this.newDatabase = { email: '', storeName: '', packageType: '' };
+                                }
+                                
+                                // โหลดข้อมูลใหม่
+                                this.loadRegistrations();
+                                this.loadLicenses();
+                                
+                            } else {
+                                Swal.fire({
+                                    icon: 'error',
+                                    title: 'เกิดข้อผิดพลาด',
+                                    text: result.message || 'ไม่สามารถสร้างฐานข้อมูลได้'
+                                });
+                            }
+                        })
+                        .withFailureHandler(error => {
+                            this.isLoading = false;
+                            console.error('Error creating database:', error);
+                            
+                            Swal.fire({
+                                icon: 'error',
+                                title: 'เกิดข้อผิดพลาด',
+                                text: 'ไม่สามารถเชื่อมต่อกับเซิร์ฟเวอร์ได้: ' + error.toString()
+                            });
+                        })
+                        .createNewDatabase(dbData.email, dbData.storeName, dbData.packageType);
+                },
+                
+                openExtendModal(license) {
+                    this.selectedLicense = license;
+                    this.extendPackage = 'monthly';
+                    this.showExtendModal = true;
+                },
+                
+                extendLicense() {
+                    if (!this.selectedLicense || !this.extendPackage) {
+                        return;
+                    }
+                    
+                    this.isLoading = true;
+                    this.loadingMessage = 'กำลังต่ออายุใบอนุญาต...';
+                    this.showExtendModal = false;
+                    
+                    Swal.fire({
+                        title: 'กำลังต่ออายุใบอนุญาต...',
+                        text: 'กรุณารอสักครู่',
+                        allowOutsideClick: false,
+                        didOpen: () => {
+                            Swal.showLoading();
+                        }
+                    });
+                    
+                    google.script.run
+                        .withSuccessHandler(result => {
+                            this.isLoading = false;
+                            
+                            if (result.status === 'success') {
+                                Swal.fire({
+                                    icon: 'success',
+                                    title: 'ต่ออายุใบอนุญาตสำเร็จ!',
+                                    html: `
+                                        <div class="text-left">
+                                            <p><strong>Store ID:</strong> ${result.data.storeID}</p>
+                                            <p><strong>แพ็คเกจใหม่:</strong> ${result.data.package}</p>
+                                            <p><strong>วันหมดอายุใหม่:</strong> ${result.data.expireDate}</p>
+                                        </div>
+                                    `,
+                                    confirmButtonText: 'ตกลง'
+                                });
+                                
+                                // โหลดข้อมูลใหม่
+                                this.loadLicenses();
+                                
+                            } else {
+                                Swal.fire({
+                                    icon: 'error',
+                                    title: 'เกิดข้อผิดพลาด',
+                                    text: result.message || 'ไม่สามารถต่ออายุใบอนุญาตได้'
+                                });
+                            }
+                        })
+                        .withFailureHandler(error => {
+                            this.isLoading = false;
+                            console.error('Error extending license:', error);
+                            
+                            Swal.fire({
+                                icon: 'error',
+                                title: 'เกิดข้อผิดพลาด',
+                                text: 'ไม่สามารถเชื่อมต่อกับเซิร์ฟเวอร์ได้: ' + error.toString()
+                            });
+                        })
+                        .extendLicense(this.selectedLicense.storeID, this.extendPackage);
+                },
+                
+                // Utility functions
+                formatDate(dateString) {
+                    if (!dateString) return '';
+                    try {
+                        const date = new Date(dateString);
+                        return date.toLocaleDateString('th-TH', {
+                            year: 'numeric',
+                            month: 'short',
+                            day: 'numeric'
+                        });
+                    } catch (error) {
+                        return dateString;
+                    }
+                },
+                
+                getRelativeTime(dateString) {
+                    if (!dateString) return '';
+                    try {
+                        const date = new Date(dateString);
+                        const now = new Date();
+                        const diffTime = Math.abs(now - date);
+                        const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+                        
+                        if (diffDays === 0) return 'วันนี้';
+                        if (diffDays === 1) return 'เมื่อวาน';
+                        if (diffDays <= 7) return `${diffDays} วันที่แล้ว`;
+                        return this.formatDate(dateString);
+                    } catch (error) {
+                        return dateString;
+                    }
+                },
+                
+                getStatusClass(status) {
+                    switch(status) {
+                        case 'เปิดใช้งานแล้ว':
+                            return 'status-approved';
+                        case 'รอดำเนินการ':
+                            return 'status-pending';
+                        default:
+                            return 'status-pending';
+                    }
+                },
+                
+                getPackageClass(packageType) {
+                    switch(packageType) {
+                        case 'monthly':
+                            return 'bg-blue-100 text-blue-800';
+                        case 'yearly':
+                            return 'bg-green-100 text-green-800';
+                        case 'lifetime':
+                            return 'bg-purple-100 text-purple-800';
+                        default:
+                            return 'bg-gray-100 text-gray-800';
+                    }
+                },
+                
+                getPackageText(packageType) {
+                    switch(packageType) {
+                        case 'monthly':
+                            return 'รายเดือน';
+                        case 'yearly':
+                            return 'รายปี';
+                        case 'lifetime':
+                            return 'ตลอดชีพ';
+                        default:
+                            return packageType;
+                    }
+                },
+                
+                getLicenseStatus(expireDate) {
+                    if (!expireDate) return 'ไม่ทราบสถานะ';
+                    
+                    try {
+                        const today = new Date();
+                        const expire = new Date(expireDate);
+                        
+                        if (expire < today) {
+                            return 'หมดอายุ';
+                        } else if (expire - today < 7 * 24 * 60 * 60 * 1000) {
+                            return 'ใกล้หมดอายุ';
+                        } else {
+                            return 'ใช้งานได้';
+                        }
+                    } catch (error) {
+                        return 'ไม่ทราบสถานะ';
+                    }
+                },
+                
+                getLicenseStatusClass(expireDate) {
+                    const status = this.getLicenseStatus(expireDate);
+                    switch(status) {
+                        case 'หมดอายุ':
+                            return 'status-expired';
+                        case 'ใกล้หมดอายุ':
+                            return 'status-pending';
+                        case 'ใช้งานได้':
+                            return 'status-approved';
+                        default:
+                            return 'status-pending';
+                    }
+                }
+            }
+        }
+    </script>
+</body>
+</html>

@@ -63,6 +63,8 @@ export default function RegisterShopPage() {
     // File refs
     const idCardRef = useRef<HTMLInputElement>(null)
     const businessLicenseRef = useRef<HTMLInputElement>(null)
+    const leaseAgreementRef = useRef<HTMLInputElement>(null)
+    const leaseAgreementWithCarRef = useRef<HTMLInputElement>(null)
 
     // Form data
     const [formData, setFormData] = useState({
@@ -88,6 +90,10 @@ export default function RegisterShopPage() {
     const [idCardPreview, setIdCardPreview] = useState<string | null>(null)
     const [businessLicenseFile, setBusinessLicenseFile] = useState<File | null>(null)
     const [businessLicensePreview, setBusinessLicensePreview] = useState<string | null>(null)
+    const [leaseAgreementFile, setLeaseAgreementFile] = useState<File | null>(null)
+    const [leaseAgreementPreview, setLeaseAgreementPreview] = useState<string | null>(null)
+    const [leaseAgreementWithCarFile, setLeaseAgreementWithCarFile] = useState<File | null>(null)
+    const [leaseAgreementWithCarPreview, setLeaseAgreementWithCarPreview] = useState<string | null>(null)
 
     // Check if user is already logged in
     useEffect(() => {
@@ -135,7 +141,7 @@ export default function RegisterShopPage() {
         }))
     }
 
-    const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>, type: 'idCard' | 'businessLicense') => {
+    const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>, type: 'idCard' | 'businessLicense' | 'leaseAgreement' | 'leaseAgreementWithCar') => {
         const file = e.target.files?.[0]
         if (!file) return
 
@@ -156,24 +162,38 @@ export default function RegisterShopPage() {
             if (type === 'idCard') {
                 setIdCardFile(file)
                 setIdCardPreview(file.type.startsWith('image/') ? reader.result as string : null)
-            } else {
+            } else if (type === 'businessLicense') {
                 setBusinessLicenseFile(file)
                 setBusinessLicensePreview(file.type.startsWith('image/') ? reader.result as string : null)
+            } else if (type === 'leaseAgreement') {
+                setLeaseAgreementFile(file)
+                setLeaseAgreementPreview(file.type.startsWith('image/') ? reader.result as string : null)
+            } else if (type === 'leaseAgreementWithCar') {
+                setLeaseAgreementWithCarFile(file)
+                setLeaseAgreementWithCarPreview(file.type.startsWith('image/') ? reader.result as string : null)
             }
         }
         reader.readAsDataURL(file)
         setError(null)
     }
 
-    const removeFile = (type: 'idCard' | 'businessLicense') => {
+    const removeFile = (type: 'idCard' | 'businessLicense' | 'leaseAgreement' | 'leaseAgreementWithCar') => {
         if (type === 'idCard') {
             setIdCardFile(null)
             setIdCardPreview(null)
             if (idCardRef.current) idCardRef.current.value = ''
-        } else {
+        } else if (type === 'businessLicense') {
             setBusinessLicenseFile(null)
             setBusinessLicensePreview(null)
             if (businessLicenseRef.current) businessLicenseRef.current.value = ''
+        } else if (type === 'leaseAgreement') {
+            setLeaseAgreementFile(null)
+            setLeaseAgreementPreview(null)
+            if (leaseAgreementRef.current) leaseAgreementRef.current.value = ''
+        } else if (type === 'leaseAgreementWithCar') {
+            setLeaseAgreementWithCarFile(null)
+            setLeaseAgreementWithCarPreview(null)
+            if (leaseAgreementWithCarRef.current) leaseAgreementWithCarRef.current.value = ''
         }
     }
 
@@ -195,6 +215,8 @@ export default function RegisterShopPage() {
             // Upload files to Supabase Storage first
             let idCardUrl: string | null = null
             let businessLicenseUrl: string | null = null
+            let leaseAgreementUrl: string | null = null
+            let leaseAgreementWithCarUrl: string | null = null
 
             if (idCardFile) {
                 const fileExt = idCardFile.name.split('.').pop()
@@ -234,8 +256,48 @@ export default function RegisterShopPage() {
                     return
                 }
 
+            }
+
+            if (leaseAgreementFile) {
+                const fileExt = leaseAgreementFile.name.split('.').pop()
+                const filePath = `pending/${tempId}/lease_agreement.${fileExt}`
+                const { error: uploadError } = await supabase.storage
+                    .from('verification-docs')
+                    .upload(filePath, leaseAgreementFile, {
+                        cacheControl: '3600',
+                        upsert: true
+                    })
+
+                if (uploadError) {
+                    console.error('Lease agreement upload error:', uploadError)
+                    setError('ไม่สามารถอัปโหลดสัญญาเช่าได้: ' + uploadError.message)
+                    setLoading(false)
+                    return
+                }
+
                 const { data: urlData } = supabase.storage.from('verification-docs').getPublicUrl(filePath)
-                businessLicenseUrl = urlData.publicUrl
+                leaseAgreementUrl = urlData.publicUrl
+            }
+
+            if (leaseAgreementWithCarFile) {
+                const fileExt = leaseAgreementWithCarFile.name.split('.').pop()
+                const filePath = `pending/${tempId}/lease_agreement_with_car.${fileExt}`
+                const { error: uploadError } = await supabase.storage
+                    .from('verification-docs')
+                    .upload(filePath, leaseAgreementWithCarFile, {
+                        cacheControl: '3600',
+                        upsert: true
+                    })
+
+                if (uploadError) {
+                    console.error('Lease agreement with car upload error:', uploadError)
+                    setError('ไม่สามารถอัปโหลดรูปคู้รถได้: ' + uploadError.message)
+                    setLoading(false)
+                    return
+                }
+
+                const { data: urlData } = supabase.storage.from('verification-docs').getPublicUrl(filePath)
+                leaseAgreementWithCarUrl = urlData.publicUrl
             }
 
             // If user is already logged in, create shop directly
@@ -264,6 +326,8 @@ export default function RegisterShopPage() {
                         accept_credit_card: formData.accept_credit_card,
                         id_card_url: idCardUrl,
                         business_license_url: businessLicenseUrl,
+                        lease_agreement_url: leaseAgreementUrl,
+                        lease_agreement_with_car_url: leaseAgreementWithCarUrl,
                         verification_status: 'pending',
                         pdpa_accepted_at: new Date().toISOString(),
                     })
@@ -287,6 +351,8 @@ export default function RegisterShopPage() {
                 ...formData,
                 id_card_url: idCardUrl,
                 business_license_url: businessLicenseUrl,
+                lease_agreement_url: leaseAgreementUrl,
+                lease_agreement_with_car_url: leaseAgreementWithCarUrl,
                 temp_id: tempId
             }
             localStorage.setItem('pendingShopRegistration', JSON.stringify(dataToStore))
@@ -363,6 +429,14 @@ export default function RegisterShopPage() {
             setError(formData.business_type === 'individual'
                 ? 'กรุณาแนบทะเบียนพาณิชย์'
                 : 'กรุณาแนบหนังสือรับรองบริษัท')
+            return false
+        }
+        if (!leaseAgreementFile) {
+            setError('กรุณาแนบตัวอย่างสัญญาเช่าจริง')
+            return false
+        }
+        if (!leaseAgreementWithCarFile) {
+            setError('กรุณาแนบรูปสัญญาเช่าจริงคู่กับรถ')
             return false
         }
         setError(null)
@@ -996,6 +1070,124 @@ export default function RegisterShopPage() {
                                 )}
                             </div>
 
+                            {/* Lease Agreement Upload */}
+                            <div>
+                                <label className="block text-sm font-medium text-gray-700 mb-2">
+                                    ตัวอย่างสัญญาเช่าจริง
+                                    <span className="text-red-500"> *</span>
+                                </label>
+                                <p className="text-xs text-gray-500 mb-3">
+                                    ตัวอย่างเอกสารสัญญาเช่าที่ใช้จริงกับลูกค้า
+                                </p>
+
+                                {leaseAgreementPreview ? (
+                                    <div className="relative border-2 border-green-500 rounded-xl p-4 bg-green-50">
+                                        <button
+                                            type="button"
+                                            onClick={() => removeFile('leaseAgreement')}
+                                            className="absolute top-2 right-2 p-1 bg-red-500 text-white rounded-full hover:bg-red-600"
+                                        >
+                                            <X className="w-4 h-4" />
+                                        </button>
+                                        <img
+                                            src={leaseAgreementPreview}
+                                            alt="Lease Agreement Preview"
+                                            className="max-h-48 mx-auto rounded-lg"
+                                        />
+                                        <p className="text-center text-sm text-green-700 mt-2">
+                                            <Check className="w-4 h-4 inline mr-1" />
+                                            {leaseAgreementFile?.name}
+                                        </p>
+                                    </div>
+                                ) : leaseAgreementFile ? (
+                                    <div className="relative border-2 border-green-500 rounded-xl p-4 bg-green-50">
+                                        <button
+                                            type="button"
+                                            onClick={() => removeFile('leaseAgreement')}
+                                            className="absolute top-2 right-2 p-1 bg-red-500 text-white rounded-full hover:bg-red-600"
+                                        >
+                                            <X className="w-4 h-4" />
+                                        </button>
+                                        <div className="flex items-center justify-center gap-2">
+                                            <FileText className="w-8 h-8 text-green-600" />
+                                            <span className="text-green-700">{leaseAgreementFile.name}</span>
+                                        </div>
+                                    </div>
+                                ) : (
+                                    <label className="block border-2 border-dashed border-gray-300 rounded-xl p-6 text-center hover:border-green-500 hover:bg-green-50 cursor-pointer transition-colors">
+                                        <input
+                                            ref={leaseAgreementRef}
+                                            type="file"
+                                            accept="image/*,.pdf"
+                                            onChange={(e) => handleFileChange(e, 'leaseAgreement')}
+                                            className="hidden"
+                                        />
+                                        <Upload className="w-10 h-10 text-gray-400 mx-auto mb-2" />
+                                        <p className="text-gray-600">คลิกเพื่ออัปโหลด</p>
+                                        <p className="text-xs text-gray-400 mt-1">รองรับ JPG, PNG, PDF (ไม่เกิน 5MB)</p>
+                                    </label>
+                                )}
+                            </div>
+
+                            {/* Lease Agreement With Car Upload */}
+                            <div>
+                                <label className="block text-sm font-medium text-gray-700 mb-2">
+                                    รูปสัญญาเช่าจริงคู่กับรถ
+                                    <span className="text-red-500"> *</span>
+                                </label>
+                                <p className="text-xs text-gray-500 mb-3">
+                                    รูปถ่ายสัญญาเช่าจริงคู๋กับรถที่ทะเบียนตรงกับในสัญญา
+                                </p>
+
+                                {leaseAgreementWithCarPreview ? (
+                                    <div className="relative border-2 border-green-500 rounded-xl p-4 bg-green-50">
+                                        <button
+                                            type="button"
+                                            onClick={() => removeFile('leaseAgreementWithCar')}
+                                            className="absolute top-2 right-2 p-1 bg-red-500 text-white rounded-full hover:bg-red-600"
+                                        >
+                                            <X className="w-4 h-4" />
+                                        </button>
+                                        <img
+                                            src={leaseAgreementWithCarPreview}
+                                            alt="Lease Agreement With Car Preview"
+                                            className="max-h-48 mx-auto rounded-lg"
+                                        />
+                                        <p className="text-center text-sm text-green-700 mt-2">
+                                            <Check className="w-4 h-4 inline mr-1" />
+                                            {leaseAgreementWithCarFile?.name}
+                                        </p>
+                                    </div>
+                                ) : leaseAgreementWithCarFile ? (
+                                    <div className="relative border-2 border-green-500 rounded-xl p-4 bg-green-50">
+                                        <button
+                                            type="button"
+                                            onClick={() => removeFile('leaseAgreementWithCar')}
+                                            className="absolute top-2 right-2 p-1 bg-red-500 text-white rounded-full hover:bg-red-600"
+                                        >
+                                            <X className="w-4 h-4" />
+                                        </button>
+                                        <div className="flex items-center justify-center gap-2">
+                                            <FileText className="w-8 h-8 text-green-600" />
+                                            <span className="text-green-700">{leaseAgreementWithCarFile.name}</span>
+                                        </div>
+                                    </div>
+                                ) : (
+                                    <label className="block border-2 border-dashed border-gray-300 rounded-xl p-6 text-center hover:border-green-500 hover:bg-green-50 cursor-pointer transition-colors">
+                                        <input
+                                            ref={leaseAgreementWithCarRef}
+                                            type="file"
+                                            accept="image/*,.pdf"
+                                            onChange={(e) => handleFileChange(e, 'leaseAgreementWithCar')}
+                                            className="hidden"
+                                        />
+                                        <Upload className="w-10 h-10 text-gray-400 mx-auto mb-2" />
+                                        <p className="text-gray-600">คลิกเพื่ออัปโหลด</p>
+                                        <p className="text-xs text-gray-400 mt-1">รองรับ JPG, PNG, PDF (ไม่เกิน 5MB)</p>
+                                    </label>
+                                )}
+                            </div>
+
                             <div className="flex gap-4 mt-6">
                                 <button
                                     type="button"
@@ -1086,6 +1278,14 @@ export default function RegisterShopPage() {
                                             <div className="flex items-center gap-2 text-green-600">
                                                 <Check className="w-4 h-4" />
                                                 <span className="text-sm">{businessLicenseFile?.name}</span>
+                                            </div>
+                                            <div className="flex items-center gap-2 text-green-600">
+                                                <Check className="w-4 h-4" />
+                                                <span className="text-sm">{leaseAgreementFile?.name}</span>
+                                            </div>
+                                            <div className="flex items-center gap-2 text-green-600">
+                                                <Check className="w-4 h-4" />
+                                                <span className="text-sm">{leaseAgreementWithCarFile?.name}</span>
                                             </div>
                                         </div>
                                     </div>

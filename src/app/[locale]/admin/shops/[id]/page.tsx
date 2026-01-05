@@ -58,6 +58,8 @@ export default async function AdminShopDetailPage({ params }: PageProps) {
 
     const idCardUrl = await getSignedUrl(shop.id_card_url);
     const businessLicenseUrl = await getSignedUrl(shop.business_license_url);
+    const leaseAgreementUrl = await getSignedUrl(shop.lease_agreement_url);
+    const leaseAgreementWithCarUrl = await getSignedUrl(shop.lease_agreement_with_car_url);
     const bankBookUrl = await getSignedUrl(shop.bank_book_url);
 
     const documents = documentsData ? await Promise.all(documentsData.map(async (doc) => ({
@@ -391,6 +393,74 @@ export default async function AdminShopDetailPage({ params }: PageProps) {
                                         />
                                         <a
                                             href={businessLicenseUrl}
+                                            target="_blank"
+                                            className="absolute bottom-2 right-2 bg-black/70 text-white px-3 py-1 rounded text-sm flex items-center gap-1"
+                                        >
+                                            <ExternalLink className="w-3 h-3" />
+                                            ดูเต็ม
+                                        </a>
+                                    </div>
+                                ) : (
+                                    <div className="aspect-[4/3] bg-gray-100 rounded-lg flex items-center justify-center">
+                                        <div className="text-center text-gray-400">
+                                            <ImageIcon className="w-12 h-12 mx-auto mb-2" />
+                                            <p>ยังไม่ได้อัปโหลด</p>
+                                        </div>
+                                    </div>
+                                )}
+                            </div>
+
+                            {/* Lease Agreement */}
+                            <div className="border rounded-lg p-4">
+                                <h4 className="font-medium mb-3 flex items-center gap-2">
+                                    <FileText className="w-4 h-4" />
+                                    ตัวอย่างสัญญาเช่าจริง
+                                </h4>
+                                {leaseAgreementUrl ? (
+                                    <div className="aspect-[4/3] relative bg-gray-100 rounded-lg overflow-hidden">
+                                        <Image
+                                            src={leaseAgreementUrl}
+                                            alt="Lease Agreement"
+                                            fill
+                                            unoptimized
+                                            className="object-contain"
+                                        />
+                                        <a
+                                            href={leaseAgreementUrl}
+                                            target="_blank"
+                                            className="absolute bottom-2 right-2 bg-black/70 text-white px-3 py-1 rounded text-sm flex items-center gap-1"
+                                        >
+                                            <ExternalLink className="w-3 h-3" />
+                                            ดูเต็ม
+                                        </a>
+                                    </div>
+                                ) : (
+                                    <div className="aspect-[4/3] bg-gray-100 rounded-lg flex items-center justify-center">
+                                        <div className="text-center text-gray-400">
+                                            <ImageIcon className="w-12 h-12 mx-auto mb-2" />
+                                            <p>ยังไม่ได้อัปโหลด</p>
+                                        </div>
+                                    </div>
+                                )}
+                            </div>
+
+                            {/* Lease Agreement With Car */}
+                            <div className="border rounded-lg p-4">
+                                <h4 className="font-medium mb-3 flex items-center gap-2">
+                                    <FileText className="w-4 h-4" />
+                                    สัญญาเช่าจริงคู่กับรถ
+                                </h4>
+                                {leaseAgreementWithCarUrl ? (
+                                    <div className="aspect-[4/3] relative bg-gray-100 rounded-lg overflow-hidden">
+                                        <Image
+                                            src={leaseAgreementWithCarUrl}
+                                            alt="Lease Agreement With Car"
+                                            fill
+                                            unoptimized
+                                            className="object-contain"
+                                        />
+                                        <a
+                                            href={leaseAgreementWithCarUrl}
                                             target="_blank"
                                             className="absolute bottom-2 right-2 bg-black/70 text-white px-3 py-1 rounded text-sm flex items-center gap-1"
                                         >

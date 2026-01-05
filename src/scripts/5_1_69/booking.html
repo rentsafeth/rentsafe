@@ -1,0 +1,498 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>จองรถเช่า - KP Carrent</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/alpinejs/3.13.0/cdn.min.js"></script>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css">
+  <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Prompt:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  <style>
+    body { font-family: 'Prompt', sans-serif; scroll-behavior: smooth; }
+    [x-cloak] { display: none !important; }
+    .hero-bg {
+      background: linear-gradient(rgba(0,0,0,0.6), rgba(0,0,0,0.2)), url('https://images.unsplash.com/photo-1552519507-da3b142c6e3d?q=80&w=1974&auto=format&fit=crop');
+      background-size: cover;
+      background-position: center;
+    }
+    .step {
+        transition: all 0.3s ease;
+    }
+    .step-active {
+        background-color: #3b82f6; /* blue-500 */
+        color: white;
+        transform: scale(1.1);
+    }
+    .step-inactive {
+        background-color: #e5e7eb; /* gray-200 */
+        color: #4b5563; /* gray-600 */
+    }
+    .step-completed {
+        background-color: #10b981; /* green-500 */
+        color: white;
+    }
+    .form-input {
+      @apply mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:border-blue-500 focus:ring focus:ring-blue-200 focus:ring-opacity-50 transition;
+    }
+    .form-label {
+      @apply block text-sm font-medium text-gray-700;
+    }
+  </style>
+</head>
+<body class="bg-gray-100" x-data="bookingApp()" x-init="init()">
+
+  <!-- Loading Overlay -->
+  <div x-show="isLoading" x-transition.opacity class="fixed inset-0 bg-white bg-opacity-80 backdrop-blur-sm flex justify-center items-center z-50">
+      <div class="animate-spin rounded-full h-16 w-16 border-b-2 border-blue-600"></div>
+  </div>
+
+  <!-- Main Header -->
+  <header class="bg-white/80 backdrop-blur-md shadow-sm sticky top-0 z-40">
+      <nav class="container mx-auto px-4 lg:px-6 py-4 flex justify-between items-center">
+          <a href="#" class="text-2xl font-bold text-blue-600 tracking-wider" x-text="shopName || 'KP Carrent'"></a>
+          <div class="flex items-center space-x-2 md:space-x-4">
+              <a href="#search-section" class="text-gray-600 hover:text-blue-600 transition hidden sm:block">ค้นหารถ</a>
+              <a href="#featured-cars" class="text-gray-600 hover:text-blue-600 transition hidden sm:block">รถแนะนำ</a>
+              <a href="#" @click.prevent="showLoginModal = true" class="bg-blue-600 text-white px-5 py-2 rounded-full hover:bg-blue-700 shadow-md hover:shadow-lg transition transform hover:-translate-y-0.5">
+                <i class="fas fa-user mr-2"></i>เข้าสู่ระบบ
+              </a>
+          </div>
+      </nav>
+  </header>
+
+  <main>
+    <!-- Hero Section -->
+    <section class="hero-bg text-white">
+      <div class="container mx-auto px-4 text-center flex flex-col items-center justify-center min-h-[40vh] md:min-h-[50vh]">
+        <h1 class="text-4xl md:text-6xl font-bold mb-4 text-shadow-lg">เช่ารถง่ายๆ กับเรา</h1>
+        <p class="text-lg md:text-xl max-w-2xl mx-auto text-shadow">ค้นหารถที่ใช่สำหรับทุกการเดินทางของคุณ</p>
+      </div>
+    </section>
+
+    <!-- Search Form Section -->
+    <section id="search-section" class="pb-16 pt-8">
+        <div class="container mx-auto px-4">
+            <div class="bg-white p-6 md:p-8 rounded-2xl shadow-xl max-w-5xl mx-auto -mt-32 relative z-10 border border-gray-100">
+                <h2 class="text-2xl font-bold text-gray-800 mb-6 text-center">ค้นหารถเช่า</h2>
+                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 items-end">
+                    <!-- Pickup Date/Time -->
+                    <div class="lg:col-span-1">
+                        <label for="pickupDate" class="form-label">วันและเวลารับ</label>
+                        <div class="flex gap-2">
+                          <input type="date" id="pickupDate" x-model="search.pickupDate" class="form-input">
+                          <input type="time" x-model="search.pickupTime" class="form-input w-28">
+                        </div>
+                    </div>
+                     <!-- Return Date/Time -->
+                    <div class="lg:col-span-1">
+                        <label for="returnDate" class="form-label">วันและเวลาคืน</label>
+                        <div class="flex gap-2">
+                          <input type="date" id="returnDate" x-model="search.returnDate" class="form-input">
+                           <input type="time" x-model="search.returnTime" class="form-input w-28">
+                        </div>
+                    </div>
+                    <!-- Pickup/Return Location -->
+                    <div class="lg:col-span-1">
+                        <label for="pickupLocation" class="form-label">สถานที่</label>
+                        <select id="pickupLocation" x-model="search.pickupLocation" class="form-input">
+                            <option value="">เลือกสถานที่</option>
+                            <template x-for="loc in locations.pickup" :key="loc"><option :value="loc" x-text="loc"></option></template>
+                        </select>
+                    </div>
+                    <!-- Search Button -->
+                    <div class="lg:col-span-1">
+                        <button @click="findAvailableCars" class="w-full bg-gradient-to-r from-blue-500 to-blue-600 text-white py-2.5 px-4 rounded-lg hover:from-blue-600 hover:to-blue-700 transition flex items-center justify-center h-full shadow-lg hover:shadow-xl transform hover:-translate-y-0.5">
+                            <i class="fas fa-search mr-2"></i> ค้นหา
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Available Cars Section -->
+    <section class="pb-16">
+        <div class="container mx-auto px-4">
+            <div x-show="shopClosed" class="text-center p-8 bg-red-100 text-red-800 rounded-2xl shadow-md">
+                <h3 class="text-2xl font-bold"><i class="fas fa-store-slash mr-3"></i>ขออภัยในความไม่สะดวก</h3>
+                <p class="mt-2">ขณะนี้ร้านค้าปิดให้บริการจองออนไลน์ชั่วคราว</p>
+            </div>
+            
+            <div x-show="!shopClosed && availableCars.length > 0">
+                <h2 class="text-3xl font-bold text-center mb-12 text-gray-800">รถที่ว่างสำหรับคุณ</h2>
+                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+                    <template x-for="car in availableCars" :key="car.id">
+                        <div class="bg-white rounded-2xl shadow-lg overflow-hidden flex flex-col transform hover:-translate-y-2 transition-transform duration-300">
+                            <img :src="car.photoUrl || 'https://placehold.co/600x400/e2e8f0/64748b?text=Car+Image'" alt="Car Image" class="w-full h-56 object-cover">
+                            <div class="p-6 flex-grow flex flex-col">
+                                <h3 class="text-xl font-bold text-gray-900" x-text="car.name"></h3>
+                                <div class="my-4 flex-grow text-right">
+                                    <span class="text-3xl font-bold text-blue-600" x-text="new Intl.NumberFormat('th-TH').format(car.dailyRate)"></span>
+                                    <span class="text-gray-500">/วัน</span>
+                                </div>
+                                <button @click="startBooking(car)" class="w-full bg-gradient-to-r from-green-500 to-green-600 text-white py-3 px-4 rounded-lg hover:from-green-600 hover:to-green-700 transition mt-auto font-semibold shadow-md hover:shadow-lg">
+                                    จองเลย
+                                </button>
+                            </div>
+                        </div>
+                    </template>
+                </div>
+            </div>
+             <div x-show="!shopClosed && searchPerformed && availableCars.length === 0" class="text-center p-8 bg-yellow-100 text-yellow-800 rounded-2xl shadow-md">
+                <h3 class="text-2xl font-bold"><i class="fas fa-car-crash mr-3"></i>ไม่พบรถว่าง</h3>
+                <p class="mt-2">ขออภัย ไม่พบรถว่างในช่วงเวลาที่คุณเลือก กรุณาลองเปลี่ยนวันและเวลา</p>
+            </div>
+        </div>
+    </section>
+
+    <!-- Featured Cars Section -->
+    <section id="featured-cars" class="bg-gray-100 py-16">
+        <div class="container mx-auto px-4">
+            <h2 class="text-3xl font-bold text-center mb-12 text-gray-800">รถเช่าแนะนำ</h2>
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+                <!-- Example Car 1 -->
+                <div class="bg-white rounded-2xl shadow-lg overflow-hidden flex flex-col transform hover:-translate-y-2 transition-transform duration-300">
+                    <img src="https://images.unsplash.com/photo-1616422285623-13ff01621935?q=80&w=2070&auto=format&fit=crop" alt="Toyota Yaris" class="w-full h-56 object-cover">
+                    <div class="p-6 flex-grow flex flex-col">
+                        <h3 class="text-xl font-bold text-gray-900">Toyota Yaris Ativ</h3>
+                        <p class="text-sm text-gray-500 mt-1">รถเก๋ง 5 ประตู ประหยัดน้ำมัน</p>
+                        <div class="flex space-x-4 text-gray-600 my-4">
+                            <span title="จำนวนที่นั่ง"><i class="fas fa-users mr-1"></i> 5</span>
+                            <span title="เกียร์"><i class="fas fa-cogs mr-1"></i> ออโต้</span>
+                            <span title="ประตู"><i class="fas fa-door-closed mr-1"></i> 4</span>
+                        </div>
+                        <div class="mt-auto text-right">
+                           <span class="text-2xl font-bold text-blue-600">800</span> <span class="text-gray-500">/วัน</span>
+                        </div>
+                    </div>
+                </div>
+                <!-- Example Car 2 -->
+                <div class="bg-white rounded-2xl shadow-lg overflow-hidden flex flex-col transform hover:-translate-y-2 transition-transform duration-300">
+                    <img src="https://images.unsplash.com/photo-1617531653523-a87a2b04ac4f?q=80&w=2070&auto=format&fit=crop" alt="Honda HR-V" class="w-full h-56 object-cover">
+                    <div class="p-6 flex-grow flex flex-col">
+                        <h3 class="text-xl font-bold text-gray-900">Honda HR-V</h3>
+                        <p class="text-sm text-gray-500 mt-1">SUV อเนกประสงค์สำหรับครอบครัว</p>
+                        <div class="flex space-x-4 text-gray-600 my-4">
+                            <span title="จำนวนที่นั่ง"><i class="fas fa-users mr-1"></i> 5</span>
+                            <span title="เกียร์"><i class="fas fa-cogs mr-1"></i> ออโต้</span>
+                            <span title="ประตู"><i class="fas fa-door-closed mr-1"></i> 4</span>
+                        </div>
+                        <div class="mt-auto text-right">
+                           <span class="text-2xl font-bold text-blue-600">1,200</span> <span class="text-gray-500">/วัน</span>
+                        </div>
+                    </div>
+                </div>
+                <!-- Example Car 3 -->
+                <div class="bg-white rounded-2xl shadow-lg overflow-hidden flex flex-col transform hover:-translate-y-2 transition-transform duration-300">
+                    <img src="https://images.unsplash.com/photo-1580273916550-72a3c3a938b7?q=80&w=1974&auto=format&fit=crop" alt="Mazda 2" class="w-full h-56 object-cover">
+                    <div class="p-6 flex-grow flex flex-col">
+                        <h3 class="text-xl font-bold text-gray-900">Mazda 2</h3>
+                        <p class="text-sm text-gray-500 mt-1">ดีไซน์สปอร์ต ขับสนุก คล่องตัว</p>
+                         <div class="flex space-x-4 text-gray-600 my-4">
+                            <span title="จำนวนที่นั่ง"><i class="fas fa-users mr-1"></i> 5</span>
+                            <span title="เกียร์"><i class="fas fa-cogs mr-1"></i> ออโต้</span>
+                            <span title="ประตู"><i class="fas fa-door-closed mr-1"></i> 4</span>
+                        </div>
+                        <div class="mt-auto text-right">
+                           <span class="text-2xl font-bold text-blue-600">900</span> <span class="text-gray-500">/วัน</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+  </main>
+
+  <footer class="bg-gray-800 text-white py-8">
+      <div class="container mx-auto px-4 text-center">
+          <p>&copy; 2024 KP Carrent. All rights reserved.</p>
+          <div class="flex justify-center space-x-4 mt-4">
+              <a href="#" class="hover:text-blue-400"><i class="fab fa-facebook-f"></i></a>
+              <a href="#" class="hover:text-blue-400"><i class="fab fa-line"></i></a>
+              <a href="#" class="hover:text-blue-400"><i class="fas fa-phone"></i></a>
+          </div>
+      </div>
+  </footer>
+
+
+  <!-- Booking Modal -->
+  <div x-show="showBookingModal" @keydown.escape.window="showBookingModal = false" class="fixed inset-0 bg-black bg-opacity-60 flex items-center justify-center z-50 p-4" x-cloak>
+      <div @click.away="showBookingModal = false" class="bg-white rounded-2xl shadow-2xl w-full max-w-2xl transform transition-all max-h-[90vh] flex flex-col">
+          <div class="p-6 border-b flex justify-between items-center">
+              <h3 class="text-2xl font-bold text-gray-800">ยืนยันการจอง</h3>
+              <button @click="showBookingModal = false" class="text-gray-400 hover:text-gray-600">&times;</button>
+          </div>
+          
+          <!-- Steps Indicator -->
+          <div class="p-6 flex justify-around border-b bg-gray-50">
+              <div class="text-center step" :class="{'step-active': currentStep === 1, 'step-completed': currentStep > 1, 'step-inactive': currentStep < 1}">
+                  <div class="w-10 h-10 mx-auto rounded-full flex items-center justify-center font-bold text-lg">1</div>
+                  <p class="text-xs mt-2">สรุปข้อมูล</p>
+              </div>
+              <div class="text-center step" :class="{'step-active': currentStep === 2, 'step-completed': currentStep > 2, 'step-inactive': currentStep < 2}">
+                  <div class="w-10 h-10 mx-auto rounded-full flex items-center justify-center font-bold text-lg">2</div>
+                  <p class="text-xs mt-2">ข้อมูลส่วนตัว</p>
+              </div>
+              <div class="text-center step" :class="{'step-active': currentStep === 3, 'step-completed': currentStep > 3, 'step-inactive': currentStep < 3}">
+                  <div class="w-10 h-10 mx-auto rounded-full flex items-center justify-center font-bold text-lg">3</div>
+                  <p class="text-xs mt-2">เอกสาร</p>
+              </div>
+          </div>
+          
+          <div class="p-6 space-y-4 overflow-y-auto flex-grow">
+            <!-- Step 1: Summary -->
+            <div x-show="currentStep === 1">
+                <h4 class="font-semibold text-xl mb-4 text-gray-800">สรุปรายการจอง</h4>
+                <div class="space-y-3 bg-gray-50 p-4 rounded-lg">
+                    <p><strong>รถ:</strong> <span x-text="booking.car.name" class="text-blue-600 font-semibold"></span></p>
+                    <p><strong>รับรถ:</strong> <span x-text="`${search.pickupDate} เวลา ${search.pickupTime}`"></span></p>
+                    <p><strong>คืนรถ:</strong> <span x-text="`${search.returnDate} เวลา ${search.returnTime}`"></span></p>
+                </div>
+                <hr class="my-4">
+                <h4 class="font-semibold text-xl mb-4 text-gray-800">สรุปค่าใช้จ่ายโดยประมาณ</h4>
+                <div class="space-y-2 bg-blue-50 p-4 rounded-lg">
+                    <div class="flex justify-between"><span>ค่าเช่า:</span> <span x-text="`${booking.summary.rentalCost.toLocaleString()} บาท`"></span></div>
+                    <div class="flex justify-between"><span>ค่ามัดจำ:</span> <span x-text="`${booking.summary.deposit.toLocaleString()} บาท`"></span></div>
+                    <div class="flex justify-between"><span>ค่าประกัน:</span> <span x-text="`${booking.summary.insurance.toLocaleString()} บาท`"></span></div>
+                    <div class="flex justify-between font-bold text-xl mt-2 pt-2 border-t"><span>รวมชำระวันรับรถ:</span> <span class="text-green-600" x-text="`${booking.summary.total.toLocaleString()} บาท`"></span></div>
+                </div>
+            </div>
+            
+            <!-- Step 2: Customer Info -->
+            <div x-show="currentStep === 2">
+                <h4 class="font-semibold text-xl mb-4 text-gray-800">กรอกข้อมูลผู้จอง</h4>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <input type="text" x-model="booking.customer.name" placeholder="ชื่อ-นามสกุล" class="form-input">
+                    <input type="tel" x-model="booking.customer.phone" placeholder="เบอร์โทรศัพท์" class="form-input">
+                    <input type="text" x-model="booking.customer.idCard" placeholder="หมายเลขบัตรประชาชน" class="form-input">
+                    <input type="text" x-model="booking.customer.driverLicense" placeholder="หมายเลขใบขับขี่" class="form-input">
+                    <textarea x-model="booking.customer.address" placeholder="ที่อยู่" class="form-textarea w-full md:col-span-2 rounded-md"></textarea>
+                </div>
+            </div>
+            
+            <!-- Step 3: Document Upload -->
+            <div x-show="currentStep === 3">
+                <h4 class="font-semibold text-xl mb-4 text-gray-800">อัพโหลดเอกสาร</h4>
+                <div class="space-y-4">
+                    <div><label class="form-label">รูปบัตรประชาชน</label><input type="file" @change="handleFileUpload($event, 'idCardFile')" class="form-input text-sm"></div>
+                    <div><label class="form-label">รูปใบขับขี่</label><input type="file" @change="handleFileUpload($event, 'driverLicenseFile')" class="form-input text-sm"></div>
+                    <div><label class="form-label">ตั๋วเดินทาง (ถ้ามี)</label><input type="file" @change="handleFileUpload($event, 'ticketFile')" class="form-input text-sm"></div>
+                </div>
+            </div>
+          </div>
+          
+          <!-- Buttons -->
+          <div class="p-6 bg-gray-100 flex justify-between border-t">
+              <button @click="prevStep()" x-show="currentStep > 1" class="bg-gray-500 text-white px-6 py-2 rounded-lg hover:bg-gray-600 transition shadow">ย้อนกลับ</button>
+              <button @click="nextStep()" x-show="currentStep < 3" class="bg-blue-600 text-white px-6 py-2 rounded-lg hover:bg-blue-700 ml-auto transition shadow">ต่อไป</button>
+              <button @click="submitBooking()" x-show="currentStep === 3" class="bg-green-600 text-white px-6 py-2 rounded-lg hover:bg-green-700 ml-auto transition shadow">ยืนยันการจอง</button>
+          </div>
+      </div>
+  </div>
+
+  <!-- Login Modal -->
+  <div x-show="showLoginModal" @keydown.escape.window="showLoginModal = false" class="fixed inset-0 bg-black bg-opacity-60 flex items-center justify-center z-50 p-4" x-cloak>
+    <div @click.away="showLoginModal = false" class="bg-white rounded-2xl shadow-2xl w-full max-w-sm p-8">
+        <h3 class="text-2xl font-bold text-center mb-6">เข้าสู่ระบบ</h3>
+        <div class="space-y-4">
+            <input type="tel" x-model="login.phone" placeholder="หมายเลขโทรศัพท์" class="form-input">
+            <div class="flex gap-2">
+                <input type="text" x-model="login.otp" placeholder="รหัส OTP" class="form-input">
+                <button @click="sendOtp()" class="bg-gray-200 text-gray-800 px-4 py-2 rounded-md hover:bg-gray-300 text-sm whitespace-nowrap">ส่ง OTP</button>
+            </div>
+            <button @click="customerLogin()" class="w-full bg-blue-600 text-white py-2.5 rounded-lg hover:bg-blue-700">เข้าสู่ระบบ</button>
+        </div>
+    </div>
+  </div>
+
+
+  <script>
+    function bookingApp() {
+        return {
+            isLoading: true,
+            shopClosed: false,
+            sheetId: null, // จะถูกกำหนดค่าจาก Scriptlet
+            shopName: null, // จะถูกกำหนดค่าจาก Scriptlet
+            search: {
+                pickupLocation: '',
+                pickupDate: '',
+                pickupTime: '09:00',
+                returnLocation: '',
+                returnDate: '',
+                returnTime: '18:00',
+            },
+            locations: {
+                pickup: [],
+                return: []
+            },
+            availableCars: [],
+            searchPerformed: false,
+            showBookingModal: false,
+            currentStep: 1,
+            booking: {
+                car: null,
+                customer: { name: '', phone: '', idCard: '', driverLicense: '', address: '' },
+                files: { idCardFile: null, driverLicenseFile: null, ticketFile: null },
+                summary: { rentalCost: 0, deposit: 0, insurance: 0, total: 0 }
+            },
+            showLoginModal: false,
+            login: { phone: '', otp: '' },
+            
+            init() {
+                // *** ส่วนที่แก้ไข ***
+                // อ่านค่าที่ถูก inject มาจาก Google Apps Script
+                const injectedSheetId = "<?= sheetId ?>";
+                const injectedShopName = "<?= shopName ?>";
+
+                // ตรวจสอบว่า scriptlet ทำงานถูกต้องหรือไม่
+                if (!injectedSheetId || injectedSheetId.startsWith("<?= sheetId ?>")) {
+                    this.isLoading = false;
+                    this.shopClosed = true; // แสดงสถานะว่าร้านปิด
+                    console.error("Sheet ID was not injected correctly from Google Apps Script.");
+                    Swal.fire('เกิดข้อผิดพลาดร้ายแรง', 'ไม่สามารถโหลดข้อมูลร้านค้าได้ (Invalid URL)', 'error');
+                    return;
+                }
+                
+                // กำหนดค่าให้กับ property ของ object
+                this.sheetId = injectedSheetId;
+                this.shopName = injectedShopName;
+                
+                // Set default dates
+                const today = new Date();
+                const threeDaysLater = new Date();
+                threeDaysLater.setDate(today.getDate() + 3);
+                this.search.pickupDate = today.toISOString().split('T')[0];
+                this.search.returnDate = threeDaysLater.toISOString().split('T')[0];
+
+                // Load initial data from Google Sheet
+                google.script.run
+                    .withSuccessHandler(result => {
+                        this.isLoading = false;
+                        if(result.shopClosed) {
+                            this.shopClosed = true;
+                            return;
+                        }
+                        this.locations.pickup = result.pickupLocations || [];
+                        this.locations.return = result.returnLocations || [];
+                        if (this.locations.pickup.length > 0) this.search.pickupLocation = this.locations.pickup[0];
+                        if (this.locations.return.length > 0) this.search.returnLocation = this.locations.pickup.length > 0 ? this.locations.pickup[0] : ''; // Default to same as pickup
+                    })
+                    .withFailureHandler(error => {
+                        this.isLoading = false;
+                        this.shopClosed = true;
+                        console.error("Error fetching initial data:", error);
+                        Swal.fire('เกิดข้อผิดพลาด', 'ไม่สามารถโหลดข้อมูลเริ่มต้นได้', 'error');
+                    })
+                    .getOnlineBookingInitialData({ sheetId: this.sheetId }); // ใช้ this.sheetId ที่กำหนดค่าแล้ว
+            },
+
+            findAvailableCars() {
+                if (!this.sheetId) return; // Guard clause
+                if (!this.search.pickupDate || !this.search.returnDate) {
+                    Swal.fire('ข้อมูลไม่ครบ', 'กรุณาเลือกวันรับและวันคืนรถ', 'warning');
+                    return;
+                }
+                this.isLoading = true;
+                this.searchPerformed = true;
+
+                google.script.run
+                    .withSuccessHandler(result => {
+                        this.isLoading = false;
+                        this.availableCars = result.availableCars || [];
+                    })
+                    .withFailureHandler(error => {
+                        this.isLoading = false;
+                        console.error("Error finding cars:", error);
+                        Swal.fire('เกิดข้อผิดพลาด', 'ไม่สามารถค้นหารถได้', 'error');
+                    })
+                    .findAvailableCarsForCustomer({ 
+                        pickupDate: this.search.pickupDate,
+                        pickupTime: this.search.pickupTime,
+                        returnDate: this.search.returnDate,
+                        returnTime: this.search.returnTime,
+                        sheetId: this.sheetId 
+                    });
+            },
+
+            startBooking(car) {
+                this.booking.car = car;
+                this.calculatePrice();
+                this.currentStep = 1;
+                this.showBookingModal = true;
+            },
+
+            calculatePrice() {
+                const pickup = new Date(`${this.search.pickupDate}T${this.search.pickupTime}`);
+                const returnd = new Date(`${this.search.returnDate}T${this.search.returnTime}`);
+                const diffTime = Math.abs(returnd - pickup);
+                const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+                const rentalDays = diffDays > 0 ? diffDays : 1;
+                
+                this.booking.summary.rentalCost = rentalDays * (this.booking.car.dailyRate || 0);
+                this.booking.summary.deposit = this.booking.car.deposit || 0;
+                this.booking.summary.insurance = this.booking.car.insurance || 0;
+                this.booking.summary.total = this.booking.summary.rentalCost + this.booking.summary.insurance;
+            },
+
+            nextStep() { if (this.currentStep < 3) this.currentStep++; },
+            prevStep() { if (this.currentStep > 1) this.currentStep--; },
+
+            handleFileUpload(event, fileType) {
+                this.booking.files[fileType] = event.target.files[0];
+            },
+
+            submitBooking() {
+                if (!this.sheetId) return;
+                this.isLoading = true;
+                
+                const bookingData = {
+                    carName: this.booking.car.name,
+                    pickupDateTime: `${this.search.pickupDate} ${this.search.pickupTime}`,
+                    returnDateTime: `${this.search.returnDate} ${this.search.returnTime}`,
+                    pickupLocation: this.search.pickupLocation,
+                    returnLocation: this.search.returnLocation,
+                    ...this.booking.customer,
+                    ...this.booking.summary
+                };
+
+                google.script.run
+                    .withSuccessHandler(result => {
+                        this.isLoading = false;
+                        this.showBookingModal = false;
+                        if (result.success) {
+                            Swal.fire({
+                                title: 'จองสำเร็จ!',
+                                html: `หมายเลขการจองของคุณคือ <strong>${result.bookingNumber}</strong><br>โปรดรอร้านค้ายืนยันการจองและแจ้งรายละเอียดการชำระเงิน`,
+                                icon: 'success'
+                            });
+                        } else {
+                            Swal.fire('เกิดข้อผิดพลาด', result.message, 'error');
+                        }
+                    })
+                    .withFailureHandler(error => {
+                        this.isLoading = false;
+                        Swal.fire('เกิดข้อผิดพลาด', 'ไม่สามารถส่งข้อมูลการจองได้', 'error');
+                    })
+                    .saveOnlineBooking({ bookingData, sheetId: this.sheetId });
+            },
+
+            sendOtp() {
+                console.log("Sending OTP to:", this.login.phone);
+                Swal.fire('สำเร็จ', 'รหัส OTP ถูกส่งไปยังเบอร์โทรศัพท์ของคุณแล้ว (จำลอง)', 'info');
+            },
+
+            customerLogin() {
+                console.log("Logging in with:", this.login.phone, this.login.otp);
+                Swal.fire('สำเร็จ', 'เข้าสู่ระบบเรียบร้อย (จำลอง)', 'success');
+                this.showLoginModal = false;
+            }
+        }
+    }
+  </script>
+</body>
+</html>
