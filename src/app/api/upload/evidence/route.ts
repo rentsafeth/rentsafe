@@ -11,8 +11,13 @@ export async function POST(request: NextRequest) {
             return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
         }
 
-        const admins = ['admin@rentsafe.th', 'support@rentsafe.th'];
-        const isAdmin = admins.includes(user.email || '');
+        // Check if user is admin from database
+        const { data: profile } = await supabase
+            .from('profiles')
+            .select('role')
+            .eq('id', user.id)
+            .single();
+        const isAdmin = profile?.role === 'admin';
 
         let shopId = '';
         if (!isAdmin) {
@@ -112,8 +117,13 @@ export async function DELETE(request: NextRequest) {
             return NextResponse.json({ error: 'Missing file path' }, { status: 400 });
         }
 
-        const admins = ['admin@rentsafe.th', 'support@rentsafe.th'];
-        const isAdmin = admins.includes(user.email || '');
+        // Check if user is admin from database
+        const { data: profile } = await supabase
+            .from('profiles')
+            .select('role')
+            .eq('id', user.id)
+            .single();
+        const isAdmin = profile?.role === 'admin';
 
         if (!isAdmin) {
             // Get shop

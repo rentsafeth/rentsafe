@@ -23,9 +23,6 @@ export default function Navbar() {
         const supabase = createClient()
         let isMounted = true
 
-        // Admin email list - add admin emails here
-        const ADMIN_EMAILS = ['rentsafeth@gmail.com']
-
         // Try to get cached role immediately
         const cachedRole = localStorage.getItem('user_role')
         if (cachedRole) {
@@ -50,9 +47,14 @@ export default function Navbar() {
                 setUser(currentUser)
 
                 if (currentUser) {
-                    // Check if user email is in admin list
-                    const isAdmin = ADMIN_EMAILS.includes(currentUser.email || '')
-                    const userRole = isAdmin ? 'admin' : 'user'
+                    // Get role from database (profiles table)
+                    const { data: profile } = await supabase
+                        .from('profiles')
+                        .select('role')
+                        .eq('id', currentUser.id)
+                        .single()
+
+                    const userRole = profile?.role || 'user'
 
                     console.log('User email:', currentUser.email, 'Role:', userRole)
 
@@ -83,8 +85,14 @@ export default function Navbar() {
             setUser(currentUser)
 
             if (currentUser) {
-                const isAdmin = ADMIN_EMAILS.includes(currentUser.email || '')
-                const userRole = isAdmin ? 'admin' : 'user'
+                // Get role from database (profiles table)
+                const { data: profile } = await supabase
+                    .from('profiles')
+                    .select('role')
+                    .eq('id', currentUser.id)
+                    .single()
+
+                const userRole = profile?.role || 'user'
                 setRole(userRole)
                 localStorage.setItem('user_role', userRole)
             } else {
