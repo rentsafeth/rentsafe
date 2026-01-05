@@ -289,6 +289,7 @@ export default function CreditOrdersList({ pendingOrders, processedOrders, setti
                                                 src={signedUrls[order.id] || order.slip_url || ''}
                                                 alt="Slip"
                                                 fill
+                                                unoptimized
                                                 className="object-cover"
                                             />
                                         </div>
@@ -468,6 +469,7 @@ export default function CreditOrdersList({ pendingOrders, processedOrders, setti
                                 src={slipPreview}
                                 alt="Payment Slip"
                                 fill
+                                unoptimized
                                 className="object-contain"
                             />
                         </div>

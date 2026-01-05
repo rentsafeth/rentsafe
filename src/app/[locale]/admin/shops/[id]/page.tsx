@@ -350,6 +350,7 @@ export default async function AdminShopDetailPage({ params }: PageProps) {
                                             src={idCardUrl}
                                             alt="ID Card"
                                             fill
+                                            unoptimized
                                             className="object-contain"
                                         />
                                         <a
@@ -385,6 +386,7 @@ export default async function AdminShopDetailPage({ params }: PageProps) {
                                             src={businessLicenseUrl}
                                             alt="Business License"
                                             fill
+                                            unoptimized
                                             className="object-contain"
                                         />
                                         <a
@@ -418,6 +420,7 @@ export default async function AdminShopDetailPage({ params }: PageProps) {
                                             src={bankBookUrl}
                                             alt="Bank Book"
                                             fill
+                                            unoptimized
                                             className="object-contain"
                                         />
                                         <a
