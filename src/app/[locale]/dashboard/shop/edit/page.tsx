@@ -37,12 +37,26 @@ export default function EditShopPage() {
     const supabase = createClient();
     const logoInputRef = useRef<HTMLInputElement>(null);
     const coverInputRef = useRef<HTMLInputElement>(null);
+    const idCardRef = useRef<HTMLInputElement>(null);
+    const businessLicenseRef = useRef<HTMLInputElement>(null);
+    const leaseAgreementRef = useRef<HTMLInputElement>(null);
+    const leaseAgreementWithCarRef = useRef<HTMLInputElement>(null);
 
     const [shop, setShop] = useState<Shop | null>(null);
     const [loading, setLoading] = useState(true);
     const [saving, setSaving] = useState(false);
     const [uploadingLogo, setUploadingLogo] = useState(false);
     const [uploadingCover, setUploadingCover] = useState(false);
+
+    // Document Uploads State
+    const [idCardFile, setIdCardFile] = useState<File | null>(null);
+    const [idCardPreview, setIdCardPreview] = useState<string | null>(null);
+    const [businessLicenseFile, setBusinessLicenseFile] = useState<File | null>(null);
+    const [businessLicensePreview, setBusinessLicensePreview] = useState<string | null>(null);
+    const [leaseAgreementFile, setLeaseAgreementFile] = useState<File | null>(null);
+    const [leaseAgreementPreview, setLeaseAgreementPreview] = useState<string | null>(null);
+    const [leaseAgreementWithCarFile, setLeaseAgreementWithCarFile] = useState<File | null>(null);
+    const [leaseAgreementWithCarPreview, setLeaseAgreementWithCarPreview] = useState<string | null>(null);
 
     // Alert state
     const [alertState, setAlertState] = useState({
@@ -64,6 +78,7 @@ export default function EditShopPage() {
         line_ids: [''],
         facebook_urls: [''],
         website: '',
+        promptpay_number: '',
         can_issue_tax_invoice: false,
         can_issue_withholding_tax: false,
         pay_on_pickup: false,
@@ -100,6 +115,7 @@ export default function EditShopPage() {
             line_ids: shopData.line_ids && shopData.line_ids.length > 0 ? shopData.line_ids : (shopData.line_id ? [shopData.line_id] : ['']),
             facebook_urls: shopData.facebook_urls && shopData.facebook_urls.length > 0 ? shopData.facebook_urls : (shopData.facebook_url ? [shopData.facebook_url] : ['']),
             website: shopData.website || '',
+            promptpay_number: (shopData as any).promptpay_number || '',
             can_issue_tax_invoice: shopData.can_issue_tax_invoice || false,
             can_issue_withholding_tax: shopData.can_issue_withholding_tax || false,
             pay_on_pickup: shopData.pay_on_pickup || false,
@@ -175,29 +191,123 @@ export default function EditShopPage() {
         }
     };
 
+    const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>, type: 'idCard' | 'businessLicense' | 'leaseAgreement' | 'leaseAgreementWithCar') => {
+        const file = e.target.files?.[0];
+        if (!file) return;
+
+        if (file.size > 5 * 1024 * 1024) {
+            showAlert('error', 'ไฟล์ใหญ่เกินไป', 'ขนาดไฟล์ต้องไม่เกิน 5MB');
+            return;
+        }
+
+        const reader = new FileReader();
+        reader.onloadend = () => {
+            const preview = file.type.startsWith('image/') ? reader.result as string : null;
+            if (type === 'idCard') {
+                setIdCardFile(file);
+                setIdCardPreview(preview);
+            } else if (type === 'businessLicense') {
+                setBusinessLicenseFile(file);
+                setBusinessLicensePreview(preview);
+            } else if (type === 'leaseAgreement') {
+                setLeaseAgreementFile(file);
+                setLeaseAgreementPreview(preview);
+            } else if (type === 'leaseAgreementWithCar') {
+                setLeaseAgreementWithCarFile(file);
+                setLeaseAgreementWithCarPreview(preview);
+            }
+        };
+        reader.readAsDataURL(file);
+    };
+
+    const removeFile = (type: 'idCard' | 'businessLicense' | 'leaseAgreement' | 'leaseAgreementWithCar') => {
+        if (type === 'idCard') {
+            setIdCardFile(null);
+            setIdCardPreview(null);
+            if (idCardRef.current) idCardRef.current.value = '';
+        } else if (type === 'businessLicense') {
+            setBusinessLicenseFile(null);
+            setBusinessLicensePreview(null);
+            if (businessLicenseRef.current) businessLicenseRef.current.value = '';
+        } else if (type === 'leaseAgreement') {
+            setLeaseAgreementFile(null);
+            setLeaseAgreementPreview(null);
+            if (leaseAgreementRef.current) leaseAgreementRef.current.value = '';
+        } else if (type === 'leaseAgreementWithCar') {
+            setLeaseAgreementWithCarFile(null);
+            setLeaseAgreementWithCarPreview(null);
+            if (leaseAgreementWithCarRef.current) leaseAgreementWithCarRef.current.value = '';
+        }
+    };
+
+    const uploadDocument = async (file: File, prefix: string) => {
+        if (!shop) return null;
+        const fileExt = file.name.split('.').pop();
+        const filePath = `${shop.id}/${prefix}_${Date.now()}.${fileExt}`;
+
+        const { error: uploadError } = await supabase.storage
+            .from('verification-docs')
+            .upload(filePath, file, { cacheControl: '3600', upsert: true });
+
+        if (uploadError) throw uploadError;
+
+        const { data: urlData } = supabase.storage.from('verification-docs').getPublicUrl(filePath);
+        return urlData.publicUrl;
+    };
+
     const handleSave = async () => {
         if (!shop) return;
         setSaving(true);
 
         try {
+            // Upload documents if any
+            let idCardUrl = null;
+            let businessLicenseUrl = null;
+            let leaseAgreementUrl = null;
+            let leaseAgreementWithCarUrl = null;
+
+            if (idCardFile) idCardUrl = await uploadDocument(idCardFile, 'id_card');
+            if (businessLicenseFile) businessLicenseUrl = await uploadDocument(businessLicenseFile, 'business_license');
+            if (leaseAgreementFile) leaseAgreementUrl = await uploadDocument(leaseAgreementFile, 'lease_agreement');
+            if (leaseAgreementWithCarFile) leaseAgreementWithCarUrl = await uploadDocument(leaseAgreementWithCarFile, 'lease_agreement_with_car');
+
+            // Prepare update data
+            const updateData: any = {
+                name: formData.name,
+                description: formData.description || null,
+                phone_number: formData.phone_number,
+                line_ids: formData.line_ids.filter(id => id.trim() !== ''),
+                facebook_urls: formData.facebook_urls.filter(url => url.trim() !== ''),
+                line_id: formData.line_ids[0] || null,
+                facebook_url: formData.facebook_urls[0] || null,
+                website: formData.website || null,
+                promptpay_number: formData.promptpay_number || null,
+                can_issue_tax_invoice: formData.can_issue_tax_invoice,
+                can_issue_withholding_tax: formData.can_issue_withholding_tax,
+                pay_on_pickup: formData.pay_on_pickup,
+                accept_credit_card: formData.accept_credit_card,
+            };
+
+            // Add doc URLs if updated
+            if (idCardUrl) updateData.id_card_url = idCardUrl;
+            if (businessLicenseUrl) updateData.business_license_url = businessLicenseUrl;
+            if (leaseAgreementUrl) updateData.lease_agreement_url = leaseAgreementUrl;
+            if (leaseAgreementWithCarUrl) updateData.lease_agreement_with_car_url = leaseAgreementWithCarUrl;
+
+            // CRITICAL: If shop was rejected, reset to pending for re-verification
+            // Only if at least one document is re-uploaded or just by saving? 
+            // Usually re-submitting means "I fixed it".
+            // Let's reset status only if currently 'rejected'.
+            const { data: currentShop } = await supabase.from('shops').select('verification_status').eq('id', shop.id).single();
+            if (currentShop?.verification_status === 'rejected') {
+                updateData.verification_status = 'pending';
+                updateData.verification_notes = null; // Clear rejection notes
+            }
+
             const { error } = await supabase
                 .from('shops')
-                .update({
-                    name: formData.name,
-                    description: formData.description || null,
-                    phone_number: formData.phone_number,
-                    line_ids: formData.line_ids.filter(id => id.trim() !== ''),
-                    facebook_urls: formData.facebook_urls.filter(url => url.trim() !== ''),
-                    line_id: formData.line_ids[0] || null,
-                    facebook_url: formData.facebook_urls[0] || null,
-                    website: formData.website || null,
-                    can_issue_tax_invoice: formData.can_issue_tax_invoice,
-                    can_issue_withholding_tax: formData.can_issue_withholding_tax,
-                    pay_on_pickup: formData.pay_on_pickup,
-                    accept_credit_card: formData.accept_credit_card,
-                })
+                .update(updateData)
                 .eq('id', shop.id);
-
             if (error) throw error;
 
             showAlert('success', 'บันทึกสำเร็จ!', 'ข้อมูลร้านค้าของคุณได้รับการอัปเดตแล้ว', () => {
@@ -483,6 +593,108 @@ export default function EditShopPage() {
                                 onChange={(e) => setFormData(prev => ({ ...prev, website: e.target.value }))}
                                 placeholder="https://yourwebsite.com"
                             />
+                        </div>
+
+                        {/* PromptPay */}
+                        <div className="space-y-2">
+                            <Label htmlFor="promptpay">หมายเลขพร้อมเพย์ (PromptPay)</Label>
+                            <Input
+                                id="promptpay"
+                                value={formData.promptpay_number}
+                                onChange={(e) => setFormData(prev => ({ ...prev, promptpay_number: e.target.value }))}
+                                placeholder="เบอร์โทรศัพท์ หรือ เลขบัตรประชาชน"
+                            />
+                            <p className="text-xs text-gray-500">ใส่เพื่อแสดงในหน้าข้อมูลร้านค้า (ไม่บังคับ)</p>
+                        </div>
+
+                        {/* Documents Section */}
+                        <div className="border-t pt-6">
+                            <h3 className="font-semibold text-gray-900 mb-4">อัปเดตเอกสารยืนยันตัวตน</h3>
+                            <p className="text-sm text-yellow-600 bg-yellow-50 p-3 rounded-lg mb-4">
+                                การอัปโหลดเอกสารใหม่จะทำให้สถานะร้านค้ากลับไปเป็น "รอตรวจสอบ" อีกครั้ง
+                            </p>
+
+                            <div className="grid md:grid-cols-2 gap-6">
+                                {/* ID Card */}
+                                <div className="space-y-2">
+                                    <Label>สำเนาบัตรประชาชน</Label>
+                                    <div className="border-2 border-dashed border-gray-300 rounded-xl p-4 text-center">
+                                        {idCardPreview ? (
+                                            <div className="relative">
+                                                <button onClick={() => removeFile('idCard')} className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full p-1"><X className="w-4 h-4" /></button>
+                                                <img src={idCardPreview} className="max-h-32 mx-auto rounded" alt="Preview" />
+                                                <p className="text-xs mt-2 text-green-600">{idCardFile?.name}</p>
+                                            </div>
+                                        ) : (
+                                            <div onClick={() => idCardRef.current?.click()} className="cursor-pointer py-4 hover:bg-gray-50 transition-colors">
+                                                <FileText className="w-8 h-8 text-gray-400 mx-auto mb-2" />
+                                                <p className="text-sm text-gray-600">คลิกเพื่ออัปโหลดใหม่</p>
+                                            </div>
+                                        )}
+                                        <input ref={idCardRef} type="file" accept="image/*,.pdf" className="hidden" onChange={(e) => handleFileChange(e, 'idCard')} />
+                                    </div>
+                                </div>
+
+                                {/* Business License */}
+                                <div className="space-y-2">
+                                    <Label>ทะเบียนพาณิชย์ / หนังสือรับรอง</Label>
+                                    <div className="border-2 border-dashed border-gray-300 rounded-xl p-4 text-center">
+                                        {businessLicensePreview ? (
+                                            <div className="relative">
+                                                <button onClick={() => removeFile('businessLicense')} className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full p-1"><X className="w-4 h-4" /></button>
+                                                <img src={businessLicensePreview} className="max-h-32 mx-auto rounded" alt="Preview" />
+                                                <p className="text-xs mt-2 text-green-600">{businessLicenseFile?.name}</p>
+                                            </div>
+                                        ) : (
+                                            <div onClick={() => businessLicenseRef.current?.click()} className="cursor-pointer py-4 hover:bg-gray-50 transition-colors">
+                                                <FileText className="w-8 h-8 text-gray-400 mx-auto mb-2" />
+                                                <p className="text-sm text-gray-600">คลิกเพื่ออัปโหลดใหม่</p>
+                                            </div>
+                                        )}
+                                        <input ref={businessLicenseRef} type="file" accept="image/*,.pdf" className="hidden" onChange={(e) => handleFileChange(e, 'businessLicense')} />
+                                    </div>
+                                </div>
+
+                                {/* Lease Agreement */}
+                                <div className="space-y-2">
+                                    <Label>ตัวอย่างสัญญาเช่าจริง</Label>
+                                    <div className="border-2 border-dashed border-gray-300 rounded-xl p-4 text-center">
+                                        {leaseAgreementPreview ? (
+                                            <div className="relative">
+                                                <button onClick={() => removeFile('leaseAgreement')} className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full p-1"><X className="w-4 h-4" /></button>
+                                                <img src={leaseAgreementPreview} className="max-h-32 mx-auto rounded" alt="Preview" />
+                                                <p className="text-xs mt-2 text-green-600">{leaseAgreementFile?.name}</p>
+                                            </div>
+                                        ) : (
+                                            <div onClick={() => leaseAgreementRef.current?.click()} className="cursor-pointer py-4 hover:bg-gray-50 transition-colors">
+                                                <FileText className="w-8 h-8 text-gray-400 mx-auto mb-2" />
+                                                <p className="text-sm text-gray-600">คลิกเพื่ออัปโหลดใหม่</p>
+                                            </div>
+                                        )}
+                                        <input ref={leaseAgreementRef} type="file" accept="image/*,.pdf" className="hidden" onChange={(e) => handleFileChange(e, 'leaseAgreement')} />
+                                    </div>
+                                </div>
+
+                                {/* Lease Agreement With Car */}
+                                <div className="space-y-2">
+                                    <Label>รูปสัญญาเช่าคู่กับรถ</Label>
+                                    <div className="border-2 border-dashed border-gray-300 rounded-xl p-4 text-center">
+                                        {leaseAgreementWithCarPreview ? (
+                                            <div className="relative">
+                                                <button onClick={() => removeFile('leaseAgreementWithCar')} className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full p-1"><X className="w-4 h-4" /></button>
+                                                <img src={leaseAgreementWithCarPreview} className="max-h-32 mx-auto rounded" alt="Preview" />
+                                                <p className="text-xs mt-2 text-green-600">{leaseAgreementWithCarFile?.name}</p>
+                                            </div>
+                                        ) : (
+                                            <div onClick={() => leaseAgreementWithCarRef.current?.click()} className="cursor-pointer py-4 hover:bg-gray-50 transition-colors">
+                                                <FileText className="w-8 h-8 text-gray-400 mx-auto mb-2" />
+                                                <p className="text-sm text-gray-600">คลิกเพื่ออัปโหลดใหม่</p>
+                                            </div>
+                                        )}
+                                        <input ref={leaseAgreementWithCarRef} type="file" accept="image/*,.pdf" className="hidden" onChange={(e) => handleFileChange(e, 'leaseAgreementWithCar')} />
+                                    </div>
+                                </div>
+                            </div>
                         </div>
 
                         {/* Tax & Payment Options */}

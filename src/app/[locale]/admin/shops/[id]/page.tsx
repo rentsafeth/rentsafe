@@ -83,6 +83,28 @@ export default async function AdminShopDetailPage({ params }: PageProps) {
             })
             .eq('id', shopId);
 
+        const { data: shop } = await supabase
+            .from('shops')
+            .select('owner_id, name')
+            .eq('id', shopId)
+            .single();
+
+        if (shop) {
+            // Create notification
+            await supabase.from('notifications').insert({
+                user_id: shop.owner_id,
+                title: status === 'verified'
+                    ? 'ยินดีด้วย! ร้านค้าของคุณได้รับการอนุมัติแล้ว'
+                    : 'แจ้งผลการตรวจสอบร้านค้า',
+                message: status === 'verified'
+                    ? `ร้าน ${shop.name} ได้รับการอนุมัติให้เป็น Partner กับ RentSafe เรียบร้อยแล้ว`
+                    : `ร้าน ${shop.name} ไม่ผ่านการตรวจสอบ กรุณาตรวจสอบรายละเอียดและแก้ไขข้อมูล`,
+                type: status === 'verified' ? 'system' : 'alert',
+                link: status === 'verified' ? '/dashboard' : '/dashboard/shop/edit',
+                is_read: false
+            });
+        }
+
         revalidatePath(`/admin/shops/${shopId}`);
         revalidatePath('/admin/shops');
     }
@@ -125,7 +147,7 @@ export default async function AdminShopDetailPage({ params }: PageProps) {
                         </blockquote>
                         <p>กรุณาแก้ไขข้อมูลหรืออัปโหลดเอกสารเพิ่มเติมผ่านทาง Dashboard</p>
                         <div style="margin: 30px 0;">
-                            <a href="https://rentsafe.in.th/dashboard/settings" style="background-color: #4b5563; color: white; padding: 12px 24px; text-decoration: none; border-radius: 6px; font-weight: bold;">แก้ไขข้อมูลร้านค้า</a>
+                            <a href="https://rentsafe.in.th/dashboard/shop/edit" style="background-color: #4b5563; color: white; padding: 12px 24px; text-decoration: none; border-radius: 6px; font-weight: bold;">แก้ไขข้อมูลร้านค้า</a>
                         </div>
                     </div>
                 `;
