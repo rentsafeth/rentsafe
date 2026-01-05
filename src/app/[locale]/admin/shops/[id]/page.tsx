@@ -324,6 +324,12 @@ export default async function AdminShopDetailPage({ params }: PageProps) {
                                 <p className="text-sm text-gray-500 mb-1">ชื่อบัญชี</p>
                                 <p className="font-semibold">{shop.bank_account_name || '-'}</p>
                             </div>
+                            {shop.promptpay_number && (
+                                <div className="p-4 bg-gray-50 rounded-lg">
+                                    <p className="text-sm text-gray-500 mb-1">พร้อมเพย์</p>
+                                    <p className="font-semibold font-mono">{shop.promptpay_number}</p>
+                                </div>
+                            )}
                         </div>
                     </CardContent>
                 </Card>

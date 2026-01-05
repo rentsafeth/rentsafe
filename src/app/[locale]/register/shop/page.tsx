@@ -79,6 +79,7 @@ export default function RegisterShopPage() {
         bank_name: '',
         bank_account_no: '',
         bank_account_name: '',
+        promptpay_number: '',
         can_issue_tax_invoice: false,
         can_issue_withholding_tax: false,
         pay_on_pickup: false,
@@ -320,6 +321,7 @@ export default function RegisterShopPage() {
                         bank_name: formData.bank_name,
                         bank_account_no: formData.bank_account_no,
                         bank_account_name: formData.bank_account_name,
+                        promptpay_number: formData.promptpay_number || null,
                         can_issue_tax_invoice: formData.can_issue_tax_invoice,
                         can_issue_withholding_tax: formData.can_issue_withholding_tax,
                         pay_on_pickup: formData.pay_on_pickup,
@@ -919,6 +921,23 @@ export default function RegisterShopPage() {
                                 />
                             </div>
 
+                            <div>
+                                <label className="block text-sm font-medium text-gray-700 mb-1">
+                                    หมายเลขพร้อมเพย์ (PromptPay) <span className="text-gray-400 font-normal">(ถ้ามี)</span>
+                                </label>
+                                <input
+                                    type="text"
+                                    name="promptpay_number"
+                                    value={formData.promptpay_number}
+                                    onChange={handleInputChange}
+                                    placeholder="เบอร์โทรศัพท์ หรือ เลขบัตรประชาชน"
+                                    className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-green-500 focus:border-transparent"
+                                />
+                                <p className="text-xs text-gray-500 mt-1">
+                                    เพื่อความสะดวกในการรับชำระเงินจากลูกค้า
+                                </p>
+                            </div>
+
                             <div className="flex gap-4 mt-6">
                                 <button
                                     type="button"
@@ -1258,6 +1277,12 @@ export default function RegisterShopPage() {
                                         <span className="text-gray-500">เลขบัญชี:</span>
                                         <span className="font-medium">{formData.bank_account_no}</span>
                                     </div>
+                                    {formData.promptpay_number && (
+                                        <div className="flex justify-between">
+                                            <span className="text-gray-500">พร้อมเพย์:</span>
+                                            <span className="font-medium">{formData.promptpay_number}</span>
+                                        </div>
+                                    )}
                                     <div>
                                         <span className="text-gray-500">จังหวัดที่ให้บริการ:</span>
                                         <div className="flex flex-wrap gap-1 mt-1">

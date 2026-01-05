@@ -479,7 +479,7 @@ export default async function ShopProfilePage({ params }: { params: Promise<{ id
                             </Card>
 
                             {/* Bank Account Info */}
-                            {(shop.bank_name || shop.bank_account_no) && (
+                            {(shop.bank_name || shop.bank_account_no || shop.promptpay_number) && (
                                 <Card id="shop-bank-card">
                                     <CardHeader className="pb-3">
                                         <CardTitle className="text-lg flex items-center gap-2">
@@ -509,6 +509,12 @@ export default async function ShopProfilePage({ params }: { params: Promise<{ id
                                                     <div>
                                                         <p className="text-xs text-slate-500 mb-0.5">{isThai ? 'ชื่อบัญชี' : 'Account Name'}</p>
                                                         <p className="font-semibold text-slate-900">{shop.bank_account_name}</p>
+                                                    </div>
+                                                )}
+                                                {shop.promptpay_number && (
+                                                    <div>
+                                                        <p className="text-xs text-slate-500 mb-0.5">{isThai ? 'พร้อมเพย์' : 'PromptPay'}</p>
+                                                        <p className="font-mono font-semibold text-slate-900 tracking-wider">{shop.promptpay_number}</p>
                                                     </div>
                                                 )}
                                             </div>
