@@ -29,6 +29,7 @@ import {
     Edit,
     Scan,
     Upload,
+    Plus,
 } from 'lucide-react';
 import {
     Dialog,
@@ -122,7 +123,17 @@ export default function AdminBlacklistPage() {
     const [adminNotes, setAdminNotes] = useState('');
     const [rejectionReason, setRejectionReason] = useState('');
     const [isEditing, setIsEditing] = useState(false);
-    const [editForm, setEditForm] = useState({ first_name: '', last_name: '', id_card_number: '' });
+    const [editForm, setEditForm] = useState({
+        first_name: '',
+        last_name: '',
+        id_card_number: '',
+        phone_number: '',
+        reason_type: '',
+        reason_detail: '',
+        severity: '',
+        incident_date: '',
+        evidence_urls: [] as string[]
+    });
 
     const supabase = createClient();
 
@@ -665,7 +676,13 @@ export default function AdminBlacklistPage() {
         setEditForm({
             first_name: report.first_name,
             last_name: report.last_name,
-            id_card_number: (report as any).id_card_number || ''
+            id_card_number: (report as any).id_card_number || '',
+            phone_number: report.phone_number || '',
+            reason_type: report.reason_type,
+            reason_detail: report.reason_detail,
+            severity: report.severity,
+            incident_date: report.incident_date ? new Date(report.incident_date).toISOString().split('T')[0] : '',
+            evidence_urls: report.evidence_urls || []
         });
         setIsEditing(false);
         setShowDetailModal(true);
@@ -883,6 +900,46 @@ export default function AdminBlacklistPage() {
             setPendingMatchIds([]);
             setSmartMatchStats(null);
         }
+    };
+
+    const [uploadingEvidence, setUploadingEvidence] = useState(false);
+
+    const handleEvidenceUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+        const files = e.target.files;
+        if (!files || files.length === 0) return;
+
+        setUploadingEvidence(true);
+        try {
+            for (const file of Array.from(files)) {
+                const formData = new FormData();
+                formData.append('file', file);
+
+                const response = await fetch('/api/upload/evidence', {
+                    method: 'POST',
+                    body: formData,
+                });
+
+                const data = await response.json();
+                if (!response.ok) throw new Error(data.error || 'Upload failed');
+
+                setEditForm(prev => ({
+                    ...prev,
+                    evidence_urls: [...prev.evidence_urls, data.url]
+                }));
+            }
+        } catch (error: any) {
+            alert(error.message || 'ไม่สามารถอัปโหลดไฟล์ได้');
+        } finally {
+            setUploadingEvidence(false);
+            e.target.value = '';
+        }
+    };
+
+    const removeEvidence = (index: number) => {
+        setEditForm(prev => ({
+            ...prev,
+            evidence_urls: prev.evidence_urls.filter((_, i) => i !== index)
+        }));
     };
 
     return (
@@ -1252,47 +1309,146 @@ export default function AdminBlacklistPage() {
 
                             {/* Edit Mode UI */}
                             {isEditing && (
-                                <div className="bg-blue-50 p-4 rounded-lg border border-blue-200">
-                                    <h4 className="font-semibold mb-3 flex items-center gap-2 text-blue-800">
-                                        <Edit className="w-4 h-4" />
-                                        แก้ไขข้อมูล
-                                    </h4>
-                                    <div className="space-y-3">
-                                        <div className="grid grid-cols-2 gap-3">
+                                <div className="bg-blue-50 p-6 rounded-lg border-2 border-blue-300 shadow-lg">
+                                    <div className="flex items-center justify-between mb-4">
+                                        <h4 className="font-bold text-lg flex items-center gap-2 text-blue-800">
+                                            <Edit className="w-5 h-5" />
+                                            แก้ไขข้อมูลรายงาน (Admin Mode)
+                                        </h4>
+                                        <Badge variant="outline" className="bg-white">ระเบียบการแก้ไขโดยผู้ดูแล</Badge>
+                                    </div>
+
+                                    <div className="space-y-4">
+                                        <div className="grid grid-cols-2 gap-4">
                                             <div>
-                                                <label className="text-xs font-medium text-gray-500">ชื่อจริง</label>
+                                                <label className="text-xs font-bold text-gray-500 uppercase tracking-wider mb-1 block">ชื่อจริง</label>
                                                 <Input
                                                     value={editForm.first_name}
                                                     onChange={e => setEditForm(prev => ({ ...prev, first_name: e.target.value }))}
-                                                    className="bg-white"
+                                                    className="bg-white border-blue-200 focus:border-blue-500"
                                                 />
                                             </div>
                                             <div>
-                                                <label className="text-xs font-medium text-gray-500">นามสกุล</label>
+                                                <label className="text-xs font-bold text-gray-500 uppercase tracking-wider mb-1 block">นามสกุล</label>
                                                 <Input
                                                     value={editForm.last_name}
                                                     onChange={e => setEditForm(prev => ({ ...prev, last_name: e.target.value }))}
-                                                    className="bg-white"
+                                                    className="bg-white border-blue-200 focus:border-blue-500"
                                                 />
                                             </div>
                                         </div>
-                                        <div>
-                                            <label className="text-xs font-medium text-gray-500">เลขบัตรประชาชน (13 หลัก)</label>
-                                            <Input
-                                                value={editForm.id_card_number}
-                                                onChange={e => setEditForm(prev => ({ ...prev, id_card_number: e.target.value }))}
-                                                placeholder="กรอกให้ครบ 13 หลักเพื่ออัปเดต"
-                                                className="bg-white font-mono"
-                                                maxLength={13}
-                                            />
-                                            <p className="text-xs text-blue-600 mt-1">
-                                                * การใส่เลขบัตรใหม่จะเป็นการสร้าง Hash ใหม่และเก็บเลขเต็ม
-                                            </p>
+
+                                        <div className="grid grid-cols-2 gap-4">
+                                            <div>
+                                                <label className="text-xs font-bold text-gray-500 uppercase tracking-wider mb-1 block">เลขบัตรประชาชน (13 หลัก)</label>
+                                                <Input
+                                                    value={editForm.id_card_number}
+                                                    onChange={e => setEditForm(prev => ({ ...prev, id_card_number: e.target.value }))}
+                                                    placeholder="กรอกให้ครบ 13 หลักเพื่ออัปเดต"
+                                                    className="bg-white font-mono border-blue-200 focus:border-blue-500"
+                                                    maxLength={13}
+                                                />
+                                            </div>
+                                            <div>
+                                                <label className="text-xs font-bold text-gray-500 uppercase tracking-wider mb-1 block">เบอร์โทรศัพท์</label>
+                                                <Input
+                                                    value={editForm.phone_number}
+                                                    onChange={e => setEditForm(prev => ({ ...prev, phone_number: e.target.value }))}
+                                                    placeholder="08xxxxxxxx"
+                                                    className="bg-white border-blue-200 focus:border-blue-500"
+                                                />
+                                            </div>
                                         </div>
-                                        <div className="flex justify-end gap-2 mt-2">
-                                            <Button variant="ghost" size="sm" onClick={() => setIsEditing(false)}>ยกเลิก</Button>
-                                            <Button size="sm" onClick={handleSaveEdit} disabled={processing}>
-                                                บันทึกการแก้ไข
+
+                                        <div className="grid grid-cols-2 gap-4">
+                                            <div>
+                                                <label className="text-xs font-bold text-gray-500 uppercase tracking-wider mb-1 block">ประเภทความรุนแรง</label>
+                                                <select
+                                                    className="w-full flex h-10 rounded-md border border-blue-200 bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                                    value={editForm.severity}
+                                                    onChange={e => setEditForm(prev => ({ ...prev, severity: e.target.value }))}
+                                                >
+                                                    <option value="warning">ต่ำ (Warning)</option>
+                                                    <option value="moderate">ปานกลาง (Moderate)</option>
+                                                    <option value="severe">สูง (Severe)</option>
+                                                </select>
+                                            </div>
+                                            <div>
+                                                <label className="text-xs font-bold text-gray-500 uppercase tracking-wider mb-1 block">วันที่เกิดเหตุ</label>
+                                                <Input
+                                                    type="date"
+                                                    value={editForm.incident_date}
+                                                    onChange={e => setEditForm(prev => ({ ...prev, incident_date: e.target.value }))}
+                                                    className="bg-white border-blue-200 focus:border-blue-500"
+                                                />
+                                            </div>
+                                        </div>
+
+                                        <div>
+                                            <label className="text-xs font-bold text-gray-500 uppercase tracking-wider mb-1 block">ประเภทปัญหา</label>
+                                            <select
+                                                className="w-full flex h-10 rounded-md border border-blue-200 bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                                value={editForm.reason_type}
+                                                onChange={e => setEditForm(prev => ({ ...prev, reason_type: e.target.value }))}
+                                            >
+                                                {Object.entries(REASON_TYPES).map(([val, label]) => (
+                                                    <option key={val} value={val}>{label}</option>
+                                                ))}
+                                            </select>
+                                        </div>
+
+                                        <div>
+                                            <label className="text-xs font-bold text-gray-500 uppercase tracking-wider mb-1 block">รายละเอียดเหตุการณ์</label>
+                                            <Textarea
+                                                value={editForm.reason_detail}
+                                                onChange={e => setEditForm(prev => ({ ...prev, reason_detail: e.target.value }))}
+                                                className="bg-white border-blue-200 focus:border-blue-500 min-h-[100px]"
+                                                placeholder="ระบุรายละเอียด..."
+                                            />
+                                        </div>
+
+                                        {/* Evidence Management */}
+                                        <div>
+                                            <label className="text-xs font-bold text-gray-500 uppercase tracking-wider mb-2 block">จัดการหลักฐาน (รูปภาพ)</label>
+                                            <div className="grid grid-cols-3 gap-2 mb-3">
+                                                {editForm.evidence_urls.map((url, idx) => (
+                                                    <div key={idx} className="relative aspect-square rounded-lg overflow-hidden border bg-white group">
+                                                        <img src={url} alt="" className="w-full h-full object-cover" />
+                                                        <button
+                                                            onClick={() => removeEvidence(idx)}
+                                                            className="absolute top-1 right-1 bg-red-500 text-white rounded-full p-1 opacity-0 group-hover:opacity-100 transition-opacity"
+                                                        >
+                                                            <XCircle className="w-4 h-4" />
+                                                        </button>
+                                                    </div>
+                                                ))}
+                                                {editForm.evidence_urls.length < 10 && (
+                                                    <label className="aspect-square rounded-lg border-2 border-dashed border-blue-200 flex flex-col items-center justify-center cursor-pointer hover:bg-blue-100 transition-colors">
+                                                        <Plus className="w-6 h-6 text-blue-400" />
+                                                        <span className="text-[10px] text-blue-500 font-bold">เพิ่มรูป</span>
+                                                        <input type="file" className="hidden" accept="image/*" multiple onChange={handleEvidenceUpload} disabled={uploadingEvidence} />
+                                                    </label>
+                                                )}
+                                            </div>
+                                            {uploadingEvidence && (
+                                                <div className="flex items-center gap-2 text-xs text-blue-600 animate-pulse mb-3">
+                                                    <Loader2 className="w-3 h-3 animate-spin" />
+                                                    กำลังอัปโหลดรูปภาพ...
+                                                </div>
+                                            )}
+                                        </div>
+
+                                        <div className="flex justify-end gap-3 pt-4 border-t border-blue-200">
+                                            <Button variant="ghost" onClick={() => setIsEditing(false)} className="text-gray-500">
+                                                ยกเลิกแก้ไข
+                                            </Button>
+                                            <Button
+                                                onClick={handleSaveEdit}
+                                                disabled={processing || uploadingEvidence}
+                                                className="bg-blue-600 hover:bg-blue-700 text-white px-8"
+                                            >
+                                                {processing ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : <CheckCircle className="w-4 h-4 mr-2" />}
+                                                บันทึกข้อมูลทั้งหมด
                                             </Button>
                                         </div>
                                     </div>

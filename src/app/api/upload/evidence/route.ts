@@ -11,15 +11,24 @@ export async function POST(request: NextRequest) {
             return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
         }
 
-        // Get shop
-        const { data: shop, error: shopError } = await supabase
-            .from('shops')
-            .select('id')
-            .eq('owner_id', user.id)
-            .single();
+        const admins = ['admin@rentsafe.th', 'support@rentsafe.th'];
+        const isAdmin = admins.includes(user.email || '');
 
-        if (shopError || !shop) {
-            return NextResponse.json({ error: 'Shop not found' }, { status: 404 });
+        let shopId = '';
+        if (!isAdmin) {
+            // Get shop
+            const { data: shop, error: shopError } = await supabase
+                .from('shops')
+                .select('id')
+                .eq('owner_id', user.id)
+                .single();
+
+            if (shopError || !shop) {
+                return NextResponse.json({ error: 'Shop not found' }, { status: 404 });
+            }
+            shopId = shop.id;
+        } else {
+            shopId = 'admin';
         }
 
         const formData = await request.formData();
@@ -51,7 +60,7 @@ export async function POST(request: NextRequest) {
         const ext = file.name.split('.').pop()?.toLowerCase() || 'jpg';
         const timestamp = Date.now();
         const randomStr = Math.random().toString(36).substring(2, 8);
-        const fileName = `evidence/${shop.id}/${timestamp}-${randomStr}.${ext}`;
+        const fileName = `evidence/${shopId}/${timestamp}-${randomStr}.${ext}`;
 
         // Convert file to buffer
         const arrayBuffer = await file.arrayBuffer();
@@ -103,20 +112,27 @@ export async function DELETE(request: NextRequest) {
             return NextResponse.json({ error: 'Missing file path' }, { status: 400 });
         }
 
-        // Get shop
-        const { data: shop } = await supabase
-            .from('shops')
-            .select('id')
-            .eq('owner_id', user.id)
-            .single();
+        const admins = ['admin@rentsafe.th', 'support@rentsafe.th'];
+        const isAdmin = admins.includes(user.email || '');
 
-        if (!shop) {
-            return NextResponse.json({ error: 'Shop not found' }, { status: 404 });
-        }
+        if (!isAdmin) {
+            // Get shop
+            const { data: shop } = await supabase
+                .from('shops')
+                .select('id')
+                .eq('owner_id', user.id)
+                .single();
 
-        // Verify the path belongs to this shop
-        if (!path.includes(`evidence/${shop.id}/`)) {
-            return NextResponse.json({ error: 'Unauthorized' }, { status: 403 });
+            if (!shop) {
+                return NextResponse.json({ error: 'Shop not found' }, { status: 404 });
+            }
+
+            // Verify the path belongs to this shop
+            if (!path.includes(`evidence/${shop.id}/`)) {
+                return NextResponse.json({ error: 'Unauthorized' }, { status: 403 });
+            }
+        } else {
+            // Admins can delete anything in blacklist-evidence
         }
 
         // Delete from storage

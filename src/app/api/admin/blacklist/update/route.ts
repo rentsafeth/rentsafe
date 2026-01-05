@@ -23,7 +23,21 @@ export async function POST(request: NextRequest) {
         }
 
         const body = await request.json();
-        const { report_id, id_card_number, first_name, last_name } = body;
+        const {
+            report_id,
+            id_card_number,
+            first_name,
+            last_name,
+            phone_number,
+            reason_type,
+            reason_detail,
+            severity,
+            incident_date,
+            status,
+            admin_notes,
+            rejection_reason,
+            evidence_urls
+        } = body;
 
         if (!report_id) {
             return NextResponse.json({ error: 'Missing report_id' }, { status: 400 });
@@ -43,8 +57,17 @@ export async function POST(request: NextRequest) {
             }
         }
 
-        if (first_name) updateData.first_name = first_name;
-        if (last_name) updateData.last_name = last_name;
+        if (first_name !== undefined) updateData.first_name = first_name;
+        if (last_name !== undefined) updateData.last_name = last_name;
+        if (phone_number !== undefined) updateData.phone_number = phone_number;
+        if (reason_type !== undefined) updateData.reason_type = reason_type;
+        if (reason_detail !== undefined) updateData.reason_detail = reason_detail;
+        if (severity !== undefined) updateData.severity = severity;
+        if (incident_date !== undefined) updateData.incident_date = incident_date;
+        if (status !== undefined) updateData.status = status;
+        if (admin_notes !== undefined) updateData.admin_notes = admin_notes;
+        if (rejection_reason !== undefined) updateData.rejection_reason = rejection_reason;
+        if (evidence_urls !== undefined) updateData.evidence_urls = evidence_urls;
 
         if (Object.keys(updateData).length === 0) {
             return NextResponse.json({ success: true, message: 'Nothing to update' });
@@ -52,7 +75,10 @@ export async function POST(request: NextRequest) {
 
         const { error } = await adminClient
             .from('customer_blacklist')
-            .update(updateData)
+            .update({
+                ...updateData,
+                updated_at: new Date().toISOString()
+            })
             .eq('id', report_id);
 
         if (error) throw error;
