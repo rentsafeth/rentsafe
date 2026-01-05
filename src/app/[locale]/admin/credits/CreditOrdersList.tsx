@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { createClient } from '@/lib/supabase/client';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -79,6 +79,31 @@ export default function CreditOrdersList({ pendingOrders, processedOrders, setti
     }>({ open: false, order: null, action: 'approve' });
 
     const [slipPreview, setSlipPreview] = useState<string | null>(null);
+    const [signedUrls, setSignedUrls] = useState<Record<string, string>>({});
+
+    const getSignedUrl = async (url: string | null) => {
+        if (!url) return null;
+        if (!url.includes('/payment-slips/')) return url;
+        const path = url.split('/payment-slips/')[1];
+        if (!path) return url;
+        const { data } = await supabase.storage.from('payment-slips').createSignedUrl(path, 3600);
+        return data?.signedUrl || url;
+    };
+
+    // Pre-generate signed URLs for all pending orders
+    useEffect(() => {
+        const loadSignedUrls = async () => {
+            const urls: Record<string, string> = {};
+            for (const order of pendingOrders) {
+                if (order.slip_url) {
+                    const signed = await getSignedUrl(order.slip_url);
+                    if (signed) urls[order.id] = signed;
+                }
+            }
+            setSignedUrls(urls);
+        };
+        loadSignedUrls();
+    }, [pendingOrders]);
 
     const handleAction = async () => {
         if (!confirmDialog.order) return;
@@ -258,10 +283,10 @@ export default function CreditOrdersList({ pendingOrders, processedOrders, setti
                                     {order.slip_url && (
                                         <div
                                             className="w-full md:w-32 h-32 bg-gray-100 rounded-lg overflow-hidden cursor-pointer relative"
-                                            onClick={() => setSlipPreview(order.slip_url)}
+                                            onClick={() => setSlipPreview(signedUrls[order.id] || order.slip_url)}
                                         >
                                             <Image
-                                                src={order.slip_url}
+                                                src={signedUrls[order.id] || order.slip_url || ''}
                                                 alt="Slip"
                                                 fill
                                                 className="object-cover"

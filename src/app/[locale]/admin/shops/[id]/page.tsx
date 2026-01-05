@@ -36,12 +36,34 @@ export default async function AdminShopDetailPage({ params }: PageProps) {
         notFound();
     }
 
-    // Fetch verification documents
-    const { data: documents } = await supabase
+    // Fetch verification documents (from additional verifications table)
+    const { data: documentsData } = await supabase
         .from('verifications')
         .select('*')
         .eq('shop_id', id)
         .order('created_at', { ascending: false });
+
+    // Generate signed URLs for private images from 'verification-docs' bucket
+    const getSignedUrl = async (url: string | null) => {
+        if (!url) return null;
+        // If it's not from our private verification-docs bucket, return as is
+        if (!url.includes('/verification-docs/')) return url;
+
+        const path = url.split('/verification-docs/')[1];
+        if (!path) return url;
+
+        const { data } = await supabase.storage.from('verification-docs').createSignedUrl(path, 3600);
+        return data?.signedUrl || url;
+    };
+
+    const idCardUrl = await getSignedUrl(shop.id_card_url);
+    const businessLicenseUrl = await getSignedUrl(shop.business_license_url);
+    const bankBookUrl = await getSignedUrl(shop.bank_book_url);
+
+    const documents = documentsData ? await Promise.all(documentsData.map(async (doc) => ({
+        ...doc,
+        document_url: await getSignedUrl(doc.document_url)
+    }))) : [];
 
     async function updateStatus(formData: FormData) {
         'use server';
@@ -322,16 +344,16 @@ export default async function AdminShopDetailPage({ params }: PageProps) {
                                         ? 'สำเนาบัตรประชาชน'
                                         : 'สำเนาบัตรประชาชนผู้มีอำนาจลงนาม'}
                                 </h4>
-                                {shop.id_card_url ? (
+                                {idCardUrl ? (
                                     <div className="aspect-[4/3] relative bg-gray-100 rounded-lg overflow-hidden">
                                         <Image
-                                            src={shop.id_card_url}
+                                            src={idCardUrl}
                                             alt="ID Card"
                                             fill
                                             className="object-contain"
                                         />
                                         <a
-                                            href={shop.id_card_url}
+                                            href={idCardUrl}
                                             target="_blank"
                                             className="absolute bottom-2 right-2 bg-black/70 text-white px-3 py-1 rounded text-sm flex items-center gap-1"
                                         >
@@ -357,16 +379,16 @@ export default async function AdminShopDetailPage({ params }: PageProps) {
                                         ? 'ทะเบียนพาณิชย์'
                                         : 'หนังสือรับรองบริษัท'}
                                 </h4>
-                                {shop.business_license_url ? (
+                                {businessLicenseUrl ? (
                                     <div className="aspect-[4/3] relative bg-gray-100 rounded-lg overflow-hidden">
                                         <Image
-                                            src={shop.business_license_url}
+                                            src={businessLicenseUrl}
                                             alt="Business License"
                                             fill
                                             className="object-contain"
                                         />
                                         <a
-                                            href={shop.business_license_url}
+                                            href={businessLicenseUrl}
                                             target="_blank"
                                             className="absolute bottom-2 right-2 bg-black/70 text-white px-3 py-1 rounded text-sm flex items-center gap-1"
                                         >
@@ -385,7 +407,7 @@ export default async function AdminShopDetailPage({ params }: PageProps) {
                             </div>
 
                             {/* Bank Book (optional) */}
-                            {shop.bank_book_url && (
+                            {bankBookUrl && (
                                 <div className="border rounded-lg p-4">
                                     <h4 className="font-medium mb-3 flex items-center gap-2">
                                         <CreditCard className="w-4 h-4" />
@@ -393,13 +415,13 @@ export default async function AdminShopDetailPage({ params }: PageProps) {
                                     </h4>
                                     <div className="aspect-[4/3] relative bg-gray-100 rounded-lg overflow-hidden">
                                         <Image
-                                            src={shop.bank_book_url}
+                                            src={bankBookUrl}
                                             alt="Bank Book"
                                             fill
                                             className="object-contain"
                                         />
                                         <a
-                                            href={shop.bank_book_url}
+                                            href={bankBookUrl}
                                             target="_blank"
                                             className="absolute bottom-2 right-2 bg-black/70 text-white px-3 py-1 rounded text-sm flex items-center gap-1"
                                         >
