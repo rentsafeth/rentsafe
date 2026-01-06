@@ -469,6 +469,8 @@ ${entry.bank_account_no ? `💳 เลขบัญชี: ${entry.bank_account_n
         return new Intl.NumberFormat('th-TH', {
             style: 'currency',
             currency: 'THB',
+            minimumFractionDigits: 0,
+            maximumFractionDigits: 0,
         }).format(amount)
     }
 
@@ -477,13 +479,13 @@ ${entry.bank_account_no ? `💳 เลขบัญชี: ${entry.bank_account_n
             {/* Header Card */}
             <Card className="border-red-200 bg-gradient-to-br from-red-50 to-orange-50">
                 <CardHeader className="pb-4">
-                    <div className="flex items-start justify-between">
-                        <div className="flex items-center gap-3">
-                            <div className="w-14 h-14 bg-red-600 rounded-xl flex items-center justify-center shadow-lg">
-                                <ShieldAlert className="w-8 h-8 text-white" />
+                    <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3">
+                        <div className="flex items-center gap-3 min-w-0 flex-1">
+                            <div className="w-12 h-12 sm:w-14 sm:h-14 bg-red-600 rounded-xl flex items-center justify-center shadow-lg flex-shrink-0">
+                                <ShieldAlert className="w-6 h-6 sm:w-8 sm:h-8 text-white" />
                             </div>
-                            <div>
-                                <CardTitle className="text-2xl text-red-800">
+                            <div className="min-w-0 flex-1">
+                                <CardTitle className="text-lg sm:text-2xl text-red-800 break-words">
                                     {entry.shop_names?.[0] || t('unknownShop')}
                                 </CardTitle>
                                 <p className="text-red-600 text-sm mt-1">
@@ -499,8 +501,8 @@ ${entry.bank_account_no ? `💳 เลขบัญชี: ${entry.bank_account_n
                                         size="sm"
                                         onClick={handleShare}
                                         className={`flex items-center gap-2 transition-all ${shareSuccess
-                                                ? 'bg-green-100 border-green-300 text-green-700'
-                                                : 'bg-white/80 border-red-200 text-red-700 hover:bg-red-50'
+                                            ? 'bg-green-100 border-green-300 text-green-700'
+                                            : 'bg-white/80 border-red-200 text-red-700 hover:bg-red-50'
                                             }`}
                                     >
                                         {shareSuccess ? (
