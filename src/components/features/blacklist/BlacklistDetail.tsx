@@ -22,7 +22,8 @@ import {
     ExternalLink,
     Copy,
     CheckCircle2,
-    MapPin
+    MapPin,
+    Share2
 } from 'lucide-react'
 import Link from 'next/link'
 import { useState, useEffect } from 'react'
@@ -86,34 +87,6 @@ interface Props {
 
 // Helper function for i18n
 const getLocalizedText = (isThai: boolean, th: string, en: string) => isThai ? th : en;
-
-const getRiskStatus = (entry: BlacklistEntry, isThai: boolean) => {
-    const lastReport = new Date(entry.last_reported_at || entry.first_reported_at);
-    const now = new Date();
-    const daysSinceLastReport = (now.getTime() - lastReport.getTime()) / (1000 * 3600 * 24);
-
-    // Trend: Recent activity (< 30 days)
-    if (daysSinceLastReport < 30) {
-        return {
-            label: isThai ? '🔥 กำลังระบาด (มีคนเพิ่งโดน)' : '🔥 Active Threat (Recently Reported)',
-            className: 'bg-red-600 text-white border-red-700 animate-pulse shadow-md'
-        };
-    }
-
-    // Impact: High Impact (Reports > 5 or Loss > 50,000)
-    if (entry.total_reports > 5 || entry.total_amount_lost > 50000) {
-        return {
-            label: isThai ? '🚨 ผู้เสียหายจำนวนมาก' : '🚨 High Risk (Many Victims)',
-            className: 'bg-red-100 text-red-800 border-red-200'
-        };
-    }
-
-    // Default: Caution
-    return {
-        label: isThai ? '⚠️ เฝ้าระวัง (ตรวจสอบก่อนโอน)' : '⚠️ Caution (Verify before transfer)',
-        className: 'bg-orange-100 text-orange-800 border-orange-200'
-    };
-};
 
 // Facebook Link Component with Warning Logic and Tutorial
 function FacebookLink({ url, isFirst = false, isThai = true }: { url: string; isFirst?: boolean; isThai?: boolean }) {
@@ -410,7 +383,49 @@ export default function BlacklistDetail({ entry, reports, locale = 'th' }: Props
     const t = useTranslations('BlacklistPage')
     const [expandedReport, setExpandedReport] = useState<string | null>(null)
     const [copied, setCopied] = useState(false)
+    const [shareSuccess, setShareSuccess] = useState(false)
     const isThai = locale === 'th';
+
+    // Function to share blacklist
+    const handleShare = async () => {
+        const blacklistName = entry.shop_names?.[0] || (isThai ? 'ไม่ทราบชื่อ' : 'Unknown')
+        const shareText = isThai
+            ? `พบBlacklist ${blacklistName}`
+            : `Found Blacklist: ${blacklistName}`
+        const shareUrl = `https://www.rentsafe.in.th/${locale}/blacklist/${entry.id}`
+
+        // Check if it's a touch device (likely mobile)
+        const isMobile = 'ontouchstart' in window || navigator.maxTouchPoints > 0
+
+        if (isMobile && navigator.share) {
+            // Use native share on mobile
+            try {
+                await navigator.share({
+                    title: shareText,
+                    text: shareText,
+                    url: shareUrl
+                })
+            } catch (err) {
+                // User cancelled or error - fallback to copy
+                if ((err as Error).name !== 'AbortError') {
+                    await copyToClipboard(shareUrl, shareText)
+                }
+            }
+        } else {
+            // Desktop: copy link to clipboard
+            await copyToClipboard(shareUrl, shareText)
+        }
+    }
+
+    const copyToClipboard = async (url: string, text: string) => {
+        try {
+            await navigator.clipboard.writeText(`${text}\n${url}`)
+            setShareSuccess(true)
+            setTimeout(() => setShareSuccess(false), 2000)
+        } catch (err) {
+            console.error('Failed to copy:', err)
+        }
+    }
 
     // Function to copy scammer details
     const copyScammerDetails = async () => {
@@ -476,14 +491,36 @@ ${entry.bank_account_no ? `💳 เลขบัญชี: ${entry.bank_account_n
                                 </p>
                             </div>
                         </div>
-                        {(() => {
-                            const status = getRiskStatus(entry, isThai);
-                            return (
-                                <Badge className={`${status.className} text-sm px-3 py-1`}>
-                                    {status.label}
-                                </Badge>
-                            );
-                        })()}
+                        <TooltipProvider>
+                            <Tooltip>
+                                <TooltipTrigger asChild>
+                                    <Button
+                                        variant="outline"
+                                        size="sm"
+                                        onClick={handleShare}
+                                        className={`flex items-center gap-2 transition-all ${shareSuccess
+                                                ? 'bg-green-100 border-green-300 text-green-700'
+                                                : 'bg-white/80 border-red-200 text-red-700 hover:bg-red-50'
+                                            }`}
+                                    >
+                                        {shareSuccess ? (
+                                            <>
+                                                <CheckCircle2 className="w-4 h-4" />
+                                                <span>{isThai ? 'คัดลอกแล้ว!' : 'Copied!'}</span>
+                                            </>
+                                        ) : (
+                                            <>
+                                                <Share2 className="w-4 h-4" />
+                                                <span>{isThai ? 'แชร์' : 'Share'}</span>
+                                            </>
+                                        )}
+                                    </Button>
+                                </TooltipTrigger>
+                                <TooltipContent>
+                                    <p>{isThai ? 'แชร์เตือนภัย Blacklist นี้' : 'Share this Blacklist warning'}</p>
+                                </TooltipContent>
+                            </Tooltip>
+                        </TooltipProvider>
                     </div>
                 </CardHeader>
                 <CardContent>

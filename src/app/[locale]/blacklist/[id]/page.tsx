@@ -1,31 +1,67 @@
 import { Metadata } from 'next'
-import { getTranslations } from 'next-intl/server'
 import { createClient } from '@/lib/supabase/server'
 import { notFound } from 'next/navigation'
 import BlacklistDetail from '@/components/features/blacklist/BlacklistDetail'
 
 export async function generateMetadata({ params }: { params: Promise<{ locale: string; id: string }> }): Promise<Metadata> {
     const { locale, id } = await params
-    const t = await getTranslations({ locale, namespace: 'BlacklistPage' })
     const supabase = await createClient()
 
     const { data: entry } = await supabase
         .from('blacklist_entries')
-        .select('shop_names, bank_account_no')
+        .select('shop_names, bank_account_no, total_reports, total_amount_lost, phone_numbers')
         .eq('id', id)
         .single()
 
-    const shopName = entry?.shop_names?.[0] || 'Unknown'
+    const shopName = entry?.shop_names?.[0] || (locale === 'th' ? 'ไม่ทราบชื่อ' : 'Unknown')
+    const isThai = locale === 'th'
+
+    // Create a descriptive title
+    const pageTitle = isThai
+        ? `พบBlacklist ${shopName} | RentSafe`
+        : `Found Blacklist: ${shopName} | RentSafe`
+
+    // Create a detailed description
+    const reportCount = entry?.total_reports || 0
+    const totalLoss = entry?.total_amount_lost || 0
+    const formattedLoss = new Intl.NumberFormat('th-TH').format(totalLoss)
+
+    const description = isThai
+        ? `⚠️ ${shopName} ถูกรายงาน ${reportCount} ครั้ง มูลค่าความเสียหายรวม ฿${formattedLoss} - ตรวจสอบก่อนโอนเงิน!`
+        : `⚠️ ${shopName} reported ${reportCount} times. Total loss: ฿${formattedLoss} - Verify before transfer!`
+
+    const url = `https://www.rentsafe.in.th/${locale}/blacklist/${id}`
 
     return {
-        title: `${t('title')} - ${shopName}`,
-        description: t('metaDescription', { shopName }),
+        title: pageTitle,
+        description: description,
+        openGraph: {
+            title: pageTitle,
+            description: description,
+            url: url,
+            siteName: 'RentSafe',
+            type: 'article',
+            locale: locale === 'th' ? 'th_TH' : 'en_US',
+            images: [
+                {
+                    url: 'https://www.rentsafe.in.th/og-blacklist.png',
+                    width: 1200,
+                    height: 630,
+                    alt: isThai ? `Blacklist: ${shopName}` : `Blacklist: ${shopName}`,
+                }
+            ],
+        },
+        twitter: {
+            card: 'summary_large_image',
+            title: pageTitle,
+            description: description,
+            images: ['https://www.rentsafe.in.th/og-blacklist.png'],
+        },
     }
 }
 
 export default async function BlacklistDetailPage({ params }: { params: Promise<{ locale: string; id: string }> }) {
     const { locale, id } = await params
-    const t = await getTranslations({ locale, namespace: 'BlacklistPage' })
     const supabase = await createClient()
 
     // Fetch blacklist entry
