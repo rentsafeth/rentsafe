@@ -20,126 +20,47 @@ export default function Navbar() {
     const [role, setRole] = useState<string | null>(null)
 
     useEffect(() => {
-        const supabase = createClient()
         let isMounted = true
 
-        // Try to get cached role immediately
+        // Try to get cached role immediately for fast initial render
         const cachedRole = localStorage.getItem('user_role')
         if (cachedRole) {
             setRole(cachedRole)
             console.log('Role from cache:', cachedRole)
         }
 
-        // Fail-safe: Force stop loading after 3 seconds
-        const timeoutId = setTimeout(() => {
-            if (isMounted) {
-                console.log('Navbar: Force stopping loading due to timeout (8s limit)')
-                setIsLoading(false)
-            }
-        }, 8000)
-
-        const checkUser = async () => {
+        // Use server-side API to get user info (bypasses client-side Supabase issues)
+        const checkUserViaAPI = async () => {
             try {
-                console.log('Navbar: Starting checkUser...')
-                console.log('Navbar: Supabase URL:', process.env.NEXT_PUBLIC_SUPABASE_URL ? 'Defined' : 'Missing')
-
-                // 1. Race getSession against a 5s timeout
-                const sessionPromise = supabase.auth.getSession()
-                const timeoutPromise = new Promise((_, reject) => setTimeout(() => reject(new Error('Session fetch timeout')), 5000))
-
-                let session
-                try {
-                    const result: any = await Promise.race([sessionPromise, timeoutPromise])
-                    session = result.data?.session
-                    if (result.error) console.error('Navbar: Session error', result.error)
-                } catch (e) {
-                    console.warn('Navbar: getSession timed out or failed, trying getUser...', e)
-                }
-
-                let currentUser = session?.user
-
-                // 2. If no session from caching, try forceful getUser (network check)
-                if (!currentUser) {
-                    try {
-                        const { data: { user }, error: userError } = await supabase.auth.getUser()
-                        if (user) currentUser = user
-                        if (userError) console.error('Navbar: getUser error', userError)
-                    } catch (e) {
-                        console.error('Navbar: getUser failed', e)
-                    }
-                }
-
-                console.log('Navbar: Current User resolved:', currentUser?.email)
+                console.log('Navbar: Fetching user from /api/auth/me...')
+                const response = await fetch('/api/auth/me', { credentials: 'include' })
+                const data = await response.json()
+                console.log('Navbar: API response:', data)
 
                 if (!isMounted) return
-                setUser(currentUser)
 
-                if (currentUser) {
-                    console.log('Navbar: Fetching profile for', currentUser.id)
-                    // Get role from database (profiles table)
-                    const { data: profile, error: profileError } = await supabase
-                        .from('profiles')
-                        .select('role')
-                        .eq('id', currentUser.id)
-                        .single()
-
-                    if (profileError) {
-                        console.error('Navbar: Profile fetch error', profileError)
-                    } else {
-                        console.log('Navbar: Profile retrieved', profile)
-                    }
-
-                    const userRole = profile?.role || 'user'
-                    console.log('User email:', currentUser.email, 'Role:', userRole)
-
-                    setRole(userRole)
-                    localStorage.setItem('user_role', userRole)
+                if (data.user) {
+                    setUser(data.user)
+                    setRole(data.role)
+                    localStorage.setItem('user_role', data.role || 'user')
+                    console.log('Navbar: User set from API -', data.user.email, 'Role:', data.role)
                 } else {
-                    // User is not logged in, clear cached role
+                    setUser(null)
+                    setRole(null)
                     localStorage.removeItem('user_role')
+                    console.log('Navbar: No user from API')
                 }
-
-                // Successful completion
-                console.log('Navbar: Check completed successfully')
-                setIsLoading(false)
-                clearTimeout(timeoutId)
             } catch (error) {
-                console.error('Navbar: Auth error (catch):', error)
-                setIsLoading(false)
+                console.error('Navbar: API call failed:', error)
+            } finally {
+                if (isMounted) setIsLoading(false)
             }
         }
 
-        checkUser()
-
-        // Listen for auth changes
-        const { data: { subscription } } = supabase.auth.onAuthStateChange(async (_event, session) => {
-            if (!isMounted) return
-
-            const currentUser = session?.user ?? null
-            setUser(currentUser)
-
-            if (currentUser) {
-                // Get role from database (profiles table)
-                const { data: profile } = await supabase
-                    .from('profiles')
-                    .select('role')
-                    .eq('id', currentUser.id)
-                    .single()
-
-                const userRole = profile?.role || 'user'
-                setRole(userRole)
-                localStorage.setItem('user_role', userRole)
-            } else {
-                setRole(null)
-                localStorage.removeItem('user_role')
-            }
-            setIsLoading(false)
-        })
+        checkUserViaAPI()
 
         return () => {
             isMounted = false
-            clearTimeout(timeoutId)
-            subscription.unsubscribe()
         }
     }, [])
 
