@@ -18,15 +18,21 @@ export default function Navbar() {
     const [isLoading, setIsLoading] = useState(true)
     const [showLangMenu, setShowLangMenu] = useState(false)
     const [role, setRole] = useState<string | null>(null)
+    const [hasMounted, setHasMounted] = useState(false)
 
     useEffect(() => {
+        setHasMounted(true)
         let isMounted = true
 
-        // Try to get cached role immediately for fast initial render
-        const cachedRole = localStorage.getItem('user_role')
-        if (cachedRole) {
-            setRole(cachedRole)
-            console.log('Role from cache:', cachedRole)
+        // Try to get cached role immediately for fast initial render (only after mount)
+        try {
+            const cachedRole = localStorage.getItem('user_role')
+            if (cachedRole) {
+                setRole(cachedRole)
+                console.log('Role from cache:', cachedRole)
+            }
+        } catch {
+            // localStorage not available
         }
 
         // Use server-side API to get user info (bypasses client-side Supabase issues)
@@ -42,12 +48,16 @@ export default function Navbar() {
                 if (data.user) {
                     setUser(data.user)
                     setRole(data.role)
-                    localStorage.setItem('user_role', data.role || 'user')
+                    try {
+                        localStorage.setItem('user_role', data.role || 'user')
+                    } catch { }
                     console.log('Navbar: User set from API -', data.user.email, 'Role:', data.role)
                 } else {
                     setUser(null)
                     setRole(null)
-                    localStorage.removeItem('user_role')
+                    try {
+                        localStorage.removeItem('user_role')
+                    } catch { }
                     console.log('Navbar: No user from API')
                 }
             } catch (error) {
