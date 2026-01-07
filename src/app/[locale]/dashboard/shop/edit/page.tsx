@@ -77,6 +77,7 @@ export default function EditShopPage() {
         phone_number: '',
         line_ids: [''],
         facebook_urls: [''],
+        facebook_page_names: [''],
         website: '',
         promptpay_number: '',
         can_issue_tax_invoice: false,
@@ -114,6 +115,7 @@ export default function EditShopPage() {
             phone_number: shopData.phone_number || '',
             line_ids: shopData.line_ids && shopData.line_ids.length > 0 ? shopData.line_ids : (shopData.line_id ? [shopData.line_id] : ['']),
             facebook_urls: shopData.facebook_urls && shopData.facebook_urls.length > 0 ? shopData.facebook_urls : (shopData.facebook_url ? [shopData.facebook_url] : ['']),
+            facebook_page_names: (shopData as any).facebook_page_names && (shopData as any).facebook_page_names.length > 0 ? (shopData as any).facebook_page_names : [''],
             website: shopData.website || '',
             promptpay_number: (shopData as any).promptpay_number || '',
             can_issue_tax_invoice: shopData.can_issue_tax_invoice || false,
@@ -278,6 +280,7 @@ export default function EditShopPage() {
                 phone_number: formData.phone_number,
                 line_ids: formData.line_ids.filter(id => id.trim() !== ''),
                 facebook_urls: formData.facebook_urls.filter(url => url.trim() !== ''),
+                facebook_page_names: formData.facebook_page_names.filter((_, i) => formData.facebook_urls[i]?.trim() !== ''),
                 line_id: formData.line_ids[0] || null,
                 facebook_url: formData.facebook_urls[0] || null,
                 website: formData.website || null,
@@ -542,11 +545,39 @@ export default function EditShopPage() {
                                 )}
                             </div>
 
-                            {/* Facebook URLs */}
+                            {/* Facebook Pages with Names */}
                             <div className="space-y-3">
-                                <Label>Facebook URL (สูงสุด 3 รายการ)</Label>
+                                <Label>Facebook Page (สูงสุด 3 รายการ)</Label>
+                                <p className="text-xs text-gray-500 -mt-1">ระบุชื่อเพจและลิงก์ Facebook ของร้าน</p>
                                 {formData.facebook_urls.map((url, index) => (
-                                    <div key={`fb-${index}`} className="flex gap-2">
+                                    <div key={`fb-${index}`} className="p-3 bg-blue-50 rounded-xl border border-blue-100 space-y-2">
+                                        <div className="flex items-center gap-2">
+                                            <span className="text-xs font-medium text-blue-600 bg-blue-100 px-2 py-0.5 rounded">Page {index + 1}</span>
+                                            {formData.facebook_urls.length > 1 && (
+                                                <Button
+                                                    variant="outline"
+                                                    size="icon"
+                                                    className="ml-auto h-6 w-6 shrink-0 text-red-500 hover:text-red-600 hover:bg-red-50"
+                                                    onClick={() => {
+                                                        const newUrls = formData.facebook_urls.filter((_, i) => i !== index);
+                                                        const newNames = formData.facebook_page_names.filter((_, i) => i !== index);
+                                                        setFormData(prev => ({ ...prev, facebook_urls: newUrls, facebook_page_names: newNames }));
+                                                    }}
+                                                >
+                                                    <X className="w-3 h-3" />
+                                                </Button>
+                                            )}
+                                        </div>
+                                        <Input
+                                            value={formData.facebook_page_names[index] || ''}
+                                            onChange={(e) => {
+                                                const newNames = [...formData.facebook_page_names];
+                                                newNames[index] = e.target.value;
+                                                setFormData(prev => ({ ...prev, facebook_page_names: newNames }));
+                                            }}
+                                            placeholder="ชื่อ Page เช่น รถเช่าสุขใจ"
+                                            className="text-sm"
+                                        />
                                         <Input
                                             value={url}
                                             onChange={(e) => {
@@ -555,20 +586,8 @@ export default function EditShopPage() {
                                                 setFormData(prev => ({ ...prev, facebook_urls: newUrls }));
                                             }}
                                             placeholder="https://facebook.com/yourpage"
+                                            className="text-sm"
                                         />
-                                        {formData.facebook_urls.length > 1 && (
-                                            <Button
-                                                variant="outline"
-                                                size="icon"
-                                                className="shrink-0 text-red-500 hover:text-red-600 hover:bg-red-50"
-                                                onClick={() => {
-                                                    const newUrls = formData.facebook_urls.filter((_, i) => i !== index);
-                                                    setFormData(prev => ({ ...prev, facebook_urls: newUrls }));
-                                                }}
-                                            >
-                                                <X className="w-4 h-4" />
-                                            </Button>
-                                        )}
                                     </div>
                                 ))}
                                 {formData.facebook_urls.length < 3 && (
@@ -577,9 +596,13 @@ export default function EditShopPage() {
                                         variant="ghost"
                                         size="sm"
                                         className="text-blue-600 hover:text-blue-700 hover:bg-blue-50"
-                                        onClick={() => setFormData(prev => ({ ...prev, facebook_urls: [...prev.facebook_urls, ''] }))}
+                                        onClick={() => setFormData(prev => ({
+                                            ...prev,
+                                            facebook_urls: [...prev.facebook_urls, ''],
+                                            facebook_page_names: [...prev.facebook_page_names, '']
+                                        }))}
                                     >
-                                        + เพิ่ม Facebook
+                                        + เพิ่ม Facebook Page
                                     </Button>
                                 )}
                             </div>

@@ -282,20 +282,27 @@ export default async function AdminShopDetailPage({ params }: PageProps) {
                             <span className="text-gray-500">เบอร์โทร:</span>
                             <span className="font-medium">{shop.phone_number}</span>
                         </div>
-                        {shop.line_id && (
-                            <div className="flex justify-between">
-                                <span className="text-gray-500">LINE ID:</span>
-                                <span className="font-medium">{shop.line_id}</span>
+                        {/* Line IDs */}
+                        {(shop.line_ids?.length > 0 ? shop.line_ids : (shop.line_id ? [shop.line_id] : [])).map((lineId: string, index: number) => (
+                            <div key={`line-${index}`} className="flex justify-between">
+                                <span className="text-gray-500">LINE ID {index > 0 ? index + 1 : ''}:</span>
+                                <span className="font-medium">{lineId}</span>
                             </div>
-                        )}
-                        {shop.facebook_url && (
-                            <div className="flex justify-between">
-                                <span className="text-gray-500">Facebook:</span>
-                                <a href={shop.facebook_url} target="_blank" className="font-medium text-blue-600 hover:underline">
-                                    {shop.facebook_url}
-                                </a>
+                        ))}
+                        {/* Facebook Pages */}
+                        {(shop.facebook_urls?.length > 0 ? shop.facebook_urls : (shop.facebook_url ? [shop.facebook_url] : [])).map((fbUrl: string, index: number) => (
+                            <div key={`fb-${index}`} className="flex justify-between items-start gap-2">
+                                <span className="text-gray-500 shrink-0">Facebook {index > 0 ? index + 1 : ''}:</span>
+                                <div className="text-right">
+                                    {shop.facebook_page_names?.[index] && (
+                                        <p className="font-medium text-sm">{shop.facebook_page_names[index]}</p>
+                                    )}
+                                    <a href={fbUrl} target="_blank" className="text-blue-600 hover:underline text-sm break-all">
+                                        {fbUrl}
+                                    </a>
+                                </div>
                             </div>
-                        )}
+                        ))}
                         {shop.website && (
                             <div className="flex justify-between">
                                 <span className="text-gray-500">Website:</span>

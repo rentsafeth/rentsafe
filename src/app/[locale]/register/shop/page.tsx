@@ -73,6 +73,7 @@ export default function RegisterShopPage() {
         phone_number: '',
         line_ids: [''],
         facebook_urls: [''],
+        facebook_page_names: [''],
         website: '',
         service_provinces: [] as string[],
         business_type: 'individual' as 'individual' | 'company',
@@ -312,6 +313,7 @@ export default function RegisterShopPage() {
                         phone_number: formData.phone_number,
                         line_ids: formData.line_ids.filter(id => id.trim() !== ''),
                         facebook_urls: formData.facebook_urls.filter(url => url.trim() !== ''),
+                        facebook_page_names: formData.facebook_page_names.filter((_, i) => formData.facebook_urls[i]?.trim() !== ''),
                         // Backward compatibility
                         line_id: formData.line_ids[0] || null,
                         facebook_url: formData.facebook_urls[0] || null,
@@ -811,13 +813,41 @@ export default function RegisterShopPage() {
                                     )}
                                 </div>
 
-                                {/* Facebook URLs */}
+                                {/* Facebook URLs with Page Names */}
                                 <div className="space-y-3">
                                     <label className="block text-sm font-medium text-gray-700">
-                                        Facebook URL (สูงสุด 3 รายการ)
+                                        Facebook Page (สูงสุด 3 รายการ)
                                     </label>
+                                    <p className="text-xs text-gray-500 -mt-1">ระบุชื่อเพจและลิงก์ Facebook ของร้าน</p>
                                     {formData.facebook_urls.map((url, index) => (
-                                        <div key={`fb-${index}`} className="flex gap-2">
+                                        <div key={`fb-${index}`} className="p-3 bg-blue-50 rounded-xl border border-blue-100 space-y-2">
+                                            <div className="flex items-center gap-2">
+                                                <span className="text-xs font-medium text-blue-600 bg-blue-100 px-2 py-0.5 rounded">Page {index + 1}</span>
+                                                {formData.facebook_urls.length > 1 && (
+                                                    <button
+                                                        type="button"
+                                                        onClick={() => {
+                                                            const newUrls = formData.facebook_urls.filter((_, i) => i !== index);
+                                                            const newNames = formData.facebook_page_names.filter((_, i) => i !== index);
+                                                            setFormData(prev => ({ ...prev, facebook_urls: newUrls, facebook_page_names: newNames }));
+                                                        }}
+                                                        className="ml-auto p-1 text-red-500 hover:bg-red-100 rounded transition-colors"
+                                                    >
+                                                        <X className="w-4 h-4" />
+                                                    </button>
+                                                )}
+                                            </div>
+                                            <input
+                                                type="text"
+                                                value={formData.facebook_page_names[index] || ''}
+                                                onChange={(e) => {
+                                                    const newNames = [...formData.facebook_page_names];
+                                                    newNames[index] = e.target.value;
+                                                    setFormData(prev => ({ ...prev, facebook_page_names: newNames }));
+                                                }}
+                                                placeholder="ชื่อ Page เช่น รถเช่าสุขใจ"
+                                                className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm"
+                                            />
                                             <input
                                                 type="text"
                                                 value={url}
@@ -826,30 +856,22 @@ export default function RegisterShopPage() {
                                                     newUrls[index] = e.target.value;
                                                     setFormData(prev => ({ ...prev, facebook_urls: newUrls }));
                                                 }}
-                                                placeholder="https://facebook.com/..."
-                                                className="flex-1 px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-green-500 focus:border-transparent"
+                                                placeholder="https://facebook.com/yourpage"
+                                                className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm"
                                             />
-                                            {formData.facebook_urls.length > 1 && (
-                                                <button
-                                                    type="button"
-                                                    onClick={() => {
-                                                        const newUrls = formData.facebook_urls.filter((_, i) => i !== index);
-                                                        setFormData(prev => ({ ...prev, facebook_urls: newUrls }));
-                                                    }}
-                                                    className="p-3 text-red-500 hover:bg-red-50 rounded-xl transition-colors"
-                                                >
-                                                    <X className="w-5 h-5" />
-                                                </button>
-                                            )}
                                         </div>
                                     ))}
                                     {formData.facebook_urls.length < 3 && (
                                         <button
                                             type="button"
-                                            onClick={() => setFormData(prev => ({ ...prev, facebook_urls: [...prev.facebook_urls, ''] }))}
+                                            onClick={() => setFormData(prev => ({
+                                                ...prev,
+                                                facebook_urls: [...prev.facebook_urls, ''],
+                                                facebook_page_names: [...prev.facebook_page_names, '']
+                                            }))}
                                             className="text-sm text-blue-600 hover:text-blue-700 font-medium flex items-center gap-1"
                                         >
-                                            + เพิ่ม Facebook
+                                            + เพิ่ม Facebook Page
                                         </button>
                                     )}
                                 </div>

@@ -443,21 +443,6 @@ export default async function ShopProfilePage({ params }: { params: Promise<{ id
                                         </div>
                                     ))}
 
-                                    {/* Facebook URLs */}
-                                    {(shop.facebook_urls?.length > 0 ? shop.facebook_urls : (shop.facebook_url ? [shop.facebook_url] : [])).map((fbUrl: string, index: number) => (
-                                        <a key={`fb-${index}`} id={`shop-contact-facebook-${index}`} href={fbUrl} target="_blank" rel="noopener noreferrer"
-                                            className="flex items-center gap-3 p-3 bg-slate-50 rounded-lg hover:bg-slate-100 transition-colors group">
-                                            <div className="p-2 bg-blue-100 rounded-lg group-hover:bg-blue-200 transition-colors">
-                                                <Globe className="w-4 h-4 text-blue-600" />
-                                            </div>
-                                            <div className="flex-1 min-w-0">
-                                                <p className="text-sm text-slate-500">Facebook {index > 0 ? index + 1 : ''}</p>
-                                                <p className="font-medium text-blue-600 truncate">{fbUrl}</p>
-                                            </div>
-                                            <ExternalLink className="w-4 h-4 text-slate-400 group-hover:text-blue-500" />
-                                        </a>
-                                    ))}
-
                                     {shop.website && (
                                         <a href={shop.website} target="_blank" rel="noopener noreferrer"
                                             className="flex items-center gap-3 p-3 bg-slate-50 rounded-lg hover:bg-slate-100 transition-colors">
@@ -472,11 +457,56 @@ export default async function ShopProfilePage({ params }: { params: Promise<{ id
                                         </a>
                                     )}
 
-                                    {!shop.phone_number && !shop.line_id && !shop.facebook_url && !shop.website && (
+                                    {!shop.phone_number && !shop.line_id && !shop.website && (
                                         <p className="text-slate-500 text-center py-4">{isThai ? 'ไม่มีข้อมูลการติดต่อ' : 'No contact information available'}</p>
                                     )}
                                 </CardContent>
                             </Card>
+
+                            {/* Facebook Pages Card - Separate from Contact */}
+                            {((shop.facebook_urls?.length > 0) || shop.facebook_url) && (
+                                <Card className="border-blue-100">
+                                    <CardHeader className="pb-3">
+                                        <CardTitle className="text-lg flex items-center gap-2">
+                                            <Globe className="w-5 h-5 text-blue-600" />
+                                            {isThai ? 'Page Facebook' : 'Facebook Pages'}
+                                        </CardTitle>
+                                        <p className="text-xs text-slate-500 mt-1 ml-7">
+                                            {isThai ? 'คลิกที่ลิงก์เพื่อไปยังเพจจริงของร้าน' : 'Click link to visit official shop page'}
+                                        </p>
+                                    </CardHeader>
+                                    <CardContent className="space-y-3">
+                                        <div className="p-3 bg-amber-50 rounded-lg border border-amber-200 mb-4">
+                                            <div className="flex items-start gap-2">
+                                                <AlertTriangle className="w-4 h-4 text-amber-600 mt-0.5 flex-shrink-0" />
+                                                <div className="text-xs text-amber-700">
+                                                    <p className="font-medium mb-1">{isThai ? 'คำแนะนำก่อนติดต่อผ่าน Facebook' : 'Tips before contacting via Facebook'}</p>
+                                                    <ul className="list-disc list-inside space-y-0.5">
+                                                        <li>{isThai ? 'ตรวจสอบว่าเป็นเพจจริงของร้านหรือไม่' : 'Verify this is the official shop page'}</li>
+                                                        <li>{isThai ? 'ระวังเพจปลอมที่ใช้ชื่อคล้ายกัน' : 'Beware of fake pages with similar names'}</li>
+                                                        <li>{isThai ? 'อย่าโอนเงินก่อนได้รับสัญญาเช่า' : 'Never transfer money before receiving rental agreement'}</li>
+                                                    </ul>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        {(shop.facebook_urls?.length > 0 ? shop.facebook_urls : (shop.facebook_url ? [shop.facebook_url] : [])).map((fbUrl: string, index: number) => (
+                                            <a key={`fb-${index}`} id={`shop-facebook-page-${index}`} href={fbUrl} target="_blank" rel="noopener noreferrer"
+                                                className="flex items-center gap-3 p-3 bg-blue-50 rounded-lg hover:bg-blue-100 transition-colors group border border-blue-100">
+                                                <div className="p-2 bg-blue-100 rounded-lg group-hover:bg-blue-200 transition-colors">
+                                                    <Globe className="w-4 h-4 text-blue-600" />
+                                                </div>
+                                                <div className="flex-1 min-w-0">
+                                                    <p className="text-sm font-medium text-slate-700">
+                                                        {shop.facebook_page_names?.[index] || `Facebook Page ${index > 0 ? index + 1 : ''}`}
+                                                    </p>
+                                                    <p className="text-xs text-blue-600 truncate">{fbUrl}</p>
+                                                </div>
+                                                <ExternalLink className="w-4 h-4 text-blue-400 group-hover:text-blue-600" />
+                                            </a>
+                                        ))}
+                                    </CardContent>
+                                </Card>
+                            )}
 
                             {/* Bank Account Info */}
                             {(shop.bank_name || shop.bank_account_no || shop.promptpay_number) && (
