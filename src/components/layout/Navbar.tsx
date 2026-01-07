@@ -33,26 +33,40 @@ export default function Navbar() {
         // Fail-safe: Force stop loading after 3 seconds
         const timeoutId = setTimeout(() => {
             if (isMounted) {
-                console.log('Navbar: Force stopping loading due to timeout')
+                console.log('Navbar: Force stopping loading due to timeout (8s limit)')
                 setIsLoading(false)
             }
-        }, 3000)
+        }, 8000)
 
         const checkUser = async () => {
             try {
-                const { data: { session } } = await supabase.auth.getSession()
+                console.log('Navbar: Starting checkUser...')
+                const { data: { session }, error: sessionError } = await supabase.auth.getSession()
+                console.log('Navbar: Session retrieved', session?.user?.email)
+
+                if (sessionError) {
+                    console.error('Navbar: Session error', sessionError)
+                }
+
                 if (!isMounted) return
 
                 const currentUser = session?.user ?? null
                 setUser(currentUser)
 
                 if (currentUser) {
+                    console.log('Navbar: Fetching profile for', currentUser.id)
                     // Get role from database (profiles table)
-                    const { data: profile } = await supabase
+                    const { data: profile, error: profileError } = await supabase
                         .from('profiles')
                         .select('role')
                         .eq('id', currentUser.id)
                         .single()
+
+                    if (profileError) {
+                        console.error('Navbar: Profile fetch error', profileError)
+                    } else {
+                        console.log('Navbar: Profile retrieved', profile)
+                    }
 
                     const userRole = profile?.role || 'user'
 
@@ -60,17 +74,17 @@ export default function Navbar() {
 
                     setRole(userRole)
                     localStorage.setItem('user_role', userRole)
-
-                    // Stop loading immediately since we have the user
-                    setIsLoading(false)
-                    clearTimeout(timeoutId)
                 } else {
                     // User is not logged in, clear cached role
                     localStorage.removeItem('user_role')
-                    setIsLoading(false)
                 }
+
+                // Successful completion
+                console.log('Navbar: Check completed successfully')
+                setIsLoading(false)
+                clearTimeout(timeoutId)
             } catch (error) {
-                console.error('Auth error:', error)
+                console.error('Navbar: Auth error (catch):', error)
                 setIsLoading(false)
             }
         }
