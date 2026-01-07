@@ -258,6 +258,8 @@ export default function RegisterShopPage() {
                     return
                 }
 
+                const { data: urlData } = supabase.storage.from('verification-docs').getPublicUrl(filePath)
+                businessLicenseUrl = urlData.publicUrl
             }
 
             if (leaseAgreementFile) {
