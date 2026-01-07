@@ -41,16 +41,37 @@ export default function Navbar() {
         const checkUser = async () => {
             try {
                 console.log('Navbar: Starting checkUser...')
-                const { data: { session }, error: sessionError } = await supabase.auth.getSession()
-                console.log('Navbar: Session retrieved', session?.user?.email)
+                console.log('Navbar: Supabase URL:', process.env.NEXT_PUBLIC_SUPABASE_URL ? 'Defined' : 'Missing')
 
-                if (sessionError) {
-                    console.error('Navbar: Session error', sessionError)
+                // 1. Race getSession against a 5s timeout
+                const sessionPromise = supabase.auth.getSession()
+                const timeoutPromise = new Promise((_, reject) => setTimeout(() => reject(new Error('Session fetch timeout')), 5000))
+
+                let session
+                try {
+                    const result: any = await Promise.race([sessionPromise, timeoutPromise])
+                    session = result.data?.session
+                    if (result.error) console.error('Navbar: Session error', result.error)
+                } catch (e) {
+                    console.warn('Navbar: getSession timed out or failed, trying getUser...', e)
                 }
 
-                if (!isMounted) return
+                let currentUser = session?.user
 
-                const currentUser = session?.user ?? null
+                // 2. If no session from caching, try forceful getUser (network check)
+                if (!currentUser) {
+                    try {
+                        const { data: { user }, error: userError } = await supabase.auth.getUser()
+                        if (user) currentUser = user
+                        if (userError) console.error('Navbar: getUser error', userError)
+                    } catch (e) {
+                        console.error('Navbar: getUser failed', e)
+                    }
+                }
+
+                console.log('Navbar: Current User resolved:', currentUser?.email)
+
+                if (!isMounted) return
                 setUser(currentUser)
 
                 if (currentUser) {
@@ -69,7 +90,6 @@ export default function Navbar() {
                     }
 
                     const userRole = profile?.role || 'user'
-
                     console.log('User email:', currentUser.email, 'Role:', userRole)
 
                     setRole(userRole)
