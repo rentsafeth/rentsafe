@@ -10,7 +10,7 @@ import PWARegister from '@/components/PWARegister';
 import CookieConsent from '@/components/ui/CookieConsent';
 import "../globals.css";
 
-const BASE_URL = 'https://rentsafe.in.th';
+const BASE_URL = 'https://www.rentsafe.in.th';
 
 export async function generateMetadata({ params }: { params: Promise<{ locale: string }> }): Promise<Metadata> {
   const { locale } = await params;
@@ -50,10 +50,10 @@ export async function generateMetadata({ params }: { params: Promise<{ locale: s
       description,
       images: [
         {
-          url: '/opengraph-image',
+          url: `${BASE_URL}/og-image.png`,
           width: 1200,
           height: 630,
-          alt: 'RentSafe - Trusted Car Rental Verification',
+          alt: 'RentSafe - ตรวจสอบร้านเช่ารถที่น่าเชื่อถือ',
         },
       ],
     },
@@ -61,7 +61,7 @@ export async function generateMetadata({ params }: { params: Promise<{ locale: s
       card: 'summary_large_image',
       title,
       description,
-      images: ['/opengraph-image'],
+      images: [`${BASE_URL}/og-image.png`],
     },
     robots: {
       index: true,
