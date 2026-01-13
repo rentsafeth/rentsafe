@@ -328,6 +328,21 @@ export default function SearchResults() {
                     .or(`name.ilike.%${q}%,bank_account_no.ilike.%${q}%,phone_number.ilike.%${q}%`);
                 // Removed .gt('report_count', 0) to include good shops too
 
+                // Check for verified pro shops (with active subscription)
+                const shopIds = shops?.map(s => s.id) || [];
+                const { data: subscriptions } = await supabase
+                    .from('shop_subscriptions')
+                    .select('shop_id, status, ends_at')
+                    .in('shop_id', shopIds)
+                    .eq('status', 'active');
+
+                const verifiedProShops = new Set<string>();
+                subscriptions?.forEach(s => {
+                    if (s.status === 'active' && new Date(s.ends_at) > new Date()) {
+                        verifiedProShops.add(s.shop_id);
+                    }
+                });
+
                 const combinedResults: SearchResult[] = [];
                 const seenIds = new Set<string>();
 
@@ -336,9 +351,9 @@ export default function SearchResults() {
                     shops.filter(s => s.verification_status === 'verified').forEach(shop => {
                         if (!seenIds.has(shop.id)) {
                             seenIds.add(shop.id);
-                            // Mock isVerifiedPro for now based on status, or fetch properly if needed.
-                            // Assuming s.verification_status === 'verified' is enough for search context
-                            combinedResults.push({ type: 'shop', data: shop, isVerifiedPro: true });
+                            // Check if shop has active subscription (verified pro)
+                            const isVerifiedPro = verifiedProShops.has(shop.id);
+                            combinedResults.push({ type: 'shop', data: shop, isVerifiedPro });
                         }
                     });
                 }
